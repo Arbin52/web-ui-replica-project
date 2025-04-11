@@ -51,7 +51,7 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
   };
 
   return (
-    <div className="network-header shadow-md">
+    <header className="network-header bg-gradient-to-r from-primary/90 to-primary shadow-md text-white p-3 flex items-center justify-between sticky top-0 z-50">
       <div className="flex items-center gap-2">
         <Sheet>
           <SheetTrigger asChild>
@@ -59,15 +59,20 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
               <Menu size={20} />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-64 bg-[#2d4c4c] text-white">
+          <SheetContent side="left" className="p-0 w-64">
             {setActiveTab && <Sidebar activeTab={activeTab || 'overview'} setActiveTab={setActiveTab} />}
           </SheetContent>
         </Sheet>
-        <h1 className="text-2xl font-bold cursor-pointer" onClick={handleLogoClick}>Network Monitor</h1>
+        <h1 
+          className="text-2xl font-bold cursor-pointer transition-transform hover:scale-105" 
+          onClick={handleLogoClick}
+        >
+          Network Monitor
+        </h1>
       </div>
       
       {isSearchExpanded ? (
-        <form onSubmit={handleSearch} className="flex-grow max-w-md mx-4">
+        <form onSubmit={handleSearch} className="flex-grow max-w-md mx-4 animate-fade-in">
           <div className="flex rounded-md bg-white/10 px-3 py-1.5 w-full">
             <input 
               type="text" 
@@ -83,7 +88,10 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
           </div>
         </form>
       ) : (
-        <div className="hidden md:flex rounded-md bg-white/10 px-3 py-1.5 w-64 cursor-pointer" onClick={() => setIsSearchExpanded(true)}>
+        <div 
+          className="hidden md:flex rounded-md bg-white/10 px-3 py-1.5 w-64 cursor-pointer hover:bg-white/20 transition-colors" 
+          onClick={() => setIsSearchExpanded(true)}
+        >
           <span className="text-white/70 w-full">Search...</span>
           <Search size={18} className="text-white/70" />
         </div>
@@ -111,7 +119,7 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-white">
+            <Button variant="ghost" size="icon" className="text-white rounded-full">
               <User size={18} />
             </Button>
           </DropdownMenuTrigger>
@@ -124,7 +132,7 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </div>
+    </header>
   );
 };
 

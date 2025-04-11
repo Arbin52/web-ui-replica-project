@@ -14,12 +14,14 @@ import WifiAnalysis from '../components/WifiAnalysis';
 const Index = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [previousTab, setPreviousTab] = useState('overview');
   const navigate = useNavigate();
 
   const handleTabChange = (tab: string) => {
     if (tab === 'networks') {
       navigate('/networks');
     } else {
+      setPreviousTab(activeTab);
       setIsTransitioning(true);
       setTimeout(() => {
         setActiveTab(tab);
@@ -27,6 +29,11 @@ const Index = () => {
       }, 300);
     }
   };
+
+  useEffect(() => {
+    // Set page title based on active tab
+    document.title = `Network Monitor | ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`;
+  }, [activeTab]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -49,6 +56,17 @@ const Index = () => {
     }
   };
 
+  // Determine animation direction based on sidebar order
+  const getAnimationDirection = () => {
+    const tabOrder = ['overview', 'networks', 'security', 'reports', 'speed', 'ping', 'traceroute', 'wifi-analysis'];
+    const prevIndex = tabOrder.indexOf(previousTab);
+    const currentIndex = tabOrder.indexOf(activeTab);
+    
+    return prevIndex < currentIndex ? 'slide-right' : 'slide-left';
+  };
+
+  const animationDirection = getAnimationDirection();
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header activeTab={activeTab} setActiveTab={handleTabChange} />
@@ -56,13 +74,17 @@ const Index = () => {
         <div className="hidden md:block">
           <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} />
         </div>
-        <div className="flex-grow overflow-y-auto">
+        <main className="flex-grow overflow-y-auto">
           <div className="max-w-screen-xl mx-auto p-4 md:p-6">
-            <div className={`transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100 animate-fade-in'}`}>
+            <div 
+              className={`transition-all duration-300 ${isTransitioning ? 'opacity-0 transform ' + 
+                (animationDirection === 'slide-right' ? 'translate-x-10' : '-translate-x-10') : 
+                'opacity-100 transform translate-x-0 animate-fade-in'}`}
+            >
               {renderContent()}
             </div>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );
