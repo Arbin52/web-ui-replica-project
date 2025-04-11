@@ -10,6 +10,7 @@ import Speed from '../components/Speed';
 import Ping from '../components/Ping';
 import Traceroute from '../components/Traceroute';
 import WifiAnalysis from '../components/WifiAnalysis';
+import WifiManager from '../components/wifi/WifiManager';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -20,6 +21,8 @@ const Index = () => {
   const handleTabChange = (tab: string) => {
     if (tab === 'networks') {
       navigate('/networks');
+    } else if (tab === 'wifi') {
+      navigate('/wifi');
     } else {
       setPreviousTab(activeTab);
       setIsTransitioning(true);
@@ -51,6 +54,8 @@ const Index = () => {
         return <Traceroute />;
       case 'wifi-analysis':
         return <WifiAnalysis />;
+      case 'wifi':
+        return <WifiManager />;
       default:
         return <Overview />;
     }
@@ -58,7 +63,7 @@ const Index = () => {
 
   // Determine animation direction based on sidebar order
   const getAnimationDirection = () => {
-    const tabOrder = ['overview', 'networks', 'security', 'reports', 'speed', 'ping', 'traceroute', 'wifi-analysis'];
+    const tabOrder = ['overview', 'networks', 'wifi', 'security', 'reports', 'speed', 'ping', 'traceroute', 'wifi-analysis'];
     const prevIndex = tabOrder.indexOf(previousTab);
     const currentIndex = tabOrder.indexOf(activeTab);
     
@@ -68,7 +73,7 @@ const Index = () => {
   const animationDirection = getAnimationDirection();
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <Header activeTab={activeTab} setActiveTab={handleTabChange} />
       <div className="flex flex-grow">
         <div className="hidden md:block">

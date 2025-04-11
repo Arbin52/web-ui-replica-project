@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Index from "./pages/Index";
 import NetworkManagement from "./pages/NetworkManagement";
+import WiFiManagement from "./pages/WiFiManagement";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -45,6 +46,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <NetworkManagement />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/wifi" 
+        element={
+          <ProtectedRoute>
+            <WiFiManagement />
           </ProtectedRoute>
         } 
       />

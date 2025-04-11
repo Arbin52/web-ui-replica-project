@@ -10,3 +10,16 @@
 .info-value {
   @apply text-sm text-gray-900 dark:text-gray-200 font-normal mt-1 sm:mt-0;
 }
+
+/* WiFi specific styles */
+.wifi-signal-indicator {
+  @apply flex space-x-0.5;
+}
+
+.wifi-signal-bar {
+  @apply w-1 rounded-sm bg-gray-300 dark:bg-gray-700;
+}
+
+.wifi-signal-bar.active {
+  @apply bg-green-500;
+}

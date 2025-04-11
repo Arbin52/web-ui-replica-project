@@ -31,6 +31,52 @@ export const useNetworkStatus = () => {
     }
   }, [networkStatus]);
 
+  // Function to connect to a WiFi network (simulated)
+  const connectToNetwork = async (ssid: string, password: string) => {
+    try {
+      toast.info(`Connecting to ${ssid}...`);
+      
+      // Simulate connection delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // In a real app, this would make API calls to your router/gateway
+      // Update the network status after connecting
+      await fetchNetworkStatus();
+      
+      toast.success(`Connected to ${ssid}`);
+      return true;
+    } catch (err) {
+      console.error('Error connecting to network:', err);
+      toast.error(`Failed to connect to ${ssid}`);
+      return false;
+    }
+  };
+
+  // Function to disconnect from current network (simulated)
+  const disconnectFromNetwork = async () => {
+    try {
+      if (!networkStatus?.networkName) {
+        toast.error('Not connected to any network');
+        return false;
+      }
+      
+      toast.info(`Disconnecting from ${networkStatus.networkName}...`);
+      
+      // Simulate disconnection delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // In a real app, this would make API calls to your router/gateway
+      await fetchNetworkStatus();
+      
+      toast.success(`Disconnected from ${networkStatus.networkName}`);
+      return true;
+    } catch (err) {
+      console.error('Error disconnecting from network:', err);
+      toast.error('Failed to disconnect from network');
+      return false;
+    }
+  };
+
   useEffect(() => {
     fetchNetworkStatus();
     
@@ -72,6 +118,8 @@ export const useNetworkStatus = () => {
     isLiveUpdating,
     toggleLiveUpdates,
     updateInterval,
-    setRefreshRate
+    setRefreshRate,
+    connectToNetwork,
+    disconnectFromNetwork
   };
 };
