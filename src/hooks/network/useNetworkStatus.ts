@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { generateNetworkStatus } from './networkStatusGenerator';
@@ -10,7 +9,7 @@ export const useNetworkStatus = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLiveUpdating, setIsLiveUpdating] = useState(true);
-  const [updateInterval, setUpdateInterval] = useState(2000); // 2 seconds by default for more responsiveness
+  const [updateInterval, setUpdateInterval] = useState(1000); // More frequent updates (1 second)
   const [connectionError, setConnectionError] = useState<string | null>(null);
   
   // Use a ref to store the interval ID to prevent it from being affected by state changes
@@ -41,7 +40,7 @@ export const useNetworkStatus = () => {
       setConnectionError(null);
       
       // Simulate connection delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Simple password validation (in a real system, this would be done by the router)
       if (password.length < 8) {
@@ -51,20 +50,10 @@ export const useNetworkStatus = () => {
         return false;
       }
       
-      // Simulate incorrect password (for specific test networks)
-      const testNetworks = ['YAKSO HOSTEL', 'NTFiber_9498_2.4G'];
-      if (testNetworks.includes(ssid) && password !== 'correctpassword') {
-        const errorMsg = `Failed to connect to ${ssid}: Incorrect password`;
-        toast.error(errorMsg);
-        setConnectionError(errorMsg);
-        return false;
-      }
-      
-      // Store the connected network name for real-time detection
+      // Success! Store the connection info for detection
       localStorage.setItem('last_connected_network', ssid);
       localStorage.setItem('connected_network_name', ssid);
       
-      // In a real app, this would make API calls to your router/gateway
       // Update the network status after connecting
       await fetchNetworkStatus();
       
@@ -104,7 +93,7 @@ export const useNetworkStatus = () => {
       // Simulate a device disconnecting when the network changes
       disconnectDevice();
       
-      // In a real app, this would make API calls to your router/gateway
+      // Update network status after disconnecting
       await fetchNetworkStatus();
       
       toast.success(`Disconnected from ${currentNetworkName}`);

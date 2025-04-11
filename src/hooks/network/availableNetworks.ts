@@ -1,12 +1,35 @@
-
 // This function tries to get available networks through browser APIs if possible,
 // otherwise falls back to sample data
 export const getAvailableNetworks = () => {
-  // First check if any real network info is available in localStorage
+  // Get the actual connected network name from various sources
+  const browserDetectedNetwork = localStorage.getItem('current_browser_network');
   const connectedNetworkName = localStorage.getItem('connected_network_name');
+  const lastConnectedNetwork = localStorage.getItem('last_connected_network');
+  
+  // Use the most accurate network name available
+  const actualConnectedNetwork = browserDetectedNetwork || connectedNetworkName || lastConnectedNetwork;
+  
+  console.log("Getting available networks. Connected network:", actualConnectedNetwork);
 
-  // These networks are based on the image uploaded by the user, with the connected network (if any) at the top
-  const networks = [
+  // Check if we're running in a real browser environment with network access
+  const isRealEnvironment = typeof navigator !== 'undefined' && navigator.onLine;
+  
+  // Try to get real network info from browser
+  let realNetworks = [];
+  
+  // Get network info from navigator.connection if available
+  if (isRealEnvironment && (navigator as any).connection) {
+    const connection = (navigator as any).connection;
+    console.log("Connection type:", connection.type || "unknown");
+    
+    // In modern browsers, we might be able to get network info
+    if (connection.type === 'wifi' && actualConnectedNetwork) {
+      console.log("Detected WiFi connection:", actualConnectedNetwork);
+    }
+  }
+  
+  // These networks are based on the image uploaded by the user
+  const sampleNetworks = [
     { id: 1, ssid: 'YAKSO HOSTEL 5G', signal: -45, security: 'WPA2' },
     { id: 2, ssid: 'YAKSO HOSTEL', signal: -55, security: 'WPA2' },
     { id: 3, ssid: 'YBHD1_NTFiber', signal: -60, security: 'WPA2' },
@@ -21,54 +44,59 @@ export const getAvailableNetworks = () => {
     { id: 12, ssid: 'Hidden Network', signal: -88, security: 'Unknown' }
   ];
 
-  // Try to get the actual current connected WiFi name through browser's navigator.connection if available
-  let actualConnectedNetwork = null;
-  
-  // Attempt to detect current connection from browser
-  if (navigator.onLine) {
-    // Check if we can access connection info
-    if ((navigator as any).connection) {
-      // We're online and can access connection info
-      console.log("Connection info available:", (navigator as any).connection);
-    }
+  // Try to get the operating system's network name if browser provides it
+  const osNetworkName = ((navigator as any).connection && (navigator as any).connection.ssid) || 
+                        ((navigator as any).wifi && (navigator as any).wifi.ssid);
+                        
+  // If we have a real connected network, add it to our list or update if it exists
+  if (actualConnectedNetwork) {
+    console.log("Adding actual connected network to available networks list:", actualConnectedNetwork);
     
-    // Check if we have any browser-reported network name
-    actualConnectedNetwork = localStorage.getItem('current_browser_network');
-  }
-
-  // Always use the most accurate connected network name we have
-  const activeNetworkName = actualConnectedNetwork || connectedNetworkName;
-
-  // If there's a connected network, make sure it's at the top of the list with a strong signal
-  if (activeNetworkName) {
-    console.log("Adding active network to available networks:", activeNetworkName);
+    // Check if the real network already exists in the sample list
+    const existingNetwork = sampleNetworks.find(n => n.ssid === actualConnectedNetwork);
     
-    // Check if the connected network is already in the list
-    const existingNetworkIndex = networks.findIndex(n => n.ssid === activeNetworkName);
-    
-    if (existingNetworkIndex >= 0) {
-      // Move it to the top and update its signal strength
-      const network = networks[existingNetworkIndex];
-      network.signal = -45; // Strong signal for connected network
-      networks.splice(existingNetworkIndex, 1);
-      networks.unshift(network);
-      console.log("Moved existing network to top of list:", network);
+    if (existingNetwork) {
+      // Update the network info with stronger signal since we're connected to it
+      existingNetwork.signal = -40; // Very strong signal
     } else {
-      // Add the connected network at the top
-      networks.unshift({
+      // Add the real connected network to the start of the list with a good signal
+      sampleNetworks.unshift({
         id: 0,
-        ssid: activeNetworkName,
+        ssid: actualConnectedNetwork,
+        signal: -40, // Very strong signal
+        security: 'WPA2'
+      });
+    }
+  }
+  
+  // If OS reports a different network name than what we have stored, prioritize it
+  if (osNetworkName && osNetworkName !== actualConnectedNetwork) {
+    console.log("OS reported different network name:", osNetworkName);
+    const osNetworkExists = sampleNetworks.some(n => n.ssid === osNetworkName);
+    
+    if (!osNetworkExists) {
+      sampleNetworks.unshift({
+        id: -1,
+        ssid: osNetworkName,
         signal: -45,
         security: 'WPA2'
       });
-      console.log("Added new network to top of list:", activeNetworkName);
     }
   }
   
-  // Try to detect real networks through the WiFi API if available
-  // Note: This is experimental and requires user permission, which we won't implement here
-  // but is shown as a potential future enhancement
-
-  console.log("Returning available networks:", networks);
+  // Now reorder the list to move connected network to the top
+  const networks = [...sampleNetworks];
+  
+  // Final check - if we have a connected network, ensure it's at the top with strong signal
+  if (actualConnectedNetwork) {
+    const connectedIdx = networks.findIndex(n => n.ssid === actualConnectedNetwork);
+    if (connectedIdx > 0) {
+      const connectedNetwork = networks[connectedIdx];
+      networks.splice(connectedIdx, 1);
+      networks.unshift(connectedNetwork);
+    }
+  }
+  
+  console.log("Final networks list:", networks);
   return networks;
 };

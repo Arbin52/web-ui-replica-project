@@ -16,18 +16,32 @@ export const fetchRealNetworkInfo = async (): Promise<{
     let networkType = "Unknown";
     let networkName = undefined;
     
-    // Try to get more detailed connection information if available in a type-safe way
-    // Using typeof check for browser compatibility
+    // Define potential network name sources
+    const storedNetworkName = localStorage.getItem('connected_network_name');
+    const lastConnectedNetwork = localStorage.getItem('last_connected_network');
+    
+    console.log("Fetching real network info. Stored network:", storedNetworkName);
+    console.log("Last connected network:", lastConnectedNetwork);
+
+    // Check the connection APIs
     if (typeof navigator !== 'undefined') {
       const nav = navigator as any;
       if (nav.connection) {
         networkType = nav.connection.effectiveType || nav.connection.type || "Unknown";
+        console.log("Connection type detected:", networkType);
         
         // In some cases, type can give us hints about the connection
         if (nav.connection.type === 'wifi') {
           networkType = "802.11 (WiFi)";
+          
+          // If we're on WiFi, use stored network name if available
+          if (storedNetworkName) {
+            networkName = storedNetworkName;
+            console.log("Using stored WiFi name:", networkName);
+          }
         } else if (nav.connection.type === 'cellular') {
           networkType = "Cellular";
+          networkName = "Cellular Connection";
         }
       }
     }
@@ -38,91 +52,67 @@ export const fetchRealNetworkInfo = async (): Promise<{
 
     // Try to get the actual WiFi network name - multiple approaches
     
-    // 1. First try modern Network Information API (if available)
+    // 1. Check if the browser has exposed the network name directly
     try {
-      if (isSecureContext && window.navigator && (window.navigator as any).connection) {
-        const connection = (window.navigator as any).connection;
-        console.log("Connection info available:", connection);
-        
-        // Some browsers expose network info through connection.name 
-        if (connection.ssid) {
-          networkName = connection.ssid;
-          console.log("Got network name from connection.ssid:", networkName);
-        }
+      // Some browsers might expose network name in newer APIs
+      if ((navigator as any).wifi && (navigator as any).wifi.ssid) {
+        networkName = (navigator as any).wifi.ssid;
+        console.log("Got network name from navigator.wifi:", networkName);
+      } 
+      // Try connection.ssid if available (future/experimental API)
+      else if ((navigator as any).connection && (navigator as any).connection.ssid) {
+        networkName = (navigator as any).connection.ssid;
+        console.log("Got network name from connection.ssid:", networkName);
       }
     } catch (e) {
-      console.log("Error accessing connection API:", e);
+      console.log("Error accessing experimental network APIs:", e);
     }
-    
-    // 2. Check localStorage for manually stored network name
-    if (!networkName) {
-      networkName = localStorage.getItem('connected_network_name');
-      console.log("Got network name from localStorage:", networkName);
-    }
-    
-    // 3. Try to retrieve from real browser environment - different APIs depending on platform
-    if (!networkName && isOnline) {
-      // Try to get WiFi info directly from browser if possible
-      try {
-        if (isSecureContext && (navigator as any).wifi) {
-          const wifiInfo = await (navigator as any).wifi.getCurrentNetwork();
-          if (wifiInfo && wifiInfo.ssid) {
-            networkName = wifiInfo.ssid;
-            console.log("Got network name from WiFi API:", networkName);
-          }
-        }
-      } catch (e) {
-        console.log("WiFi API not available:", e);
-      }
 
-      // Try to detect network from browser
-      if (!networkName) {
-        try {
-          const rtcPeerConnection = window.RTCPeerConnection 
-            || (window as any).webkitRTCPeerConnection 
-            || (window as any).mozRTCPeerConnection;
-            
-          if (rtcPeerConnection) {
-            const pc = new rtcPeerConnection({ iceServers: [] });
-            pc.createDataChannel("");
-            
-            // Create an offer to trigger ICE candidate gathering
-            pc.createOffer()
-              .then(offer => pc.setLocalDescription(offer))
-              .catch(err => console.log("Error creating offer:", err));
-              
-            // Listen for ICE candidates to extract network info
-            pc.onicecandidate = (ice) => {
-              if (ice.candidate) {
-                console.log("ICE candidate:", ice.candidate);
-                // Extract possible network info from ICE candidate
-                const candidateStr = ice.candidate.candidate;
-                // Close the connection after gathering
-                pc.close();
-              }
-            };
-          }
-        } catch (e) {
-          console.log("Error using RTCPeerConnection:", e);
-        }
+    // 2. If we still don't have a network name but we're online, prioritize stored values
+    if (!networkName && isOnline) {
+      if (storedNetworkName) {
+        networkName = storedNetworkName;
+        console.log("Using stored network name:", networkName);
+      } else if (lastConnectedNetwork) {
+        networkName = lastConnectedNetwork;
+        console.log("Using last connected network name:", networkName);
       }
     }
-    
-    // 4. If still no network name but we're online, estimate from device info
-    if (!networkName && isOnline) {
-      // Try to get actual WiFi SSID name (may not be possible in all browsers)
-      const savedNetworkName = localStorage.getItem('last_connected_network');
+
+    // 3. Check network information API for hints about connection
+    if (!networkName && isOnline && (navigator as any).connection) {
+      const connection = (navigator as any).connection;
       
-      // If we're online but don't know network name, make an educated guess
-      if ((navigator as any).connection && (navigator as any).connection.type === 'wifi') {
-        networkName = savedNetworkName || "WiFi Network";
-      } else if (networkType.includes("WiFi")) {
-        networkName = savedNetworkName || "WiFi Connection";  
-      } else if (networkType.includes("Cellular")) {
+      // If we know we're on WiFi but don't know the name
+      if (connection.type === 'wifi') {
+        // Fallback to generic name if we're definitely on WiFi but don't know name
+        networkName = storedNetworkName || lastConnectedNetwork || "WiFi Connection";
+        console.log("WiFi connection detected, using fallback name:", networkName);
+      } 
+      // For non-WiFi connections, be more generic
+      else if (connection.type === 'cellular') {
         networkName = "Cellular Connection";
       } else if (isOnline) {
-        networkName = savedNetworkName || "Connected Network";
+        networkName = "Active Connection";
       }
+    }
+    
+    // If we're online but still have no network name, use last connected or default
+    if (isOnline && !networkName) {
+      networkName = lastConnectedNetwork || "Unknown Network";
+      console.log("Online but no network name, using fallback:", networkName);
+    }
+    
+    // If we know we're offline, clear the network name
+    if (!isOnline) {
+      networkName = undefined;
+      console.log("Device is offline, clearing network name");
+    }
+    
+    // Make the name available to other parts of the app
+    if (networkName) {
+      localStorage.setItem('current_browser_network', networkName);
+      console.log("Stored detected network name:", networkName);
     }
     
     // Attempt to get public IP from API if online
@@ -144,6 +134,7 @@ export const fetchRealNetworkInfo = async (): Promise<{
     // Generate a realistic gateway IP
     const gatewayIp = "192.168.1.1";
     
+    // Return the collected network information
     return {
       networkName,
       isOnline,
