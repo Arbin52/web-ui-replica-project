@@ -16,59 +16,66 @@ export const fetchRealNetworkInfo = async (): Promise<{
     let networkType = "Unknown";
     let networkName = undefined;
     
-    // Define potential network name sources
+    // Check if we previously stored a network name from user selection
     const storedNetworkName = localStorage.getItem('connected_network_name');
     const lastConnectedNetwork = localStorage.getItem('last_connected_network');
     
     console.log("Fetching real network info. Stored network:", storedNetworkName);
     console.log("Last connected network:", lastConnectedNetwork);
 
-    // Check the connection APIs
-    if (typeof navigator !== 'undefined') {
-      const nav = navigator as any;
-      if (nav.connection) {
-        networkType = nav.connection.effectiveType || nav.connection.type || "Unknown";
+    // Try to use more accurate method to detect network
+    try {
+      // This is a special approach to try to get the actual network name
+      // First check if we can access network information
+      if ('connection' in navigator && (navigator as any).connection) {
+        const connection = (navigator as any).connection;
+        networkType = connection.effectiveType || connection.type || "Unknown";
         console.log("Connection type detected:", networkType);
-        
-        // In some cases, type can give us hints about the connection
-        if (nav.connection.type === 'wifi') {
-          networkType = "802.11 (WiFi)";
-          
-          // If we're on WiFi, use stored network name if available
-          if (storedNetworkName) {
-            networkName = storedNetworkName;
-            console.log("Using stored WiFi name:", networkName);
+      }
+
+      // Check if Network Information API is available and try to use it
+      if ('getNetworkInformation' in navigator) {
+        try {
+          const networkInfo = await (navigator as any).getNetworkInformation();
+          if (networkInfo && networkInfo.ssid) {
+            networkName = networkInfo.ssid;
+            console.log("Got SSID from Network Information API:", networkName);
           }
-        } else if (nav.connection.type === 'cellular') {
-          networkType = "Cellular";
-          networkName = "Cellular Connection";
+        } catch (e) {
+          console.log("Error accessing Network Information API:", e);
         }
       }
-    }
-
-    // First check if we're in a secure context (HTTPS)
-    const isSecureContext = window.isSecureContext;
-    console.log("Is secure context:", isSecureContext);
-
-    // Try to get the actual WiFi network name - multiple approaches
-    
-    // 1. Check if the browser has exposed the network name directly
-    try {
-      // Some browsers might expose network name in newer APIs
-      if ((navigator as any).wifi && (navigator as any).wifi.ssid) {
-        networkName = (navigator as any).wifi.ssid;
-        console.log("Got network name from navigator.wifi:", networkName);
-      } 
-      // Try connection.ssid if available (future/experimental API)
-      else if ((navigator as any).connection && (navigator as any).connection.ssid) {
-        networkName = (navigator as any).connection.ssid;
-        console.log("Got network name from connection.ssid:", networkName);
+      
+      // Try to get information from device memory (if available)
+      if (!networkName && 'deviceMemory' in navigator) {
+        console.log("Device memory:", (navigator as any).deviceMemory);
+      }
+      
+      // Check if any version of network details API is available
+      if (!networkName && 'connection' in navigator) {
+        const conn = (navigator as any).connection;
+        if (conn && conn.ssid) {
+          networkName = conn.ssid;
+          console.log("Got SSID from connection API:", networkName);
+        }
+        
+        // Get network type at least
+        if (conn) {
+          if (conn.type === 'wifi') {
+            networkType = "WiFi";
+          } else if (conn.type === 'ethernet') {
+            networkType = "Ethernet";
+          } else if (conn.type === 'cellular') {
+            networkType = "Cellular";
+          }
+        }
       }
     } catch (e) {
       console.log("Error accessing experimental network APIs:", e);
     }
 
-    // 2. If we still don't have a network name but we're online, prioritize stored values
+    // If we couldn't get the network name but we're online and 
+    // have a previously stored network name, use it
     if (!networkName && isOnline) {
       if (storedNetworkName) {
         networkName = storedNetworkName;
@@ -78,39 +85,30 @@ export const fetchRealNetworkInfo = async (): Promise<{
         console.log("Using last connected network name:", networkName);
       }
     }
-
-    // 3. Check network information API for hints about connection
-    if (!networkName && isOnline && (navigator as any).connection) {
-      const connection = (navigator as any).connection;
-      
-      // If we know we're on WiFi but don't know the name
-      if (connection.type === 'wifi') {
-        // Fallback to generic name if we're definitely on WiFi but don't know name
-        networkName = storedNetworkName || lastConnectedNetwork || "WiFi Connection";
-        console.log("WiFi connection detected, using fallback name:", networkName);
-      } 
-      // For non-WiFi connections, be more generic
-      else if (connection.type === 'cellular') {
-        networkName = "Cellular Connection";
-      } else if (isOnline) {
-        networkName = "Active Connection";
+    
+    // If we know we're online but still have no network name, try one more approach
+    if (isOnline && !networkName) {
+      // Try to get the network name from local storage that might have been
+      // populated by other parts of the app
+      const browserNetwork = localStorage.getItem('current_browser_network');
+      if (browserNetwork) {
+        networkName = browserNetwork;
+        console.log("Using detected browser network from storage:", networkName);
+      } else {
+        // If we really can't determine the name but we are online, use a generic name
+        networkName = storedNetworkName || lastConnectedNetwork || "Connected Network";
+        console.log("Online but no network name detected, using fallback:", networkName);
       }
     }
     
-    // If we're online but still have no network name, use last connected or default
-    if (isOnline && !networkName) {
-      networkName = lastConnectedNetwork || "Unknown Network";
-      console.log("Online but no network name, using fallback:", networkName);
-    }
-    
-    // If we know we're offline, clear the network name
+    // If we're offline, clear the network name
     if (!isOnline) {
       networkName = undefined;
       console.log("Device is offline, clearing network name");
     }
     
-    // Make the name available to other parts of the app
-    if (networkName) {
+    // Store the network name for other parts of the app to use
+    if (networkName && isOnline) {
       localStorage.setItem('current_browser_network', networkName);
       console.log("Stored detected network name:", networkName);
     }
@@ -119,7 +117,7 @@ export const fetchRealNetworkInfo = async (): Promise<{
     let publicIp = "";
     if (isOnline) {
       try {
-        const response = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(3000) });
+        const response = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(2000) });
         if (response.ok) {
           const data = await response.json();
           publicIp = data.ip;

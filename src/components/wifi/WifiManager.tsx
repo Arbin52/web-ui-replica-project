@@ -33,10 +33,11 @@ const WifiManager: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [scanInProgress, setScanInProgress] = useState(false);
-  const [initialCheckDone, setInitialCheckDone] = useState(false);
+  const [detectedNetworkName, setDetectedNetworkName] = useState<string | null>(null);
 
   // Monitor navigator.onLine directly for immediate feedback
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  
   useEffect(() => {
     const handleOnlineStatus = () => {
       console.log("Online status changed:", navigator.onLine);
@@ -74,24 +75,34 @@ const WifiManager: React.FC = () => {
     const doInitialCheck = async () => {
       console.log("Doing initial network check");
       await refreshNetworkStatus();
-      setInitialCheckDone(true);
+      
+      // Try to detect the OS-reported network name
+      const detectedName = localStorage.getItem('current_browser_network') || 
+                           localStorage.getItem('connected_network_name') ||
+                           localStorage.getItem('last_connected_network');
+      
+      if (detectedName) {
+        console.log("Detected network name on initial load:", detectedName);
+        setDetectedNetworkName(detectedName);
+      }
     };
     
     doInitialCheck();
-  }, []);
+    
+    // Refresh network status every 2 seconds to detect changes
+    const fastUpdateInterval = setInterval(() => {
+      checkCurrentNetworkImmediately();
+    }, 1000);
+    
+    return () => clearInterval(fastUpdateInterval);
+  }, [refreshNetworkStatus, checkCurrentNetworkImmediately]);
 
-  // Periodically check the connection status
+  // Update detected network name when network status changes
   useEffect(() => {
-    const connectionCheck = setInterval(() => {
-      console.log("Periodic connection check");
-      const networkName = localStorage.getItem('connected_network_name');
-      if (networkName && !isConnecting && !isDisconnecting) {
-        refreshNetworkStatus();
-      }
-    }, 2000); // Check more frequently
-
-    return () => clearInterval(connectionCheck);
-  }, [isConnecting, isDisconnecting, refreshNetworkStatus]);
+    if (networkStatus?.networkName) {
+      setDetectedNetworkName(networkStatus.networkName);
+    }
+  }, [networkStatus?.networkName]);
 
   // Reset error state when dialog closes
   useEffect(() => {
@@ -136,6 +147,7 @@ const WifiManager: React.FC = () => {
       if (success) {
         setShowPasswordDialog(false);
         setPassword('');
+        setDetectedNetworkName(selectedNetwork.ssid);
       }
     } catch (error) {
       console.error("Connection error:", error);
@@ -152,6 +164,7 @@ const WifiManager: React.FC = () => {
     
     try {
       await disconnectFromNetwork();
+      setDetectedNetworkName(null);
     } catch (error) {
       console.error("Disconnection error:", error);
       toast.error("Failed to disconnect from network");
@@ -193,9 +206,9 @@ const WifiManager: React.FC = () => {
           <span className="text-sm text-muted-foreground">
             {isOnline ? 'Your device is online' : 'Your device is offline'}
           </span>
-          {networkStatus?.networkName && (
+          {detectedNetworkName && (
             <span className="ml-2 text-sm font-medium">
-              Connected to: <span className="text-primary">{networkStatus.networkName}</span>
+              Connected to: <span className="text-primary">{detectedNetworkName}</span>
             </span>
           )}
         </div>

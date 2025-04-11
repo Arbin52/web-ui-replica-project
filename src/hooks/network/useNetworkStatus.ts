@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { generateNetworkStatus } from './networkStatusGenerator';
@@ -53,6 +54,7 @@ export const useNetworkStatus = () => {
       // Success! Store the connection info for detection
       localStorage.setItem('last_connected_network', ssid);
       localStorage.setItem('connected_network_name', ssid);
+      localStorage.setItem('current_browser_network', ssid);
       
       // Update the network status after connecting
       await fetchNetworkStatus();
@@ -174,6 +176,23 @@ export const useNetworkStatus = () => {
       }
     };
   }, [fetchNetworkStatus, isLiveUpdating, updateInterval]);
+
+  // Additional effect to perform network status check whenever online status changes
+  useEffect(() => {
+    const checkNetworkOnVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log("Page became visible, checking network status");
+        fetchNetworkStatus();
+      }
+    };
+    
+    // Listen for visibility changes to update when tab becomes active
+    document.addEventListener('visibilitychange', checkNetworkOnVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', checkNetworkOnVisibilityChange);
+    };
+  }, [fetchNetworkStatus]);
 
   const refreshNetworkStatus = () => {
     setIsLoading(true);

@@ -44,11 +44,7 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   // Generate available networks with the real one included
   let availableNetworks = getAvailableNetworks();
   
-  // Determine the best network name to use
-  // Priority order: 
-  // 1. Browser detected network name
-  // 2. Manually connected network name from user action
-  // 3. Last connected network if we're online
+  // Determine the best network name to use based on multiple sources
   const browserDetectedNetworkName = realNetworkInfo.networkName;
   const storedNetworkName = localStorage.getItem('connected_network_name');
   const lastConnectedNetwork = localStorage.getItem('last_connected_network');
@@ -61,20 +57,30 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   });
   
   // Select the most accurate network name available
-  let networkName = browserDetectedNetworkName || storedNetworkName;
+  let networkName = browserDetectedNetworkName;
   
-  // Store browser detection for future reference
-  if (browserDetectedNetworkName) {
-    localStorage.setItem('current_browser_network', browserDetectedNetworkName);
+  // If browser detection didn't work, fall back to stored values
+  if (!networkName && isCurrentlyOnline) {
+    networkName = storedNetworkName || lastConnectedNetwork;
+    console.log("Using stored network name:", networkName);
   }
   
-  // If online but no network name, use last connected
-  if (isCurrentlyOnline && !networkName && lastConnectedNetwork) {
-    networkName = lastConnectedNetwork;
-    console.log("Using last connected network:", networkName);
-  } 
+  // If online but no network name detected, try OS-level detection
+  if (isCurrentlyOnline && !networkName) {
+    // Try to get the OS-level network name
+    try {
+      if ((navigator as any).connection && (navigator as any).connection.type === 'wifi') {
+        // We know we're on WiFi but don't know the name
+        networkName = storedNetworkName || lastConnectedNetwork || "WiFi Connection";
+        console.log("WiFi connection detected, using:", networkName);
+      } 
+    } catch (e) {
+      console.log("Error detecting connection type:", e);
+    }
+  }
+  
   // If offline, clear network name
-  else if (!isCurrentlyOnline) {
+  if (!isCurrentlyOnline) {
     networkName = undefined;
     console.log("Device offline, clearing network name");
   }
@@ -82,21 +88,21 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   console.log("Selected final network name:", networkName);
   
   // Check if current network exists in available networks and ensure it's prioritized
-  const currentNetworkInList = availableNetworks.some(network => network.ssid === networkName);
-  
-  // If current network not in list, add it with strong signal
-  if (!currentNetworkInList && networkName && isCurrentlyOnline) {
-    console.log("Adding current network to available list:", networkName);
-    availableNetworks.unshift({
-      id: availableNetworks.length + 1,
-      ssid: networkName,
-      signal: -45, // Strong signal
-      security: 'WPA2'
-    });
-  }
-  
-  // Reorder to ensure current network is at the top
   if (networkName && isCurrentlyOnline) {
+    const currentNetworkInList = availableNetworks.some(network => network.ssid === networkName);
+    
+    // If current network not in list, add it with strong signal
+    if (!currentNetworkInList) {
+      console.log("Adding current network to available list:", networkName);
+      availableNetworks.unshift({
+        id: availableNetworks.length + 1,
+        ssid: networkName,
+        signal: -45, // Strong signal
+        security: 'WPA2'
+      });
+    }
+    
+    // Reorder to ensure current network is at the top
     const networkIndex = availableNetworks.findIndex(n => n.ssid === networkName);
     if (networkIndex > 0) {
       const network = availableNetworks[networkIndex];
