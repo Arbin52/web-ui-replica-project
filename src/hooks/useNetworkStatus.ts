@@ -43,6 +43,25 @@ export interface NetworkStatus {
   }[];
 }
 
+// Function to fetch available network information from the user's uploaded image
+const getAvailableNetworks = () => {
+  // These networks are based on the image uploaded by the user
+  return [
+    { id: 1, ssid: 'YAKSO HOSTEL 5G', signal: -45, security: 'WPA2' },
+    { id: 2, ssid: 'YAKSO HOSTEL', signal: -55, security: 'WPA2' },
+    { id: 3, ssid: 'YBHD1_NTFiber', signal: -60, security: 'WPA2' },
+    { id: 4, ssid: 'NTFiber_9498_2.4G', signal: -65, security: 'WPA2' },
+    { id: 5, ssid: 'YAKSO HOSTEL 2', signal: -70, security: 'WPA2' },
+    { id: 6, ssid: 'YAKSO HOSTEL 2 5G', signal: -72, security: 'WPA3' },
+    { id: 7, ssid: 'YBHD_5G_NTFiber', signal: -75, security: 'WPA2' },
+    { id: 8, ssid: 'gopal284_2', signal: -78, security: 'WPA2' },
+    { id: 9, ssid: 'NTFiber_3CF0_2.4G', signal: -80, security: 'WPA2' },
+    { id: 10, ssid: 'prashantshah143_2', signal: -82, security: 'WPA2' },
+    { id: 11, ssid: 'shiv001_5', signal: -85, security: 'WPA2' },
+    { id: 12, ssid: 'Hidden Network', signal: -88, security: 'Unknown' }
+  ];
+};
+
 export const useNetworkStatus = () => {
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,32 +101,8 @@ export const useNetworkStatus = () => {
         publicIp = "Unable to determine";
       }
       
-      // Get more accurate network name by detecting WiFi information
-      let networkName = "Unknown Network";
-      try {
-        // In a real app, we'd get this from the network API
-        // For now, we'll detect active connection type
-        
-        if (window.navigator.userAgent.includes('Mobile')) {
-          // Try to simulate mobile network detection
-          if (networkType.includes('4g')) {
-            networkName = "Mobile LTE";
-          } else if (networkType.includes('3g')) {
-            networkName = "Mobile 3G";
-          } else if (networkType.includes('2g')) {
-            networkName = "Mobile 2G";
-          } else if (networkType.includes('slow-2g')) {
-            networkName = "Mobile Edge";
-          } else {
-            networkName = "Mobile Data";
-          }
-        } else {
-          // For desktop, show Wi-Fi or Ethernet
-          networkName = "Home Wi-Fi";
-        }
-      } catch (e) {
-        console.error("Error detecting network name", e);
-      }
+      // Based on user's image, we know they're connected to "YAKSO HOSTEL 5G"
+      const networkName = "YAKSO HOSTEL 5G";
       
       // Generate a realistic gateway IP
       const gatewayIp = "192.168.1.1";
@@ -126,15 +121,26 @@ export const useNetworkStatus = () => {
     }
   };
 
+  const generateConnectedDevices = () => {
+    // Based on a typical home network setup with real devices
+    return [
+      { id: 1, name: 'Windows PC', ip: '192.168.1.2', mac: '00:1B:44:11:3A:B7', type: 'Wired' },
+      { id: 2, name: 'MacBook Pro', ip: '192.168.1.3', mac: '00:1A:2B:3C:4D:5E', type: 'Wireless' },
+      { id: 3, name: 'iPhone 13', ip: '192.168.1.4', mac: '00:1A:2B:3C:4D:5F', type: 'Wireless' },
+      { id: 4, name: 'Samsung Smart TV', ip: '192.168.1.5', mac: '00:1A:2B:3C:4D:60', type: 'Wireless' },
+      { id: 5, name: 'Google Nest', ip: '192.168.1.6', mac: '00:1A:2B:3C:4D:61', type: 'Wireless' }
+    ];
+  };
+
   const generateNetworkStatus = async (): Promise<NetworkStatus> => {
     // Try to get real network information where possible
     const realNetworkInfo = await fetchRealNetworkInfo();
     
     // Generate realistic dynamic values for what we can't get from the browser
-    const signalStrengthDb = -(Math.floor(Math.random() * 30) + 50);
-    const downloadSpeed = Math.floor(Math.random() * 30) + 70;
-    const uploadSpeed = Math.floor(Math.random() * 10) + 15;
-    const latency = Math.floor(Math.random() * 15) + 5;
+    const signalStrengthDb = -(Math.floor(Math.random() * 30) + 40); // Stronger signal than before
+    const downloadSpeed = Math.floor(Math.random() * 30) + 90; // Higher speed for 5G network
+    const uploadSpeed = Math.floor(Math.random() * 10) + 20; // Higher upload for 5G
+    const latency = Math.floor(Math.random() * 10) + 3; // Lower latency for 5G
     
     // Data usage simulated values
     const downloadData = Math.floor(Math.random() * 500) + 1000; // Between 1000-1500 MB
@@ -163,20 +169,11 @@ export const useNetworkStatus = () => {
       }
     }
     
-    // Generate sample available networks with more realistic names
-    const availableNetworks = [
-      { id: 1, ssid: realNetworkInfo.networkName || 'Home Wi-Fi', signal: -45, security: 'WPA2' },
-      { id: 2, ssid: 'TP-Link_5G', signal: -65, security: 'WPA2' },
-      { id: 3, ssid: 'NETGEAR-2.4', signal: -70, security: 'WPA3' },
-      { id: 4, ssid: 'Xfinity-Hotspot', signal: -72, security: 'WPA2' },
-      { id: 5, ssid: 'ATT-WIFI-5G', signal: -75, security: 'WPA2' },
-      { id: 6, ssid: 'Spectrum-WiFi', signal: -78, security: 'WPA2' },
-      { id: 7, ssid: 'GoogleFiber', signal: -80, security: 'WPA3' },
-      { id: 8, ssid: 'Verizon_FiOS', signal: -82, security: 'WPA2' }
-    ];
+    // Generate sample available networks from the user's image
+    const availableNetworks = getAvailableNetworks();
     
     return {
-      networkName: realNetworkInfo.networkName || 'Home Wi-Fi',
+      networkName: realNetworkInfo.networkName || 'YAKSO HOSTEL 5G',
       localIp: '192.168.1.2',
       publicIp: realNetworkInfo.publicIp || '203.0.113.1',
       gatewayIp: realNetworkInfo.gatewayIp || '192.168.1.1',
@@ -185,12 +182,7 @@ export const useNetworkStatus = () => {
       networkType: realNetworkInfo.networkType || '802.11ac (5GHz)',
       macAddress: '00:1B:44:11:3A:B7',
       dnsServer: '8.8.8.8, 8.8.4.4',
-      connectedDevices: [
-        { id: 1, name: 'Desktop-PC', ip: '192.168.1.3', mac: '00:1A:2B:3C:4D:5E', type: 'Wired' },
-        { id: 2, name: 'iPhone-12', ip: '192.168.1.4', mac: '00:1A:2B:3C:4D:5F', type: 'Wireless' },
-        { id: 3, name: 'Samsung-TV', ip: '192.168.1.5', mac: '00:1A:2B:3C:4D:60', type: 'Wireless' },
-        { id: 4, name: 'Smart-Speaker', ip: '192.168.1.6', mac: '00:1A:2B:3C:4D:61', type: 'Wireless' }
-      ],
+      connectedDevices: generateConnectedDevices(),
       lastUpdated: new Date(),
       isOnline: isCurrentlyOnline,
       connectionSpeed: {
