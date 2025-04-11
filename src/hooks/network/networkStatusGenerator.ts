@@ -6,9 +6,42 @@ import { getConnectionHistory } from './networkHistoryUtils';
 import { NetworkStatus } from './types';
 import { toast } from 'sonner';
 
+// Store previous values with global variables for smoother transitions
+// These values will persist between function calls
 let previousDownloadSpeed = 0;
 let previousUploadSpeed = 0;
 let previousLatency = 0;
+
+// Adding more global variables to track long-term average values
+// This helps create more stable numbers that don't fluctuate wildly
+let downloadSpeedHistory: number[] = [];
+let uploadSpeedHistory: number[] = [];
+let latencyHistory: number[] = [];
+
+// Function to calculate moving average with decay factor
+// Newer values have more weight than older values
+const calculateMovingAverage = (history: number[], newValue: number, maxHistoryLength: number = 5) => {
+  // Add the new value to history
+  history.push(newValue);
+  
+  // Maintain maximum history length
+  if (history.length > maxHistoryLength) {
+    history.shift();
+  }
+  
+  // Calculate weighted average (newer values have more weight)
+  let weightSum = 0;
+  let valueSum = 0;
+  
+  for (let i = 0; i < history.length; i++) {
+    // Weight increases with index (newer values)
+    const weight = i + 1;
+    weightSum += weight;
+    valueSum += history[i] * weight;
+  }
+  
+  return valueSum / weightSum;
+};
 
 export const generateNetworkStatus = async (previousStatus: NetworkStatus | null): Promise<NetworkStatus> => {
   console.log("Generating network status, previous status:", previousStatus?.networkName);
@@ -27,23 +60,39 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   let downloadSpeed, uploadSpeed, latency;
   
   if (previousStatus) {
-    // Apply smoothing - only change by up to 5% of current value
-    const maxDownloadChange = previousDownloadSpeed * 0.05;
-    downloadSpeed = previousDownloadSpeed + (Math.random() * maxDownloadChange * 2 - maxDownloadChange);
-    downloadSpeed = Math.floor(downloadSpeed * 10) / 10; // Round to 1 decimal place
+    // Apply advanced smoothing with smaller maximum changes
+    // Maximum change reduced to 2% of current value for more stability
+    const maxDownloadChange = previousDownloadSpeed * 0.02;
+    const randomDownloadChange = (Math.random() * maxDownloadChange * 2 - maxDownloadChange);
+    const newDownloadValue = previousDownloadSpeed + randomDownloadChange;
     
-    const maxUploadChange = previousUploadSpeed * 0.05;
-    uploadSpeed = previousUploadSpeed + (Math.random() * maxUploadChange * 2 - maxUploadChange);
-    uploadSpeed = Math.floor(uploadSpeed * 10) / 10; // Round to 1 decimal place
+    // Use moving average for super-smooth values
+    downloadSpeed = calculateMovingAverage(downloadSpeedHistory, newDownloadValue);
+    downloadSpeed = Math.round(downloadSpeed * 10) / 10; // Round to 1 decimal place
     
-    const maxLatencyChange = Math.max(1, previousLatency * 0.05);
-    latency = previousLatency + (Math.random() * maxLatencyChange * 2 - maxLatencyChange);
-    latency = Math.floor(latency * 10) / 10; // Round to 1 decimal place
+    const maxUploadChange = previousUploadSpeed * 0.02;
+    const randomUploadChange = (Math.random() * maxUploadChange * 2 - maxUploadChange);
+    const newUploadValue = previousUploadSpeed + randomUploadChange;
+    
+    uploadSpeed = calculateMovingAverage(uploadSpeedHistory, newUploadValue);
+    uploadSpeed = Math.round(uploadSpeed * 10) / 10; // Round to 1 decimal place
+    
+    const maxLatencyChange = Math.max(0.5, previousLatency * 0.02);
+    const randomLatencyChange = (Math.random() * maxLatencyChange * 2 - maxLatencyChange);
+    const newLatencyValue = previousLatency + randomLatencyChange;
+    
+    latency = calculateMovingAverage(latencyHistory, newLatencyValue);
+    latency = Math.round(latency * 10) / 10; // Round to 1 decimal place
   } else {
     // Initial values
     downloadSpeed = Math.floor(Math.random() * 30) + 90; // Higher speed for 5G network
     uploadSpeed = Math.floor(Math.random() * 10) + 20; // Higher upload for 5G
     latency = Math.floor(Math.random() * 10) + 3; // Lower latency for 5G
+    
+    // Initialize histories
+    downloadSpeedHistory = [downloadSpeed];
+    uploadSpeedHistory = [uploadSpeed];
+    latencyHistory = [latency];
   }
   
   // Update previous values for next time

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, Signal, Database, Shield, Wifi } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { NetworkStatusCards } from '../overview/NetworkStatusCards';
@@ -32,38 +32,84 @@ export const NetworkOverview: React.FC<NetworkOverviewProps> = ({
   const [displayDownload, setDisplayDownload] = useState<number>(0);
   const [displayUpload, setDisplayUpload] = useState<number>(0);
   
-  // Effect to smoothly transition download speed
+  // Animation frame refs for smoother animation
+  const downloadAnimFrameRef = useRef<number | null>(null);
+  const uploadAnimFrameRef = useRef<number | null>(null);
+  
+  // Effect to smoothly transition download speed using requestAnimationFrame
   useEffect(() => {
     if (!networkStatus) return;
     
     const targetDownload = networkStatus.connectionSpeed.download;
+    
+    // Cancel any existing animation
+    if (downloadAnimFrameRef.current) {
+      cancelAnimationFrame(downloadAnimFrameRef.current);
+    }
+    
     const updateDownload = () => {
       setDisplayDownload(prev => {
         const diff = targetDownload - prev;
+        // Slow down transition speed for more readable display
+        const step = diff * 0.03; // Reduced from 0.1 to 0.03 for smoother transition
+        
         if (Math.abs(diff) < 0.1) return targetDownload;
-        return prev + (diff * 0.1);
+        const newValue = prev + step;
+        
+        // Continue animation if not finished
+        if (Math.abs(targetDownload - newValue) > 0.1) {
+          downloadAnimFrameRef.current = requestAnimationFrame(updateDownload);
+        }
+        
+        return newValue;
       });
     };
     
-    const intervalId = setInterval(updateDownload, 50);
-    return () => clearInterval(intervalId);
+    downloadAnimFrameRef.current = requestAnimationFrame(updateDownload);
+    
+    return () => {
+      if (downloadAnimFrameRef.current) {
+        cancelAnimationFrame(downloadAnimFrameRef.current);
+      }
+    };
   }, [networkStatus?.connectionSpeed.download]);
   
-  // Effect to smoothly transition upload speed
+  // Effect to smoothly transition upload speed using requestAnimationFrame
   useEffect(() => {
     if (!networkStatus) return;
     
     const targetUpload = networkStatus.connectionSpeed.upload;
+    
+    // Cancel any existing animation
+    if (uploadAnimFrameRef.current) {
+      cancelAnimationFrame(uploadAnimFrameRef.current);
+    }
+    
     const updateUpload = () => {
       setDisplayUpload(prev => {
         const diff = targetUpload - prev;
+        // Slow down transition speed for more readable display
+        const step = diff * 0.03; // Reduced from 0.1 to 0.03 for smoother transition
+        
         if (Math.abs(diff) < 0.1) return targetUpload;
-        return prev + (diff * 0.1);
+        const newValue = prev + step;
+        
+        // Continue animation if not finished
+        if (Math.abs(targetUpload - newValue) > 0.1) {
+          uploadAnimFrameRef.current = requestAnimationFrame(updateUpload);
+        }
+        
+        return newValue;
       });
     };
     
-    const intervalId = setInterval(updateUpload, 50);
-    return () => clearInterval(intervalId);
+    uploadAnimFrameRef.current = requestAnimationFrame(updateUpload);
+    
+    return () => {
+      if (uploadAnimFrameRef.current) {
+        cancelAnimationFrame(uploadAnimFrameRef.current);
+      }
+    };
   }, [networkStatus?.connectionSpeed.upload]);
 
   return (

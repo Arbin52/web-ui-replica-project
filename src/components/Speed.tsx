@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Activity, Download, Upload, RefreshCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -14,47 +13,98 @@ const Speed: React.FC = () => {
   const [displayDownload, setDisplayDownload] = useState<number | null>(null);
   const [displayUpload, setDisplayUpload] = useState<number | null>(null);
   const [displayPing, setDisplayPing] = useState<number | null>(null);
+  
+  const downloadAnimationRef = useRef<number | null>(null);
+  const uploadAnimationRef = useRef<number | null>(null);
+  const pingAnimationRef = useRef<number | null>(null);
 
-  // Effect to smoothly animate displayed values
   useEffect(() => {
     if (downloadSpeed !== null) {
-      const interval = setInterval(() => {
+      if (downloadAnimationRef.current) {
+        cancelAnimationFrame(downloadAnimationRef.current);
+      }
+      
+      const animateDownload = () => {
         setDisplayDownload(prev => {
           if (prev === null) return downloadSpeed;
           const diff = downloadSpeed - prev;
+          const step = diff * 0.05;
+          
           if (Math.abs(diff) < 0.1) return downloadSpeed;
-          return prev + (diff * 0.1);
+          const newValue = prev + step;
+          
+          downloadAnimationRef.current = requestAnimationFrame(animateDownload);
+          return newValue;
         });
-      }, 50);
-      return () => clearInterval(interval);
+      };
+      
+      downloadAnimationRef.current = requestAnimationFrame(animateDownload);
+      
+      return () => {
+        if (downloadAnimationRef.current) {
+          cancelAnimationFrame(downloadAnimationRef.current);
+        }
+      };
     }
   }, [downloadSpeed]);
 
   useEffect(() => {
     if (uploadSpeed !== null) {
-      const interval = setInterval(() => {
+      if (uploadAnimationRef.current) {
+        cancelAnimationFrame(uploadAnimationRef.current);
+      }
+      
+      const animateUpload = () => {
         setDisplayUpload(prev => {
           if (prev === null) return uploadSpeed;
           const diff = uploadSpeed - prev;
+          const step = diff * 0.05;
+          
           if (Math.abs(diff) < 0.1) return uploadSpeed;
-          return prev + (diff * 0.1);
+          const newValue = prev + step;
+          
+          uploadAnimationRef.current = requestAnimationFrame(animateUpload);
+          return newValue;
         });
-      }, 50);
-      return () => clearInterval(interval);
+      };
+      
+      uploadAnimationRef.current = requestAnimationFrame(animateUpload);
+      
+      return () => {
+        if (uploadAnimationRef.current) {
+          cancelAnimationFrame(uploadAnimationRef.current);
+        }
+      };
     }
   }, [uploadSpeed]);
 
   useEffect(() => {
     if (ping !== null) {
-      const interval = setInterval(() => {
+      if (pingAnimationRef.current) {
+        cancelAnimationFrame(pingAnimationRef.current);
+      }
+      
+      const animatePing = () => {
         setDisplayPing(prev => {
           if (prev === null) return ping;
           const diff = ping - prev;
+          const step = diff * 0.05;
+          
           if (Math.abs(diff) < 0.1) return ping;
-          return prev + (diff * 0.1);
+          const newValue = prev + step;
+          
+          pingAnimationRef.current = requestAnimationFrame(animatePing);
+          return newValue;
         });
-      }, 50);
-      return () => clearInterval(interval);
+      };
+      
+      pingAnimationRef.current = requestAnimationFrame(animatePing);
+      
+      return () => {
+        if (pingAnimationRef.current) {
+          cancelAnimationFrame(pingAnimationRef.current);
+        }
+      };
     }
   }, [ping]);
 
@@ -68,30 +118,27 @@ const Speed: React.FC = () => {
     setDisplayPing(null);
     setProgressPercent(0);
     
-    // Simulate measuring ping
     setTimeout(() => {
-      const pingValue = Math.floor(Math.random() * 30) + 5; // 5-35ms
+      const pingValue = Math.floor(Math.random() * 30) + 5;
       setPing(pingValue);
       toast.info("Ping measured");
       setProgressPercent(20);
       
-      // Simulate measuring download speed
       setTimeout(() => {
-        const randomDownloadSpeed = (Math.random() * 100) + 50; // 50-150 Mbps
+        const randomDownloadSpeed = (Math.random() * 100) + 50;
         setDownloadSpeed(parseFloat(randomDownloadSpeed.toFixed(1)));
         toast.info("Download speed measured");
         setProgressPercent(60);
         
-        // Simulate measuring upload speed
         setTimeout(() => {
-          const randomUploadSpeed = (Math.random() * 20) + 10; // 10-30 Mbps
+          const randomUploadSpeed = (Math.random() * 20) + 10;
           setUploadSpeed(parseFloat(randomUploadSpeed.toFixed(1)));
           toast.success("Speed test completed!");
           setProgressPercent(100);
           setIsLoading(false);
-        }, 2000); // Wait 2 seconds for upload measurement
-      }, 2500); // Wait 2.5 seconds for download measurement
-    }, 1500); // Wait 1.5 seconds for ping measurement
+        }, 3000);
+      }, 3500);
+    }, 2500);
   };
   
   return (
@@ -145,7 +192,7 @@ const Speed: React.FC = () => {
               <Download size={20} />
               <h3 className="font-semibold">Download</h3>
             </div>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold transition-all duration-500 ease-in-out">
               {displayDownload ? `${displayDownload.toFixed(1)} Mbps` : '-'}
             </div>
           </div>
@@ -155,7 +202,7 @@ const Speed: React.FC = () => {
               <Upload size={20} />
               <h3 className="font-semibold">Upload</h3>
             </div>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold transition-all duration-500 ease-in-out">
               {displayUpload ? `${displayUpload.toFixed(1)} Mbps` : '-'}
             </div>
           </div>
@@ -165,7 +212,7 @@ const Speed: React.FC = () => {
               <Activity size={20} />
               <h3 className="font-semibold">Ping</h3>
             </div>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold transition-all duration-500 ease-in-out">
               {displayPing ? `${displayPing.toFixed(1)} ms` : '-'}
             </div>
           </div>
