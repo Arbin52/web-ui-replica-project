@@ -1,15 +1,28 @@
 
-import React from 'react';
-import { Info, Router, ExternalLink, RefreshCw, Wifi, Globe, Activity } from 'lucide-react';
+import React, { useState } from 'react';
+import { Info, Router, ExternalLink, RefreshCw, Wifi, Globe, Activity, PauseCircle, PlayCircle, Clock, BarChart2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { DashboardCard } from '@/components/ui/dashboard-card';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DeviceList } from '@/components/devices/DeviceList';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Overview: React.FC = () => {
-  const { networkStatus, isLoading, error, refreshNetworkStatus } = useNetworkStatus();
+  const { 
+    networkStatus, 
+    isLoading, 
+    error, 
+    refreshNetworkStatus,
+    isLiveUpdating,
+    toggleLiveUpdates,
+    updateInterval,
+    setRefreshRate 
+  } = useNetworkStatus();
+  const [activeInfoTab, setActiveInfoTab] = useState('basic');
 
   const handleGatewayClick = () => {
     if (networkStatus?.gatewayIp) {
@@ -49,15 +62,50 @@ const Overview: React.FC = () => {
           <Info size={24} />
           <h2 className="text-xl font-bold">Network Overview</h2>
         </div>
-        <Button 
-          variant="outline" 
-          className="flex items-center gap-1" 
-          onClick={handleRefresh}
-          disabled={isLoading}
-        >
-          <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
-          <span>Refresh</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Select
+            value={updateInterval.toString()}
+            onValueChange={(value) => setRefreshRate(parseInt(value))}
+            disabled={!isLiveUpdating || isLoading}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Refresh Rate" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1000">Every 1 second</SelectItem>
+              <SelectItem value="3000">Every 3 seconds</SelectItem>
+              <SelectItem value="5000">Every 5 seconds</SelectItem>
+              <SelectItem value="10000">Every 10 seconds</SelectItem>
+              <SelectItem value="30000">Every 30 seconds</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-1" 
+            onClick={toggleLiveUpdates}
+          >
+            {isLiveUpdating ? (
+              <>
+                <PauseCircle size={16} />
+                <span>Pause</span>
+              </>
+            ) : (
+              <>
+                <PlayCircle size={16} />
+                <span>Resume</span>
+              </>
+            )}
+          </Button>
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-1" 
+            onClick={handleRefresh}
+            disabled={isLoading}
+          >
+            <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
+            <span>Refresh</span>
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -89,130 +137,182 @@ const Overview: React.FC = () => {
         <DashboardCard
           title="Latency"
           value={isLoading ? "" : `${networkStatus?.connectionSpeed.latency} ms`}
-          icon={<Activity className="h-5 w-5" />}
+          icon={<Clock className="h-5 w-5" />}
           description="Current ping time"
+          isLoading={isLoading}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <DashboardCard
+          title="Data Downloaded"
+          value={isLoading ? "" : `${networkStatus?.dataUsage?.download} MB`}
+          icon={<BarChart2 className="h-5 w-5" />}
+          isLoading={isLoading}
+        />
+
+        <DashboardCard
+          title="Data Uploaded"
+          value={isLoading ? "" : `${networkStatus?.dataUsage?.upload} MB`}
+          icon={<BarChart2 className="h-5 w-5" />}
+          isLoading={isLoading}
+        />
+
+        <DashboardCard
+          title="Total Data Used"
+          value={isLoading ? "" : `${networkStatus?.dataUsage?.total} MB`}
+          icon={<BarChart2 className="h-5 w-5" />}
           isLoading={isLoading}
         />
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <h3 className="text-lg font-semibold mb-3 border-b pb-2">Basic Information</h3>
-          
-          {isLoading ? (
-            <div className="space-y-3">
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-            </div>
-          ) : (
-            <>
-              <div className="info-row">
-                <div className="info-label">Wi-Fi Network Name:</div> 
-                <div className="info-value">{networkStatus?.networkName}</div>
-              </div>
-              
-              <div className="info-row">
-                <div className="info-label">Local IP Address:</div>
-                <div className="info-value">{networkStatus?.localIp}</div>
-              </div>
-              
-              <div className="info-row">
-                <div className="info-label">Public IP Address:</div>
-                <div className="info-value">{networkStatus?.publicIp}</div>
-              </div>
-              
-              <div className="info-row">
-                <div className="info-label">Gateway IP Address:</div>
-                <div className="info-value">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button 
-                          onClick={handleGatewayClick} 
-                          className="flex items-center gap-1 text-primary hover:underline"
-                        >
-                          {networkStatus?.gatewayIp}
-                          <ExternalLink size={14} />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Access router admin interface</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+          <Tabs value={activeInfoTab} onValueChange={setActiveInfoTab} className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="basic">Basic Information</TabsTrigger>
+              <TabsTrigger value="advanced">Advanced Details</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="basic" className="animate-fade-in">
+              {isLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-full" />
                 </div>
-              </div>
-              
-              <div className="info-row">
-                <div className="info-label">Signal Strength:</div>
-                <div className="info-value">
-                  {networkStatus?.signalStrength} ({networkStatus?.signalStrengthDb})
-                  <div className="w-20 h-2 bg-gray-200 rounded-full mt-1">
-                    <div 
-                      className={`h-2 rounded-full ${
-                        networkStatus?.signalStrength === 'Good' ? 'bg-green-500' : 
-                        networkStatus?.signalStrength === 'Fair' ? 'bg-yellow-500' : 
-                        'bg-red-500'
-                      }`}
-                      style={{ width: networkStatus?.signalStrength === 'Good' ? '90%' : 
-                              networkStatus?.signalStrength === 'Fair' ? '60%' : '30%' }}
-                    ></div>
+              ) : (
+                <>
+                  <div className="info-row">
+                    <div className="info-label">Wi-Fi Network Name:</div> 
+                    <div className="info-value">{networkStatus?.networkName}</div>
                   </div>
+                  
+                  <div className="info-row">
+                    <div className="info-label">Local IP Address:</div>
+                    <div className="info-value">{networkStatus?.localIp}</div>
+                  </div>
+                  
+                  <div className="info-row">
+                    <div className="info-label">Public IP Address:</div>
+                    <div className="info-value">{networkStatus?.publicIp}</div>
+                  </div>
+                  
+                  <div className="info-row">
+                    <div className="info-label">Gateway IP Address:</div>
+                    <div className="info-value">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button 
+                              onClick={handleGatewayClick} 
+                              className="flex items-center gap-1 text-primary hover:underline"
+                            >
+                              {networkStatus?.gatewayIp}
+                              <ExternalLink size={14} />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Access router admin interface</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </div>
+                  
+                  <div className="info-row">
+                    <div className="info-label">Signal Strength:</div>
+                    <div className="info-value">
+                      {networkStatus?.signalStrength} ({networkStatus?.signalStrengthDb})
+                      <div className="w-20 h-2 bg-gray-200 rounded-full mt-1">
+                        <div 
+                          className={`h-2 rounded-full ${
+                            networkStatus?.signalStrength === 'Good' ? 'bg-green-500' : 
+                            networkStatus?.signalStrength === 'Fair' ? 'bg-yellow-500' : 
+                            'bg-red-500'
+                          }`}
+                          style={{ width: networkStatus?.signalStrength === 'Good' ? '90%' : 
+                                  networkStatus?.signalStrength === 'Fair' ? '60%' : '30%' }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="info-row">
+                    <div className="info-label">Network Type:</div>
+                    <div className="info-value">{networkStatus?.networkType}</div>
+                  </div>
+
+                  <div className="info-row">
+                    <div className="info-label">Status History:</div>
+                    <div className="info-value">
+                      {networkStatus?.connectionHistory && networkStatus.connectionHistory.length > 0 ? (
+                        <div className="mt-2 max-h-24 overflow-y-auto text-xs">
+                          {networkStatus.connectionHistory.slice().reverse().map((event, idx) => (
+                            <div key={idx} className="flex items-center gap-2 mb-1">
+                              <span className={`w-2 h-2 rounded-full ${event.status === 'connected' ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                              <span>{event.status === 'connected' ? 'Connected' : 'Disconnected'}</span>
+                              <span className="text-gray-500">{event.timestamp.toLocaleTimeString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-gray-500">No history available</span>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="advanced" className="animate-fade-in">
+              {isLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-full" />
                 </div>
-              </div>
-              
-              <div className="info-row">
-                <div className="info-label">Network Type:</div>
-                <div className="info-value">{networkStatus?.networkType}</div>
-              </div>
-            </>
-          )}
+              ) : (
+                <>
+                  <div className="info-row">
+                    <div className="info-label">MAC Address:</div>
+                    <div className="info-value">{networkStatus?.macAddress}</div>
+                  </div>
+                  
+                  <div className="info-row">
+                    <div className="info-label">DNS Servers:</div>
+                    <div className="info-value">{networkStatus?.dnsServer}</div>
+                  </div>
+                </>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
         
         <div>
-          <h3 className="text-lg font-semibold mb-3 border-b pb-2">Advanced Details</h3>
-          
-          {isLoading ? (
-            <div className="space-y-3">
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-            </div>
-          ) : (
-            <>
-              <div className="info-row">
-                <div className="info-label">MAC Address:</div>
-                <div className="info-value">{networkStatus?.macAddress}</div>
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <Router size={18} />
+                <CardTitle className="text-lg">Connected Devices ({isLoading ? '...' : networkStatus?.connectedDevices.length})</CardTitle>
               </div>
-              
-              <div className="info-row">
-                <div className="info-label">DNS Servers:</div>
-                <div className="info-value">{networkStatus?.dnsServer}</div>
-              </div>
-            </>
-          )}
-          
-          <div className="mt-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Router size={18} />
-              <h3 className="text-lg font-semibold">Connected Devices ({isLoading ? '...' : networkStatus?.connectedDevices.length})</h3>
-            </div>
-            
-            {isLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-              </div>
-            ) : (
-              <div className="bg-gray-50 p-3 rounded-md max-h-72 overflow-y-auto">
-                <DeviceList filter="all" className="border-0 divide-y divide-gray-100" />
-              </div>
-            )}
-          </div>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : (
+                <div className="max-h-80 overflow-y-auto">
+                  <DeviceList filter="all" className="border-0 divide-y divide-gray-100" />
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
       
@@ -220,6 +320,12 @@ const Overview: React.FC = () => {
         <div className="mt-4 text-xs text-gray-500 flex items-center gap-1">
           <Wifi size={12} />
           <span>Last updated: {networkStatus.lastUpdated.toLocaleTimeString()}</span>
+          {!isLiveUpdating && (
+            <span className="ml-2 text-amber-500 flex items-center gap-1">
+              <PauseCircle size={12} />
+              Live updates paused
+            </span>
+          )}
         </div>
       )}
     </div>
