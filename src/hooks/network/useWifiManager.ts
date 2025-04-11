@@ -104,8 +104,8 @@ export const useWifiManager = () => {
     }
   };
   
-  const handleSaveNetworkNameWrapper = () => {
-    const success = handleSaveNetworkName(customNetworkName);
+  const handleSaveNetworkNameWrapper = async () => {
+    const success = await handleSaveNetworkName(customNetworkName);
     if (success) {
       setDetectedNetworkName(customNetworkName);
     }
