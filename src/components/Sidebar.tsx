@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { ActivitySquare, Shield, FileBarChart, Gauge, Signal, Network, Wifi, Laptop } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface SidebarProps {
   activeTab: string;
@@ -20,17 +21,29 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   ];
 
   return (
-    <div className="sidebar min-h-screen">
-      {menuItems.map((item) => (
-        <div 
-          key={item.id}
-          className={`sidebar-item flex items-center gap-2 ${activeTab === item.id ? 'sidebar-active' : ''}`}
-          onClick={() => setActiveTab(item.id)}
-        >
-          {item.icon}
-          <span>{item.label}</span>
-        </div>
-      ))}
+    <div className="bg-white border-r border-gray-200 min-h-screen w-64 p-4">
+      <div className="flex flex-col gap-1">
+        {menuItems.map((item) => (
+          <button 
+            key={item.id}
+            className={cn(
+              "flex items-center gap-3 px-4 py-3 rounded-md text-left transition-colors",
+              activeTab === item.id 
+                ? "bg-primary text-white font-medium"
+                : "text-gray-600 hover:bg-gray-100"
+            )}
+            onClick={() => setActiveTab(item.id)}
+          >
+            <span className={cn(
+              "flex items-center justify-center",
+              activeTab === item.id ? "text-white" : "text-gray-500"
+            )}>
+              {item.icon}
+            </span>
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 };

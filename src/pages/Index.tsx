@@ -10,7 +10,6 @@ import Speed from '../components/Speed';
 import Ping from '../components/Ping';
 import Traceroute from '../components/Traceroute';
 import WifiAnalysis from '../components/WifiAnalysis';
-import NetworkManagement from './NetworkManagement';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -52,7 +51,7 @@ const Index = () => {
         <div className="hidden md:block">
           <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} />
         </div>
-        <div className="flex-grow">
+        <div className="flex-grow overflow-y-auto">
           <div className="max-w-screen-xl mx-auto p-4 md:p-6 animate-fade-in">
             {renderContent()}
           </div>
