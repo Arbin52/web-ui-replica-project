@@ -12,21 +12,24 @@ export const useWifiScan = (
   
   // Handle scanning for networks - return Promise<void> to match expected type
   const handleScanNetworks = useCallback(async (): Promise<void> => {
-    setScanInProgress(true);
-    
-    // Do an immediate refresh
-    await refreshNetworkStatus();
-    
-    // Check browser's network status after a short delay
-    setTimeout(async () => {
-      console.log("Checking network status after scan");
-      await checkCurrentNetworkImmediately();
-      // Do one more check after a bit more time
+    return new Promise(async (resolve) => {
+      setScanInProgress(true);
+      
+      // Do an immediate refresh
+      await refreshNetworkStatus();
+      
+      // Check browser's network status after a short delay
       setTimeout(async () => {
+        console.log("Checking network status after scan");
         await checkCurrentNetworkImmediately();
-        setScanInProgress(false);
+        // Do one more check after a bit more time
+        setTimeout(async () => {
+          await checkCurrentNetworkImmediately();
+          setScanInProgress(false);
+          resolve();
+        }, 1000);
       }, 1000);
-    }, 1000);
+    });
   }, [refreshNetworkStatus, checkCurrentNetworkImmediately]);
 
   return {

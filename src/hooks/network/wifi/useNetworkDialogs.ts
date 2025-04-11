@@ -16,10 +16,13 @@ export const useNetworkDialogs = () => {
   
   // Handle network name editing - return Promise<void> to match expected type
   const handleEditNetworkName = useCallback(async (): Promise<void> => {
-    // Get current network name if any
-    const currentName = localStorage.getItem('user_provided_network_name') || '';
-    setCustomNetworkName(currentName);
-    setShowNetworkNameDialog(true);
+    return new Promise((resolve) => {
+      // Get current network name if any
+      const currentName = localStorage.getItem('user_provided_network_name') || '';
+      setCustomNetworkName(currentName);
+      setShowNetworkNameDialog(true);
+      resolve();
+    });
   }, []);
   
   return {
