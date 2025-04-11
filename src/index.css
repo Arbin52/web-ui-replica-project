@@ -32,6 +32,9 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
+
+    --sidebar-bg: 210 40% 96.1%;
+    --sidebar-text: 222.2 47.4% 11.2%;
  
     --radius: 0.5rem;
   }
@@ -64,6 +67,9 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.5% 48%;
+
+    --sidebar-bg: 217.2 32.6% 17.5%;
+    --sidebar-text: 210 40% 98%;
   }
 }
  
@@ -78,19 +84,19 @@
 
 @layer components {
   .content-card {
-    @apply bg-white p-6 rounded-lg shadow-sm border;
+    @apply bg-card p-6 rounded-lg shadow-sm border;
   }
   
   .info-row {
-    @apply flex flex-col sm:flex-row py-2 border-b border-gray-100;
+    @apply flex flex-col sm:flex-row py-2 border-b border-gray-100 dark:border-gray-800;
   }
   
   .info-label {
-    @apply font-medium text-gray-600 min-w-[180px];
+    @apply font-medium text-gray-600 dark:text-gray-400 min-w-[180px];
   }
   
   .info-value {
-    @apply text-gray-800;
+    @apply text-gray-800 dark:text-gray-300;
   }
   
   .animate-fade-in {
@@ -180,7 +186,7 @@
 
   /* Connection history list */
   .connection-history-list {
-    @apply max-h-32 overflow-y-auto text-sm border-t border-gray-100 pt-2 mt-2;
+    @apply max-h-32 overflow-y-auto text-sm border-t border-gray-100 dark:border-gray-800 pt-2 mt-2;
   }
   
   .connection-history-item {

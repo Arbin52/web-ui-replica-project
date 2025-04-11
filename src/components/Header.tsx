@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Sidebar from './Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import { ThemeToggle } from './ThemeToggle';
 
 interface HeaderProps {
   activeTab?: string;
@@ -112,6 +113,8 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
           <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
         </Button>
         
+        <ThemeToggle />
+        
         <Button variant="ghost" className="hidden md:flex items-center gap-1 text-white">
           <Settings size={18} />
           <span className="hidden md:inline">Settings</span>
@@ -123,7 +126,7 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
               <User size={18} />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-white">
+          <DropdownMenuContent align="end" className="bg-white dark:bg-gray-800">
             <DropdownMenuItem className="font-medium">{user?.email}</DropdownMenuItem>
             <DropdownMenuItem onClick={handleSignOut}>
               <LogOut size={16} className="mr-2" />
