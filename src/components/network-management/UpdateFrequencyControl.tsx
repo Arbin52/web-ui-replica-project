@@ -35,7 +35,7 @@ export const UpdateFrequencyControl: React.FC<UpdateFrequencyControlProps> = ({
             variant={updateInterval === interval ? "default" : "outline"}
             onClick={() => handleIntervalChange(interval)}
           >
-            {interval === 60000 ? '1m' : `${interval / 1000}s`}
+            {interval === 60000 ? '1 min' : `${interval / 1000} sec`}
           </Button>
         ))}
       </div>
