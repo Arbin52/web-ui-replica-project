@@ -64,7 +64,7 @@ const Traceroute: React.FC = () => {
       setTraceProgress(progressPercent);
       
       // Generate a random hop result
-      const newHop = {
+      const newHop: HopResult = {
         hop: hopCount,
         ipAddress: generateRandomIP(),
         hostName: Math.random() > 0.3 ? `host-${hopCount}.example.com` : null,
