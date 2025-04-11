@@ -36,14 +36,35 @@ const WifiManager: React.FC = () => {
   // Monitor navigator.onLine directly for immediate feedback
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   useEffect(() => {
-    const handleOnlineStatus = () => setIsOnline(navigator.onLine);
+    const handleOnlineStatus = () => {
+      setIsOnline(navigator.onLine);
+      // Refresh network status when online state changes
+      refreshNetworkStatus();
+    };
     window.addEventListener('online', handleOnlineStatus);
     window.addEventListener('offline', handleOnlineStatus);
     return () => {
       window.removeEventListener('online', handleOnlineStatus);
       window.removeEventListener('offline', handleOnlineStatus);
     };
-  }, []);
+  }, [refreshNetworkStatus]);
+
+  // Monitor real network connection changes if available
+  useEffect(() => {
+    const connection = (navigator as any).connection;
+    if (connection) {
+      const handleConnectionChange = () => {
+        console.log("Network connection type changed");
+        refreshNetworkStatus();
+      };
+      
+      connection.addEventListener('change', handleConnectionChange);
+      
+      return () => {
+        connection.removeEventListener('change', handleConnectionChange);
+      };
+    }
+  }, [refreshNetworkStatus]);
 
   // Periodically check the connection status
   useEffect(() => {
@@ -52,7 +73,7 @@ const WifiManager: React.FC = () => {
       if (networkName && !isConnecting && !isDisconnecting) {
         refreshNetworkStatus();
       }
-    }, 3000); // Check more frequently
+    }, 2000); // Check more frequently
 
     return () => clearInterval(connectionCheck);
   }, [isConnecting, isDisconnecting, refreshNetworkStatus]);
@@ -63,6 +84,11 @@ const WifiManager: React.FC = () => {
       clearConnectionError?.();
     }
   }, [showPasswordDialog, clearConnectionError]);
+
+  // Initial fetch on component load
+  useEffect(() => {
+    refreshNetworkStatus();
+  }, []);
 
   const getSignalStrength = (signalValue: number) => {
     const percentage = 100 - (Math.abs(signalValue) - 30) * 1.5;

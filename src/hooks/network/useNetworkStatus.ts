@@ -10,7 +10,7 @@ export const useNetworkStatus = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLiveUpdating, setIsLiveUpdating] = useState(true);
-  const [updateInterval, setUpdateInterval] = useState(5000); // 5 seconds by default
+  const [updateInterval, setUpdateInterval] = useState(3000); // 3 seconds by default for more responsiveness
   const [connectionError, setConnectionError] = useState<string | null>(null);
   
   // Use a ref to store the interval ID to prevent it from being affected by state changes
@@ -19,9 +19,6 @@ export const useNetworkStatus = () => {
   const fetchNetworkStatus = useCallback(async () => {
     // In a real application, this would make API calls to get actual network data
     try {
-      // Simulate network request delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
       // Generate network status data with real information where possible
       const data = await generateNetworkStatus(networkStatus);
       
@@ -117,7 +114,7 @@ export const useNetworkStatus = () => {
     }
   };
 
-  // Monitor real network connection status using navigator.onLine
+  // Monitor real network connection status using navigator.onLine and network change events
   useEffect(() => {
     const handleOnline = () => {
       toast.success("Your device is connected to the internet");
@@ -132,6 +129,24 @@ export const useNetworkStatus = () => {
     // Add event listeners
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    
+    // Try to detect network changes more accurately on supported browsers
+    if ((navigator as any).connection) {
+      const connection = (navigator as any).connection;
+      
+      const handleConnectionChange = () => {
+        console.log("Network connection changed");
+        fetchNetworkStatus();
+      };
+      
+      connection.addEventListener('change', handleConnectionChange);
+      
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+        connection.removeEventListener('change', handleConnectionChange);
+      };
+    }
     
     // Cleanup
     return () => {

@@ -16,16 +16,17 @@ export const fetchRealNetworkInfo = async (): Promise<{
     let networkType = "Unknown";
     let networkName = undefined;
     
-    // Try to get more detailed connection information if available
-    if ('connection' in navigator) {
-      const connection = (navigator as any).connection;
-      if (connection) {
-        networkType = connection.effectiveType || connection.type || "Unknown";
+    // Try to get more detailed connection information if available in a type-safe way
+    // Using typeof check for browser compatibility
+    if (typeof navigator !== 'undefined') {
+      const nav = navigator as any;
+      if (nav.connection) {
+        networkType = nav.connection.effectiveType || nav.connection.type || "Unknown";
         
         // In some cases, type can give us hints about the connection
-        if (connection.type === 'wifi') {
+        if (nav.connection.type === 'wifi') {
           networkType = "802.11 (WiFi)";
-        } else if (connection.type === 'cellular') {
+        } else if (nav.connection.type === 'cellular') {
           networkType = "Cellular";
         }
       }
@@ -35,7 +36,7 @@ export const fetchRealNetworkInfo = async (): Promise<{
     let networkNameFromAPI = false;
     
     // Check if we can access Network Information API (not available in all browsers)
-    if ('getNetworkInformation' in navigator) {
+    if (typeof navigator !== 'undefined' && 'getNetworkInformation' in navigator) {
       try {
         // @ts-ignore - This is experimental and not widely supported
         const networkInfo = await navigator.getNetworkInformation();
@@ -50,20 +51,42 @@ export const fetchRealNetworkInfo = async (): Promise<{
     
     // If we couldn't get the name through the API, try other methods
     if (!networkNameFromAPI) {
-      // Try to get the actual connected network name
-      networkName = localStorage.getItem('last_connected_network');
+      // Try to get the actual connected network name from localStorage or native APIs
+      networkName = localStorage.getItem('connected_network_name');
       
       // If no stored network and the device is online, we need to detect current connection
       if (!networkName && isOnline) {
-        // Query the connection type to make a good guess
-        if (networkType.includes("WiFi")) {
-          const connectedNetworkFromStorage = localStorage.getItem('connected_network_name');
-          networkName = connectedNetworkFromStorage || "WiFi Network";
-        } else if (networkType.includes("Cellular")) {
-          networkName = "Cellular Connection";
-        } else if (isOnline) {
-          // Device is online, but we don't know what type of connection
-          networkName = "Connected Network";
+        // First, try to get it directly from the WiFi APIs if available (requires permissions)
+        try {
+          // Check if we're on a secure context (HTTPS) for newer browser APIs
+          if (window.isSecureContext) {
+            // This is experimental and requires user permission
+            // @ts-ignore
+            if (navigator.wifi && typeof navigator.wifi.getCurrentNetwork === 'function') {
+              // @ts-ignore
+              const wifiNetwork = await navigator.wifi.getCurrentNetwork();
+              if (wifiNetwork && wifiNetwork.ssid) {
+                networkName = wifiNetwork.ssid;
+              }
+            }
+          }
+        } catch (err) {
+          console.log("WiFi API access error:", err);
+        }
+        
+        // If still no network name, make an educated guess
+        if (!networkName) {
+          const nav = navigator as any;
+          // Query the connection type to make a good guess
+          if (nav.connection && (nav.connection.type === 'wifi' || networkType.includes("WiFi"))) {
+            const connectedNetworkFromStorage = localStorage.getItem('last_connected_network');
+            networkName = connectedNetworkFromStorage || "WiFi Network";
+          } else if (networkType.includes("Cellular")) {
+            networkName = "Cellular Connection";
+          } else if (isOnline) {
+            // Device is online, but we don't know what type of connection
+            networkName = "Connected Network";
+          }
         }
       }
     }
