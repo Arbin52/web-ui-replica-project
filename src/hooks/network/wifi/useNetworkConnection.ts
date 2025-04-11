@@ -64,19 +64,22 @@ export const useNetworkConnection = (
     }
   };
   
-  // Handle saving a custom network name - return Promise<boolean> to ensure consistent async handling
+  // Handle saving a custom network name - ensure it returns a Promise<boolean>
   const handleSaveNetworkName = useCallback(async (customNetworkName: string): Promise<boolean> => {
-    if (customNetworkName.trim()) {
-      localStorage.setItem('user_provided_network_name', customNetworkName.trim());
-      
-      // Apply changes immediately
-      setTimeout(() => {
-        void refreshNetworkStatus();
-      }, 100);
-      
-      return true;
-    }
-    return false;
+    return new Promise((resolve) => {
+      if (customNetworkName.trim()) {
+        localStorage.setItem('user_provided_network_name', customNetworkName.trim());
+        
+        // Apply changes immediately
+        setTimeout(() => {
+          void refreshNetworkStatus();
+        }, 100);
+        
+        resolve(true);
+      } else {
+        resolve(false);
+      }
+    });
   }, [refreshNetworkStatus]);
   
   // Function to detect if current network is in available networks
