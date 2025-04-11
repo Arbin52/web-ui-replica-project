@@ -36,11 +36,15 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      <Header activeTab={activeTab} setActiveTab={setActiveTab} />
       <div className="flex flex-grow">
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <div className="hidden md:block">
+          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        </div>
         <div className="flex-grow bg-gray-100">
-          {renderContent()}
+          <div className="max-w-screen-xl mx-auto">
+            {renderContent()}
+          </div>
         </div>
       </div>
     </div>
