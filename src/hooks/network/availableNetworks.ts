@@ -1,3 +1,4 @@
+
 // This function tries to get available networks through browser APIs if possible,
 // otherwise falls back to sample data
 export const getAvailableNetworks = () => {
@@ -20,10 +21,30 @@ export const getAvailableNetworks = () => {
     { id: 12, ssid: 'Hidden Network', signal: -88, security: 'Unknown' }
   ];
 
+  // Try to get the actual current connected WiFi name through browser's navigator.connection if available
+  let actualConnectedNetwork = null;
+  
+  // Attempt to detect current connection from browser
+  if (navigator.onLine) {
+    // Check if we can access connection info
+    if ((navigator as any).connection) {
+      // We're online and can access connection info
+      console.log("Connection info available:", (navigator as any).connection);
+    }
+    
+    // Check if we have any browser-reported network name
+    actualConnectedNetwork = localStorage.getItem('current_browser_network');
+  }
+
+  // Always use the most accurate connected network name we have
+  const activeNetworkName = actualConnectedNetwork || connectedNetworkName;
+
   // If there's a connected network, make sure it's at the top of the list with a strong signal
-  if (connectedNetworkName) {
+  if (activeNetworkName) {
+    console.log("Adding active network to available networks:", activeNetworkName);
+    
     // Check if the connected network is already in the list
-    const existingNetworkIndex = networks.findIndex(n => n.ssid === connectedNetworkName);
+    const existingNetworkIndex = networks.findIndex(n => n.ssid === activeNetworkName);
     
     if (existingNetworkIndex >= 0) {
       // Move it to the top and update its signal strength
@@ -31,14 +52,16 @@ export const getAvailableNetworks = () => {
       network.signal = -45; // Strong signal for connected network
       networks.splice(existingNetworkIndex, 1);
       networks.unshift(network);
+      console.log("Moved existing network to top of list:", network);
     } else {
       // Add the connected network at the top
       networks.unshift({
         id: 0,
-        ssid: connectedNetworkName,
+        ssid: activeNetworkName,
         signal: -45,
         security: 'WPA2'
       });
+      console.log("Added new network to top of list:", activeNetworkName);
     }
   }
   
@@ -46,5 +69,6 @@ export const getAvailableNetworks = () => {
   // Note: This is experimental and requires user permission, which we won't implement here
   // but is shown as a potential future enhancement
 
+  console.log("Returning available networks:", networks);
   return networks;
 };

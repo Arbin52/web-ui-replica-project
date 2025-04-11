@@ -10,13 +10,14 @@ export const useNetworkStatus = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLiveUpdating, setIsLiveUpdating] = useState(true);
-  const [updateInterval, setUpdateInterval] = useState(3000); // 3 seconds by default for more responsiveness
+  const [updateInterval, setUpdateInterval] = useState(2000); // 2 seconds by default for more responsiveness
   const [connectionError, setConnectionError] = useState<string | null>(null);
   
   // Use a ref to store the interval ID to prevent it from being affected by state changes
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   
   const fetchNetworkStatus = useCallback(async () => {
+    console.log("Fetching network status...");
     // In a real application, this would make API calls to get actual network data
     try {
       // Generate network status data with real information where possible
@@ -98,6 +99,7 @@ export const useNetworkStatus = () => {
       // Clear the stored network name
       localStorage.removeItem('last_connected_network');
       localStorage.removeItem('connected_network_name');
+      localStorage.removeItem('current_browser_network');
       
       // Simulate a device disconnecting when the network changes
       disconnectDevice();
@@ -117,11 +119,13 @@ export const useNetworkStatus = () => {
   // Monitor real network connection status using navigator.onLine and network change events
   useEffect(() => {
     const handleOnline = () => {
+      console.log("Browser reports online status change: ONLINE");
       toast.success("Your device is connected to the internet");
       fetchNetworkStatus();
     };
     
     const handleOffline = () => {
+      console.log("Browser reports online status change: OFFLINE");
       toast.error("Your device lost internet connection");
       fetchNetworkStatus();
     };
@@ -135,7 +139,7 @@ export const useNetworkStatus = () => {
       const connection = (navigator as any).connection;
       
       const handleConnectionChange = () => {
-        console.log("Network connection changed");
+        console.log("Network connection changed:", connection);
         fetchNetworkStatus();
       };
       
@@ -184,7 +188,7 @@ export const useNetworkStatus = () => {
 
   const refreshNetworkStatus = () => {
     setIsLoading(true);
-    toast.info('Refreshing network status...');
+    console.log("Manual refresh requested");
     fetchNetworkStatus();
   };
 
@@ -231,6 +235,12 @@ export const useNetworkStatus = () => {
     setConnectionError(null);
   };
 
+  // Additional function to immediately check current network status (useful for UI events)
+  const checkCurrentNetworkImmediately = async () => {
+    console.log("Immediate network check requested");
+    return await fetchNetworkStatus();
+  };
+
   return {
     networkStatus,
     isLoading,
@@ -247,6 +257,7 @@ export const useNetworkStatus = () => {
     getDeviceStatus,
     setDeviceStatus,
     connectionError,
-    clearConnectionError
+    clearConnectionError,
+    checkCurrentNetworkImmediately
   };
 };

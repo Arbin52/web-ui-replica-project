@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { Button } from '@/components/ui/button';
-import { Smartphone, WifiOff, RefreshCw } from 'lucide-react';
+import { Smartphone, WifiOff, RefreshCw, Loader2 } from 'lucide-react';
 import '../overview/index.css';
 
 // Import our components
@@ -23,7 +23,8 @@ const WifiManager: React.FC = () => {
     simulateDeviceConnect,
     simulateDeviceDisconnect,
     connectionError,
-    clearConnectionError
+    clearConnectionError,
+    checkCurrentNetworkImmediately
   } = useNetworkStatus();
   
   const [isConnecting, setIsConnecting] = useState(false);
@@ -32,11 +33,13 @@ const WifiManager: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [scanInProgress, setScanInProgress] = useState(false);
+  const [initialCheckDone, setInitialCheckDone] = useState(false);
 
   // Monitor navigator.onLine directly for immediate feedback
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   useEffect(() => {
     const handleOnlineStatus = () => {
+      console.log("Online status changed:", navigator.onLine);
       setIsOnline(navigator.onLine);
       // Refresh network status when online state changes
       refreshNetworkStatus();
@@ -54,7 +57,7 @@ const WifiManager: React.FC = () => {
     const connection = (navigator as any).connection;
     if (connection) {
       const handleConnectionChange = () => {
-        console.log("Network connection type changed");
+        console.log("Network connection type changed:", connection);
         refreshNetworkStatus();
       };
       
@@ -66,9 +69,21 @@ const WifiManager: React.FC = () => {
     }
   }, [refreshNetworkStatus]);
 
+  // Initial detection of network status
+  useEffect(() => {
+    const doInitialCheck = async () => {
+      console.log("Doing initial network check");
+      await refreshNetworkStatus();
+      setInitialCheckDone(true);
+    };
+    
+    doInitialCheck();
+  }, []);
+
   // Periodically check the connection status
   useEffect(() => {
     const connectionCheck = setInterval(() => {
+      console.log("Periodic connection check");
       const networkName = localStorage.getItem('connected_network_name');
       if (networkName && !isConnecting && !isDisconnecting) {
         refreshNetworkStatus();
@@ -85,11 +100,6 @@ const WifiManager: React.FC = () => {
     }
   }, [showPasswordDialog, clearConnectionError]);
 
-  // Initial fetch on component load
-  useEffect(() => {
-    refreshNetworkStatus();
-  }, []);
-
   const getSignalStrength = (signalValue: number) => {
     const percentage = 100 - (Math.abs(signalValue) - 30) * 1.5;
     return Math.max(0, Math.min(100, percentage));
@@ -101,17 +111,19 @@ const WifiManager: React.FC = () => {
     setShowPasswordDialog(true);
   };
 
-  const handleScanNetworks = () => {
+  const handleScanNetworks = async () => {
     setScanInProgress(true);
     toast.info("Scanning for WiFi networks...");
     
-    refreshNetworkStatus();
+    await refreshNetworkStatus();
     
-    // Simulate scanning completion
-    setTimeout(() => {
+    // Check browser's network status after a short delay
+    setTimeout(async () => {
+      console.log("Checking network status after scan");
+      await checkCurrentNetworkImmediately();
       setScanInProgress(false);
       toast.success("Network scan complete");
-    }, 3000);
+    }, 1500);
   };
 
   const handleSubmitPassword = async () => {
@@ -163,6 +175,7 @@ const WifiManager: React.FC = () => {
     
     // If not in list, trigger a refresh to update the list
     if (!currentNetworkInList) {
+      console.log("Current network not in available list, refreshing");
       refreshNetworkStatus();
     }
   };
@@ -195,7 +208,7 @@ const WifiManager: React.FC = () => {
             disabled={scanInProgress}
             className="flex items-center gap-1"
           >
-            <RefreshCw size={14} className={scanInProgress ? 'animate-spin' : ''} />
+            {scanInProgress ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
             {scanInProgress ? 'Scanning...' : 'Scan Networks'}
           </Button>
           <Button 
