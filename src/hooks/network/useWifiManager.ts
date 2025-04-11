@@ -56,23 +56,23 @@ export const useWifiManager = () => {
       // Try to detect network again after a short delay
       // This can help with detecting network after the page has fully loaded
       setTimeout(() => {
-        checkCurrentNetworkImmediately();
+        void checkCurrentNetworkImmediately();
         detectRealNetworkName();
       }, 1500);
     };
     
-    doInitialCheck();
+    void doInitialCheck();
     
     // Real-time updates at 300ms intervals
     const fastUpdateInterval = setInterval(() => {
-      checkCurrentNetworkImmediately();
+      void checkCurrentNetworkImmediately();
       detectRealNetworkName();
     }, 300);
     
     // Additional periodic check with different timing to catch any missed updates
     const secondaryInterval = setInterval(() => {
       console.log("Secondary network check");
-      refreshNetworkStatus();
+      void refreshNetworkStatus();
     }, 2000);
     
     return () => {
