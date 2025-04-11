@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface UpdateFrequencyControlProps {
   updateInterval: number;
@@ -11,6 +12,15 @@ export const UpdateFrequencyControl: React.FC<UpdateFrequencyControlProps> = ({
   updateInterval,
   setRefreshRate
 }) => {
+  const handleIntervalChange = (interval: number) => {
+    // Only change if it's different than the current interval
+    if (interval !== updateInterval) {
+      console.log(`Changing update interval from ${updateInterval}ms to ${interval}ms`);
+      setRefreshRate(interval);
+      toast.success(`Update interval changed to ${interval === 60000 ? '1 minute' : `${interval / 1000} seconds`}`);
+    }
+  };
+
   return (
     <div className="bg-muted/50 rounded-md p-3 flex justify-between items-center">
       <div>
@@ -23,7 +33,7 @@ export const UpdateFrequencyControl: React.FC<UpdateFrequencyControlProps> = ({
             key={interval} 
             size="sm"
             variant={updateInterval === interval ? "default" : "outline"}
-            onClick={() => setRefreshRate(interval)}
+            onClick={() => handleIntervalChange(interval)}
           >
             {interval === 60000 ? '1m' : `${interval / 1000}s`}
           </Button>

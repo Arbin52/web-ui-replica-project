@@ -132,6 +132,7 @@ export const useNetworkStatus = () => {
   };
 
   const setRefreshRate = (ms: number) => {
+    console.log(`Setting refresh rate to ${ms}ms (${ms/1000} seconds)`);
     setUpdateInterval(ms);
     toast.info(`Update interval set to ${ms >= 60000 ? (ms/60000) + ' minute' + (ms === 60000 ? '' : 's') : (ms/1000) + ' seconds'}`);
   };

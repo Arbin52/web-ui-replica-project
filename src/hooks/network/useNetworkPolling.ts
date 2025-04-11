@@ -13,15 +13,19 @@ export const useNetworkPolling = (
     // Initial fetch
     fetchNetworkStatus();
     
+    // Clear any existing interval first to ensure we don't have multiple intervals running
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    
     // Set up polling for real-time updates if live updating is enabled
     if (isLiveUpdating) {
-      // Clear any existing interval first
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      console.log(`Setting up polling with interval: ${updateInterval}ms`);
       
-      // Set a new interval
+      // Set a new interval with the current updateInterval
       intervalRef.current = setInterval(() => {
+        console.log(`Polling triggered at interval: ${updateInterval}ms`);
         fetchNetworkStatus();
       }, updateInterval);
     }

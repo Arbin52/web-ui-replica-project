@@ -21,11 +21,18 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
   setRefreshRate,
   handleRefresh
 }) => {
+  // Handler to log interval changes
+  const handleIntervalChange = (value: string) => {
+    const ms = parseInt(value);
+    console.log(`NetworkControls - changing interval to ${ms}ms`);
+    setRefreshRate(ms);
+  };
+
   return (
     <div className="flex items-center gap-2">
       <Select
         value={updateInterval.toString()}
-        onValueChange={(value) => setRefreshRate(parseInt(value))}
+        onValueChange={handleIntervalChange}
         disabled={!isLiveUpdating || isLoading}
       >
         <SelectTrigger className="w-[180px]">
