@@ -28,10 +28,16 @@ const NetworkManagement = () => {
     isLiveUpdating,
     toggleLiveUpdates,
     updateInterval,
-    setRefreshRate
+    setRefreshRate,
+    openGatewayInterface
   } = useNetworkStatus();
   
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Handle gateway IP click
+  const handleGatewayClick = () => {
+    openGatewayInterface();
+  };
   
   // Handle manual refresh
   const handleRefresh = () => {
@@ -148,7 +154,11 @@ const NetworkManagement = () => {
                   </div>
                 </div>
                 
-                <NetworkStatusCards networkStatus={networkStatus} isLoading={isLoading} />
+                <NetworkStatusCards 
+                  networkStatus={networkStatus} 
+                  isLoading={isLoading}
+                  handleGatewayClick={handleGatewayClick} 
+                />
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <AvailableNetworks networkStatus={networkStatus} isLoading={isLoading} />

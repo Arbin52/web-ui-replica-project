@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BasicNetworkInfo } from './BasicNetworkInfo';
 import { AdvancedNetworkInfo } from './AdvancedNetworkInfo';
 import { NetworkStatus } from '@/hooks/network/types';
+import { toast } from 'sonner';
 
 interface NetworkInfoTabsProps {
   networkStatus: NetworkStatus | null;

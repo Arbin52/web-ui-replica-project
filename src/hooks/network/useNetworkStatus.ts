@@ -103,6 +103,23 @@ export const useNetworkStatus = () => {
     }
   };
 
+  // Function to open router/gateway admin interface
+  const openGatewayInterface = () => {
+    if (networkStatus?.gatewayIp) {
+      try {
+        // Open gateway IP in new tab
+        const gatewayUrl = `http://${networkStatus.gatewayIp}`;
+        window.open(gatewayUrl, '_blank');
+        toast.info('Opening router admin interface');
+      } catch (error) {
+        toast.error('Failed to open router interface');
+        console.error('Error opening gateway URL:', error);
+      }
+    } else {
+      toast.error('Gateway IP not available');
+    }
+  };
+
   const refreshNetworkStatus = () => {
     setIsLoading(true);
     console.log("Manual refresh requested");
@@ -175,6 +192,7 @@ export const useNetworkStatus = () => {
     setDeviceStatus,
     connectionError,
     clearConnectionError,
-    checkCurrentNetworkImmediately
+    checkCurrentNetworkImmediately,
+    openGatewayInterface
   };
 };

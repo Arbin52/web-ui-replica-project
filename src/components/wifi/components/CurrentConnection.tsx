@@ -1,10 +1,12 @@
 
 import React from 'react';
-import { Wifi, WifiOff, RefreshCw, Edit2 } from 'lucide-react';
+import { Wifi, WifiOff, RefreshCw, Edit2, ExternalLink } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NetworkStatus } from '@/hooks/network/types';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from 'sonner';
 import '../../overview/index.css';
 
 interface CurrentConnectionProps {
@@ -31,6 +33,21 @@ const CurrentConnection: React.FC<CurrentConnectionProps> = ({
     const name = networkStatus?.networkName || "Unknown Network";
     if (name === "Connected Network") return "Unknown Network";
     return name;
+  };
+
+  // Function to handle gateway IP click
+  const handleGatewayClick = () => {
+    if (networkStatus?.gatewayIp) {
+      try {
+        // Open gateway IP in new tab
+        const gatewayUrl = `http://${networkStatus.gatewayIp}`;
+        window.open(gatewayUrl, '_blank');
+        toast.info('Opening router admin interface');
+      } catch (error) {
+        toast.error('Failed to open router interface');
+        console.error('Error opening gateway URL:', error);
+      }
+    }
   };
 
   return (
@@ -103,7 +120,24 @@ const CurrentConnection: React.FC<CurrentConnectionProps> = ({
             
             <div className="info-row">
               <div className="info-label">Gateway:</div>
-              <div className="info-value">{networkStatus.gatewayIp}</div>
+              <div className="info-value">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button 
+                        onClick={handleGatewayClick} 
+                        className="flex items-center gap-1 text-primary hover:underline"
+                      >
+                        {networkStatus.gatewayIp}
+                        <ExternalLink size={14} />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Access router admin interface</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
             
             <div className="info-row">
