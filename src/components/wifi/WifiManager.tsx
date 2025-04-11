@@ -27,7 +27,8 @@ const WifiManager: React.FC = () => {
     simulateDeviceDisconnect,
     connectionError,
     clearConnectionError,
-    checkCurrentNetworkImmediately
+    checkCurrentNetworkImmediately,
+    setRefreshRate
   } = useNetworkStatus();
   
   const [isConnecting, setIsConnecting] = useState(false);
@@ -42,6 +43,18 @@ const WifiManager: React.FC = () => {
   
   // Monitor navigator.onLine directly for immediate feedback
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  // Set a faster refresh rate on component mount
+  useEffect(() => {
+    // Use a 500ms refresh rate for truly real-time updates
+    setRefreshRate(500);
+    
+    // Clean up function
+    return () => {
+      // Restore a more reasonable refresh rate when component unmounts
+      setRefreshRate(5000);
+    };
+  }, [setRefreshRate]);
   
   // Enhanced network detection that runs more frequently
   const detectRealNetworkName = useCallback(() => {
@@ -104,23 +117,39 @@ const WifiManager: React.FC = () => {
     }
   }, [refreshNetworkStatus, detectRealNetworkName]);
 
-  // Initial detection of network status
+  // Initial detection of network status + aggressive polling
   useEffect(() => {
     const doInitialCheck = async () => {
       console.log("Doing initial network check");
       await refreshNetworkStatus();
       detectRealNetworkName();
+      
+      // Try to detect network again after a short delay
+      // This can help with detecting network after the page has fully loaded
+      setTimeout(() => {
+        checkCurrentNetworkImmediately();
+        detectRealNetworkName();
+      }, 1500);
     };
     
     doInitialCheck();
     
-    // Check network status very frequently for real-time updates
+    // Real-time updates at 300ms intervals
     const fastUpdateInterval = setInterval(() => {
       checkCurrentNetworkImmediately();
       detectRealNetworkName();
-    }, 1000);
+    }, 300);
     
-    return () => clearInterval(fastUpdateInterval);
+    // Additional periodic check with different timing to catch any missed updates
+    const secondaryInterval = setInterval(() => {
+      console.log("Secondary network check");
+      refreshNetworkStatus();
+    }, 2000);
+    
+    return () => {
+      clearInterval(fastUpdateInterval);
+      clearInterval(secondaryInterval);
+    };
   }, [refreshNetworkStatus, checkCurrentNetworkImmediately, detectRealNetworkName]);
 
   // Update detected network name when network status changes
@@ -152,15 +181,20 @@ const WifiManager: React.FC = () => {
     setScanInProgress(true);
     toast.info("Scanning for WiFi networks...");
     
+    // Do an immediate refresh
     await refreshNetworkStatus();
     
     // Check browser's network status after a short delay
     setTimeout(async () => {
       console.log("Checking network status after scan");
       await checkCurrentNetworkImmediately();
-      setScanInProgress(false);
-      toast.success("Network scan complete");
-    }, 1500);
+      // Do one more check after a bit more time
+      setTimeout(async () => {
+        await checkCurrentNetworkImmediately();
+        setScanInProgress(false);
+        toast.success("Network scan complete");
+      }, 1000);
+    }, 1000);
   };
 
   const handleSubmitPassword = async () => {
@@ -177,6 +211,11 @@ const WifiManager: React.FC = () => {
         
         // Store as user-provided network name
         localStorage.setItem('user_provided_network_name', selectedNetwork.ssid);
+        
+        // Force immediate refresh after successful connection
+        setTimeout(() => {
+          refreshNetworkStatus();
+        }, 500);
       }
     } catch (error) {
       console.error("Connection error:", error);
@@ -223,7 +262,11 @@ const WifiManager: React.FC = () => {
       localStorage.setItem('user_provided_network_name', customNetworkName.trim());
       setDetectedNetworkName(customNetworkName.trim());
       toast.success(`Network name set to ${customNetworkName.trim()}`);
-      refreshNetworkStatus();
+      
+      // Apply changes immediately
+      setTimeout(() => {
+        refreshNetworkStatus();
+      }, 100);
     }
     setShowNetworkNameDialog(false);
   };
@@ -232,7 +275,7 @@ const WifiManager: React.FC = () => {
   const availableNetworksCount = networkStatus?.availableNetworks?.length || 0;
 
   // Function to detect if current network is in available networks
-  const checkIfCurrentNetworkIsInList = () => {
+  const checkIfCurrentNetworkIsInList = useCallback(() => {
     // If not online or no network status, nothing to check
     if (!isOnline || !networkStatus?.networkName) return;
     
@@ -246,12 +289,12 @@ const WifiManager: React.FC = () => {
       console.log("Current network not in available list, refreshing");
       refreshNetworkStatus();
     }
-  };
+  }, [networkStatus, isOnline, refreshNetworkStatus]);
 
   // Check if current network is in list when component mounts or network changes
   useEffect(() => {
     checkIfCurrentNetworkIsInList();
-  }, [networkStatus?.networkName, isOnline]);
+  }, [networkStatus?.networkName, isOnline, checkIfCurrentNetworkIsInList]);
 
   // Calculate if we need to prompt for network name
   const shouldPromptForNetworkName = isOnline && 
@@ -290,7 +333,7 @@ const WifiManager: React.FC = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-xs ml-2 h-6"
+                  className="text-xs ml-2 h-6 animate-pulse"
                   onClick={handleEditNetworkName}
                 >
                   Set Network Name

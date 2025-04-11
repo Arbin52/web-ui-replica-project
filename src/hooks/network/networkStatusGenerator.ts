@@ -77,11 +77,6 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
         // We know we're on WiFi but don't know the name
         networkName = "Unknown WiFi Network";
         console.log("WiFi connection detected, using generic name:", networkName);
-        
-        // Prompt user to provide network name if not yet provided
-        if (!userProvidedNetwork) {
-          console.log("Consider prompting user for network name");
-        }
       } 
     } catch (e) {
       console.log("Error detecting connection type:", e);
@@ -119,9 +114,6 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
       availableNetworks.unshift(network);
     }
   }
-  
-  // Calculate the actual available network count correctly
-  const actualNetworkCount = availableNetworks.length;
   
   return {
     networkName: networkName || undefined,

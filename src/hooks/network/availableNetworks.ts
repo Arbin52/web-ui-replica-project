@@ -91,6 +91,6 @@ export const getAvailableNetworks = () => {
     return acc;
   }, []);
   
-  console.log("Final networks list:", uniqueNetworks);
+  console.log("Final networks list size:", uniqueNetworks.length);
   return uniqueNetworks;
 };

@@ -10,7 +10,7 @@ export const useNetworkStatus = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLiveUpdating, setIsLiveUpdating] = useState(true);
-  const [updateInterval, setUpdateInterval] = useState(1000); // More frequent updates (1 second)
+  const [updateInterval, setUpdateInterval] = useState(500); // Even faster updates (500ms)
   const [connectionError, setConnectionError] = useState<string | null>(null);
   
   // Use a ref to store the interval ID to prevent it from being affected by state changes
@@ -191,6 +191,41 @@ export const useNetworkStatus = () => {
     
     return () => {
       document.removeEventListener('visibilitychange', checkNetworkOnVisibilityChange);
+    };
+  }, [fetchNetworkStatus]);
+
+  // Additional network detection through various browser events
+  useEffect(() => {
+    // Function to capture potential network changes
+    const captureNetworkChange = () => {
+      console.log("Potential network change detected, refreshing status");
+      fetchNetworkStatus();
+    };
+    
+    // Listen to various browser events that might indicate network changes
+    window.addEventListener('focus', captureNetworkChange);
+    window.addEventListener('blur', captureNetworkChange);
+    
+    // Listen to mouse movements as they could indicate user is active and network might have changed
+    const handleMouseMove = (() => {
+      let lastChecked = Date.now();
+      const throttleTime = 5000; // Only check every 5 seconds at most
+      
+      return () => {
+        const now = Date.now();
+        if (now - lastChecked > throttleTime) {
+          lastChecked = now;
+          captureNetworkChange();
+        }
+      };
+    })();
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    
+    return () => {
+      window.removeEventListener('focus', captureNetworkChange);
+      window.removeEventListener('blur', captureNetworkChange);
+      document.removeEventListener('mousemove', handleMouseMove);
     };
   }, [fetchNetworkStatus]);
 

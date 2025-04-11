@@ -34,7 +34,15 @@ const CurrentConnection: React.FC<CurrentConnectionProps> = ({
   };
 
   return (
-    <Card>
+    <Card className="relative">
+      {/* Add real-time indicator */}
+      {networkStatus?.isOnline && (
+        <div className="absolute top-4 right-4 flex items-center gap-1">
+          <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+          <span className="text-xs text-muted-foreground">Live</span>
+        </div>
+      )}
+
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {networkStatus?.isOnline ? 
