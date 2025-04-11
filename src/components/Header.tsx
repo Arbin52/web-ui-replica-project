@@ -1,13 +1,21 @@
 
 import React from 'react';
-import { Settings, LogOut, Search, Bell, Menu } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Settings, LogOut, Search, Bell, Menu, User } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import Sidebar from './Sidebar';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface HeaderProps {
   activeTab?: string;
@@ -15,6 +23,14 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+  
   return (
     <div className="network-header shadow-md">
       <div className="flex items-center gap-2">
@@ -47,10 +63,21 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
           <Settings size={18} />
           <span className="hidden md:inline">Settings</span>
         </Button>
-        <Button variant="ghost" className="flex items-center gap-1 text-white">
-          <LogOut size={18} />
-          <span className="hidden md:inline">Logout</span>
-        </Button>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="text-white">
+              <User size={18} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem className="font-medium">{user?.email}</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSignOut}>
+              <LogOut size={16} className="mr-2" />
+              Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
