@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 /**
  * Custom hook to track online status changes
@@ -12,12 +12,12 @@ export const useOnlineStatus = (
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
-    const handleOnlineStatus = () => {
+    const handleOnlineStatus = async () => {
       console.log("Online status changed:", navigator.onLine);
       setIsOnline(navigator.onLine);
       // Refresh network status when online state changes
-      void refreshNetworkStatus();
-      void detectRealNetworkName();
+      await refreshNetworkStatus();
+      await detectRealNetworkName();
     };
     
     window.addEventListener('online', handleOnlineStatus);
@@ -33,10 +33,10 @@ export const useOnlineStatus = (
   useEffect(() => {
     const connection = (navigator as any).connection;
     if (connection) {
-      const handleConnectionChange = () => {
+      const handleConnectionChange = async () => {
         console.log("Network connection type changed:", connection);
-        void refreshNetworkStatus();
-        void detectRealNetworkName();
+        await refreshNetworkStatus();
+        await detectRealNetworkName();
       };
       
       connection.addEventListener('change', handleConnectionChange);

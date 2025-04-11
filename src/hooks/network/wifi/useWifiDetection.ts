@@ -9,7 +9,7 @@ export const useWifiDetection = () => {
   const [shouldPromptForNetworkName, setShouldPromptForNetworkName] = useState(false);
   
   // Detect the current network name from various sources
-  const detectRealNetworkName = useCallback((): Promise<string | null> => {
+  const detectRealNetworkName = useCallback(async (): Promise<string | null> => {
     return new Promise((resolve) => {
       const userProvidedName = localStorage.getItem('user_provided_network_name');
       const detectedName = userProvidedName ||
