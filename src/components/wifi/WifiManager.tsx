@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import '../overview/index.css';
 
-// Import our new components
+// Import our components
 import CurrentConnection from './components/CurrentConnection';
 import AvailableNetworks from './components/AvailableNetworks';
 import NetworkDiagnostics from './components/NetworkDiagnostics';
@@ -34,6 +34,7 @@ const WifiManager: React.FC = () => {
 
   const handleConnect = (network: {id: number, ssid: string}) => {
     setSelectedNetwork(network);
+    setPassword('');  // Clear any previous password
     setShowPasswordDialog(true);
   };
 
@@ -84,12 +85,15 @@ const WifiManager: React.FC = () => {
     }
   };
 
+  // Calculate the actual number of available networks
+  const availableNetworksCount = networkStatus?.availableNetworks?.length || 0;
+
   return (
     <div className="space-y-6">
       <Tabs defaultValue="current">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="current">Current Connection</TabsTrigger>
-          <TabsTrigger value="available">Available Networks</TabsTrigger>
+          <TabsTrigger value="available">Available Networks ({availableNetworksCount})</TabsTrigger>
           <TabsTrigger value="diagnostics">Network Diagnostics</TabsTrigger>
         </TabsList>
         

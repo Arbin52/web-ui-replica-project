@@ -27,12 +27,15 @@ const AvailableNetworks: React.FC<AvailableNetworksProps> = ({
   isDisconnecting,
   getSignalStrength
 }) => {
+  // Get actual count of available networks
+  const availableNetworksCount = networkStatus?.availableNetworks?.length || 0;
+  
   return (
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle className="flex items-center gap-2">
-            <Wifi className="h-5 w-5" /> Available Networks
+            <Wifi className="h-5 w-5" /> Available Networks ({availableNetworksCount})
           </CardTitle>
           <Button 
             variant="outline" 

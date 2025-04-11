@@ -42,6 +42,13 @@ export const useNetworkStatus = () => {
       // Simulate connection delay
       await new Promise(resolve => setTimeout(resolve, 2000));
       
+      // Simple password validation (in a real system, this would be done by the router)
+      // Most WiFi passwords require at least 8 characters
+      if (password.length < 8) {
+        toast.error(`Failed to connect to ${ssid}: Invalid password (must be at least 8 characters)`);
+        return false;
+      }
+      
       // In a real app, this would make API calls to your router/gateway
       // Update the network status after connecting
       await fetchNetworkStatus();

@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { AlertCircle } from 'lucide-react';
 
 interface PasswordDialogProps {
   showPasswordDialog: boolean;
@@ -24,6 +25,24 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({
   handleSubmitPassword,
   isConnecting
 }) => {
+  const [passwordError, setPasswordError] = useState('');
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    // Clear error when user types
+    if (passwordError) setPasswordError('');
+  };
+
+  const validateAndSubmit = () => {
+    // Basic validation - most WiFi passwords require at least 8 characters
+    if (password.length < 8) {
+      setPasswordError('Password must be at least 8 characters');
+      return;
+    }
+    
+    handleSubmitPassword();
+  };
+
   return (
     <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
       <DialogContent>
@@ -42,21 +61,34 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({
               type="password" 
               placeholder="Enter network password" 
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={handlePasswordChange}
+              className={passwordError ? "border-red-500" : ""}
             />
+            {passwordError && (
+              <div className="flex items-center gap-2 text-sm text-red-500 mt-1">
+                <AlertCircle className="h-4 w-4" />
+                {passwordError}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              Password should be at least 8 characters long
+            </p>
           </div>
         </div>
         
         <DialogFooter>
           <Button 
             variant="outline" 
-            onClick={() => setShowPasswordDialog(false)}
+            onClick={() => {
+              setPasswordError('');
+              setShowPasswordDialog(false);
+            }}
             disabled={isConnecting}
           >
             Cancel
           </Button>
           <Button 
-            onClick={handleSubmitPassword}
+            onClick={validateAndSubmit}
             disabled={!password || isConnecting}
           >
             {isConnecting ? "Connecting..." : "Connect"}

@@ -36,6 +36,9 @@ export const NetworkStatusMonitor: React.FC<NetworkStatusMonitorProps> = ({
 
   // Get connection history events
   const connectionEvents = networkStatus?.connectionHistory || [];
+  
+  // Get correct count of available networks
+  const availableNetworksCount = networkStatus?.availableNetworks?.length || 0;
 
   return (
     <Card>
