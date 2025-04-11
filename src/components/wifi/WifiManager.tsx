@@ -1,20 +1,20 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
-import { Button } from '@/components/ui/button';
-import { Smartphone, WifiOff, RefreshCw, Loader2, Edit2 } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { RefreshCw, Loader2 } from 'lucide-react';
+import { toast } from "sonner";
 import '../overview/index.css';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 // Import our components
 import CurrentConnection from './components/CurrentConnection';
 import AvailableNetworks from './components/AvailableNetworks';
 import NetworkDiagnostics from './components/NetworkDiagnostics';
 import PasswordDialog from './components/PasswordDialog';
+import StatusBar from './components/StatusBar';
+import DeviceSimulation from './components/DeviceSimulation';
+import NetworkNameDialog from './components/NetworkNameDialog';
 
 const WifiManager: React.FC = () => {
   const { 
@@ -179,7 +179,6 @@ const WifiManager: React.FC = () => {
 
   const handleScanNetworks = async () => {
     setScanInProgress(true);
-    toast.info("Scanning for WiFi networks...");
     
     // Do an immediate refresh
     await refreshNetworkStatus();
@@ -192,7 +191,6 @@ const WifiManager: React.FC = () => {
       setTimeout(async () => {
         await checkCurrentNetworkImmediately();
         setScanInProgress(false);
-        toast.success("Network scan complete");
       }, 1000);
     }, 1000);
   };
@@ -219,7 +217,6 @@ const WifiManager: React.FC = () => {
       }
     } catch (error) {
       console.error("Connection error:", error);
-      toast.error(`Failed to connect to ${selectedNetwork.ssid}`);
     } finally {
       setIsConnecting(false);
     }
@@ -235,7 +232,6 @@ const WifiManager: React.FC = () => {
       setDetectedNetworkName(null);
     } catch (error) {
       console.error("Disconnection error:", error);
-      toast.error("Failed to disconnect from network");
     } finally {
       setIsDisconnecting(false);
     }
@@ -261,7 +257,6 @@ const WifiManager: React.FC = () => {
     if (customNetworkName.trim()) {
       localStorage.setItem('user_provided_network_name', customNetworkName.trim());
       setDetectedNetworkName(customNetworkName.trim());
-      toast.success(`Network name set to ${customNetworkName.trim()}`);
       
       // Apply changes immediately
       setTimeout(() => {
@@ -304,75 +299,28 @@ const WifiManager: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2">
-          <div className={`h-3 w-3 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-          <span className="text-sm text-muted-foreground">
-            {isOnline ? 'Your device is online' : 'Your device is offline'}
-          </span>
-          
-          {/* Always show network name section if online, with edit button */}
-          {isOnline && (
-            <div className="ml-2 text-sm font-medium flex items-center">
-              Connected to: 
-              <span className={`ml-1 ${shouldPromptForNetworkName ? 'text-amber-500' : 'text-primary'}`}>
-                {shouldPromptForNetworkName ? 'Unknown Network' : detectedNetworkName}
-              </span>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-6 w-6 ml-1" 
-                onClick={handleEditNetworkName} 
-                title="Edit network name"
-              >
-                <Edit2 size={12} />
-              </Button>
-              
-              {/* Show prompt button if we can't detect the network name */}
-              {shouldPromptForNetworkName && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs ml-2 h-6 animate-pulse"
-                  onClick={handleEditNetworkName}
-                >
-                  Set Network Name
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-2">
-          <Button 
-            size="sm" 
-            variant="outline"
-            onClick={handleScanNetworks}
-            disabled={scanInProgress}
-            className="flex items-center gap-1"
-          >
-            {scanInProgress ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-            {scanInProgress ? 'Scanning...' : 'Scan Networks'}
-          </Button>
-          <Button 
-            size="sm" 
-            variant="outline"
-            onClick={simulateDeviceConnect}
-            className="flex items-center gap-1"
-          >
-            <Smartphone size={14} />
-            Sim. Device Connect
-          </Button>
-          <Button 
-            size="sm" 
-            variant="outline"
-            onClick={simulateDeviceDisconnect}
-            className="flex items-center gap-1"
-          >
-            <WifiOff size={14} />
-            Sim. Device Disconnect
-          </Button>
-        </div>
+      <StatusBar 
+        isOnline={isOnline}
+        detectedNetworkName={detectedNetworkName}
+        shouldPromptForNetworkName={shouldPromptForNetworkName}
+        handleEditNetworkName={handleEditNetworkName}
+      />
+      
+      <div className="flex justify-end gap-2">
+        <Button 
+          size="sm" 
+          variant="outline"
+          onClick={handleScanNetworks}
+          disabled={scanInProgress}
+          className="flex items-center gap-1"
+        >
+          {scanInProgress ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+          {scanInProgress ? 'Scanning...' : 'Scan Networks'}
+        </Button>
+        <DeviceSimulation 
+          onConnectDevice={simulateDeviceConnect} 
+          onDisconnectDevice={simulateDeviceDisconnect} 
+        />
       </div>
 
       <Tabs defaultValue="current">
@@ -423,46 +371,13 @@ const WifiManager: React.FC = () => {
         error={connectionError}
       />
 
-      {/* Network Name Dialog */}
-      <Dialog open={showNetworkNameDialog} onOpenChange={setShowNetworkNameDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update Network Name</DialogTitle>
-            <DialogDescription>
-              Enter the actual name of the network you're connected to
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="networkName">Network Name</Label>
-              <Input 
-                id="networkName" 
-                type="text" 
-                placeholder="Enter network name" 
-                value={customNetworkName}
-                onChange={(e) => setCustomNetworkName(e.target.value)}
-                autoFocus
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowNetworkNameDialog(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSaveNetworkName}
-              disabled={!customNetworkName.trim()}
-            >
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <NetworkNameDialog
+        open={showNetworkNameDialog}
+        onOpenChange={setShowNetworkNameDialog}
+        customNetworkName={customNetworkName}
+        setCustomNetworkName={setCustomNetworkName}
+        onSave={handleSaveNetworkName}
+      />
     </div>
   );
 };
