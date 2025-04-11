@@ -51,22 +51,22 @@ export const useWifiManager = () => {
     const doInitialCheck = async () => {
       console.log("Doing initial network check");
       await refreshNetworkStatus();
-      detectRealNetworkName();
+      await detectRealNetworkName();
       
       // Try to detect network again after a short delay
       // This can help with detecting network after the page has fully loaded
-      setTimeout(() => {
-        void checkCurrentNetworkImmediately();
-        detectRealNetworkName();
+      setTimeout(async () => {
+        await checkCurrentNetworkImmediately();
+        await detectRealNetworkName();
       }, 1500);
     };
     
     void doInitialCheck();
     
     // Real-time updates at 300ms intervals
-    const fastUpdateInterval = setInterval(() => {
-      void checkCurrentNetworkImmediately();
-      detectRealNetworkName();
+    const fastUpdateInterval = setInterval(async () => {
+      await checkCurrentNetworkImmediately();
+      await detectRealNetworkName();
     }, 300);
     
     // Additional periodic check with different timing to catch any missed updates
