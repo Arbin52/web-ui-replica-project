@@ -17,6 +17,8 @@ const Traceroute: React.FC = () => {
   const [traceResults, setTraceResults] = useState<HopResult[]>([]);
   const [isTracing, setIsTracing] = useState(false);
   const [traceProgress, setTraceProgress] = useState(0);
+  const [packetSize, setPacketSize] = useState(64);
+  const [timeout, setTimeout] = useState(3);
   
   useEffect(() => {
     // Reset progress when not tracing
@@ -44,7 +46,7 @@ const Traceroute: React.FC = () => {
       setTraceProgress(progressPercent);
       
       // Generate geolocation data
-      const { country, city } = generateGeoLocation();
+      const { country, city, latitude, longitude, isp, asn } = generateGeoLocation();
       
       // Generate a random hop result
       const newHop: HopResult = {
@@ -57,7 +59,11 @@ const Traceroute: React.FC = () => {
         status: hopCount === totalHops ? 'success' : 
                 Math.random() > 0.9 ? 'timeout' : 'success',
         country,
-        city
+        city,
+        latitude,
+        longitude,
+        isp,
+        asn
       };
       
       setTraceResults(prev => [...prev, newHop]);
@@ -85,6 +91,10 @@ const Traceroute: React.FC = () => {
           setMaxHops={setMaxHops}
           onStartTrace={handleTrace}
           isTracing={isTracing}
+          packetSize={packetSize}
+          setPacketSize={setPacketSize}
+          timeout={timeout}
+          setTimeout={setTimeout}
         />
         
         <TracerouteProgress
