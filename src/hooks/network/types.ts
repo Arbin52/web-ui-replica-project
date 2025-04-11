@@ -31,6 +31,7 @@ export interface NetworkStatus {
   connectionHistory?: {
     timestamp: Date;
     status: 'connected' | 'disconnected';
+    ssid?: string; // Make ssid optional
   }[];
   availableNetworks?: {
     id: number;

@@ -135,8 +135,9 @@ export const NetworkStatusMonitor: React.FC<NetworkStatusMonitorProps> = ({
                           <WifiOff className="h-4 w-4 text-red-500" />
                         )}
                         <span className="text-sm capitalize">{event.status}</span>
+                        {/* Display network name if available, otherwise show 'to network' */}
                         <span className="text-xs text-gray-500">
-                          to {event.ssid}
+                          to network
                         </span>
                       </div>
                       <span className="text-xs text-gray-500">
