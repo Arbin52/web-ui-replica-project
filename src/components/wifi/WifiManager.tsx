@@ -1,8 +1,5 @@
-
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { RefreshCw, Loader2 } from 'lucide-react';
 import { useWifiManager } from '@/hooks/network/useWifiManager';
 import '../overview/index.css';
 
