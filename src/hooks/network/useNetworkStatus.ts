@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { generateNetworkStatus } from './networkStatusGenerator';
 import { NetworkStatus } from './types';
@@ -10,6 +10,9 @@ export const useNetworkStatus = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLiveUpdating, setIsLiveUpdating] = useState(true);
   const [updateInterval, setUpdateInterval] = useState(5000); // 5 seconds by default
+  
+  // Use a ref to store the interval ID to prevent it from being affected by state changes
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   
   const fetchNetworkStatus = useCallback(async () => {
     // In a real application, this would make API calls to get actual network data
@@ -77,20 +80,30 @@ export const useNetworkStatus = () => {
     }
   };
 
+  // Setup/cleanup for the interval timer with proper dependency tracking
   useEffect(() => {
+    // Initial fetch
     fetchNetworkStatus();
     
     // Set up polling for real-time updates if live updating is enabled
-    let intervalId: NodeJS.Timeout | null = null;
-    
     if (isLiveUpdating) {
-      intervalId = setInterval(() => {
+      // Clear any existing interval first
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      
+      // Set a new interval
+      intervalRef.current = setInterval(() => {
         fetchNetworkStatus();
       }, updateInterval);
     }
     
+    // Cleanup function to clear interval when component unmounts or dependencies change
     return () => {
-      if (intervalId) clearInterval(intervalId);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
   }, [fetchNetworkStatus, isLiveUpdating, updateInterval]);
 
@@ -102,7 +115,7 @@ export const useNetworkStatus = () => {
 
   const toggleLiveUpdates = () => {
     setIsLiveUpdating(prev => !prev);
-    toast.info(isLiveUpdating ? 'Live updates paused' : 'Live updates resumed');
+    toast.info(!isLiveUpdating ? 'Live updates resumed' : 'Live updates paused');
   };
 
   const setRefreshRate = (ms: number) => {

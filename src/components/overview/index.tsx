@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from 'react-router-dom';
+import NetworkStatusMonitor from './NetworkStatusMonitor';
 import './index.css';
 
 const Overview: React.FC = () => {
@@ -74,6 +75,18 @@ const Overview: React.FC = () => {
 
       {/* Network status cards */}
       <NetworkStatusCards networkStatus={networkStatus} isLoading={isLoading} />
+
+      {/* Real-time Network Status Monitor */}
+      <div className="mb-6">
+        <NetworkStatusMonitor 
+          networkStatus={networkStatus}
+          isLoading={isLoading}
+          isLiveUpdating={isLiveUpdating}
+          toggleLiveUpdates={toggleLiveUpdates}
+          refreshNetworkStatus={refreshNetworkStatus}
+          updateInterval={updateInterval}
+        />
+      </div>
 
       {/* Data usage cards */}
       <DataUsageCards networkStatus={networkStatus} isLoading={isLoading} />

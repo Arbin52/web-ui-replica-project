@@ -1,11 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
 import NetworkList from '../components/NetworkList';
 import AddNetworkDialog from '../components/AddNetworkDialog';
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Wifi, Signal, Database, Shield } from 'lucide-react';
+import { PlusCircle, Wifi, Signal, Database, Shield, RefreshCw } from 'lucide-react';
 import { useNetworks } from '@/hooks/useNetworks';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { NetworkStatusCards } from '@/components/overview/NetworkStatusCards';
@@ -15,13 +15,36 @@ import { AvailableNetworks } from '@/components/overview/AvailableNetworks';
 import { ConnectedDevices } from '@/components/overview/ConnectedDevices';
 import { DashboardCard } from '@/components/ui/dashboard-card';
 import WifiManager from '@/components/wifi/WifiManager';
+import { toast } from 'sonner';
 
 const NetworkManagement = () => {
   const [activeTab, setActiveTab] = useState('networks');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { networks, loading, fetchNetworks } = useNetworks();
-  const { networkStatus, isLoading, refreshNetworkStatus } = useNetworkStatus();
+  const { 
+    networkStatus, 
+    isLoading, 
+    refreshNetworkStatus,
+    isLiveUpdating,
+    toggleLiveUpdates,
+    updateInterval,
+    setRefreshRate
+  } = useNetworkStatus();
   
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Handle manual refresh
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    toast.info('Refreshing network status...');
+    
+    refreshNetworkStatus();
+    
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 1000);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -33,13 +56,36 @@ const NetworkManagement = () => {
           <div className="max-w-screen-xl mx-auto p-4 md:p-6 animate-fade-in">
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold">Network Management</h1>
-              <Button 
-                onClick={() => setIsAddDialogOpen(true)}
-                className="flex items-center gap-2"
-              >
-                <PlusCircle size={16} />
-                Add Network
-              </Button>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mr-2">
+                  <div className={`w-3 h-3 rounded-full ${isLiveUpdating ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                  <span className="text-sm text-muted-foreground">
+                    {isLiveUpdating ? `Live (${updateInterval/1000}s)` : 'Live updates paused'}
+                  </span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={toggleLiveUpdates}
+                >
+                  {isLiveUpdating ? 'Pause' : 'Resume'} Updates
+                </Button>
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                </Button>
+                <Button 
+                  onClick={() => setIsAddDialogOpen(true)}
+                  className="flex items-center gap-2"
+                >
+                  <PlusCircle size={16} />
+                  Add Network
+                </Button>
+              </div>
             </div>
             
             <Tabs defaultValue="overview" className="space-y-4">
@@ -82,6 +128,25 @@ const NetworkManagement = () => {
                     isLoading={isLoading}
                   />
                 </div>
+
+                <div className="bg-muted/50 rounded-md p-3 flex justify-between items-center">
+                  <div>
+                    <h3 className="font-medium">Update Frequency</h3>
+                    <p className="text-sm text-muted-foreground">Adjust how often network data is refreshed</p>
+                  </div>
+                  <div className="flex gap-2">
+                    {[2000, 5000, 10000].map(interval => (
+                      <Button 
+                        key={interval} 
+                        size="sm"
+                        variant={updateInterval === interval ? "default" : "outline"}
+                        onClick={() => setRefreshRate(interval)}
+                      >
+                        {interval / 1000}s
+                      </Button>
+                    ))}
+                  </div>
+                </div>
                 
                 <NetworkStatusCards networkStatus={networkStatus} isLoading={isLoading} />
                 
@@ -92,9 +157,15 @@ const NetworkManagement = () => {
                 
                 <Button 
                   variant="outline" 
-                  onClick={refreshNetworkStatus}
+                  onClick={handleRefresh}
                   className="w-full mt-2"
+                  disabled={isRefreshing}
                 >
+                  {isRefreshing ? (
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                  )}
                   Refresh Network Data
                 </Button>
               </TabsContent>
