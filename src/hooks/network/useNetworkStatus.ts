@@ -3,7 +3,21 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { generateNetworkStatus } from './networkStatusGenerator';
 import { NetworkStatus } from './types';
-import { connectNewDevice, disconnectDevice, getConnectedDeviceStatus, updateDeviceStatus } from './connectedDevices';
+import { 
+  connectNewDevice, 
+  disconnectDevice, 
+  getConnectedDeviceStatus, 
+  updateDeviceStatus 
+} from './connectedDevices';
+import { 
+  connectToNetwork as connectToNetworkUtil, 
+  disconnectFromNetwork as disconnectFromNetworkUtil 
+} from './networkConnectionUtils';
+import {
+  scheduleNetworkChecks,
+  setupNetworkChangeListeners,
+  setupMouseMoveListener
+} from './refreshUtils';
 
 export const useNetworkStatus = () => {
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus | null>(null);
@@ -37,24 +51,14 @@ export const useNetworkStatus = () => {
   // Function to connect to a WiFi network
   const connectToNetwork = async (ssid: string, password: string) => {
     try {
-      toast.info(`Connecting to ${ssid}...`);
       setConnectionError(null);
       
-      // Simulate connection delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const result = await connectToNetworkUtil(ssid, password);
       
-      // Simple password validation (in a real system, this would be done by the router)
-      if (password.length < 8) {
-        const errorMsg = `Failed to connect to ${ssid}: Invalid password (must be at least 8 characters)`;
-        toast.error(errorMsg);
-        setConnectionError(errorMsg);
+      if (!result.success) {
+        setConnectionError(result.error || null);
         return false;
       }
-      
-      // Success! Store the connection info for detection
-      localStorage.setItem('last_connected_network', ssid);
-      localStorage.setItem('connected_network_name', ssid);
-      localStorage.setItem('current_browser_network', ssid);
       
       // Update the network status after connecting
       await fetchNetworkStatus();
@@ -62,13 +66,9 @@ export const useNetworkStatus = () => {
       // Simulate a new device connecting when the network changes
       connectNewDevice();
       
-      toast.success(`Connected to ${ssid}`);
       return true;
     } catch (err) {
-      console.error('Error connecting to network:', err);
-      const errorMsg = `Failed to connect to ${ssid}: Network error`;
-      toast.error(errorMsg);
-      setConnectionError(errorMsg);
+      console.error('Error in connectToNetwork:', err);
       return false;
     }
   };
@@ -81,74 +81,22 @@ export const useNetworkStatus = () => {
         return false;
       }
       
-      const currentNetworkName = networkStatus.networkName;
-      toast.info(`Disconnecting from ${currentNetworkName}...`);
+      const success = await disconnectFromNetworkUtil(networkStatus.networkName);
       
-      // Simulate disconnection delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (success) {
+        // Simulate a device disconnecting when the network changes
+        disconnectDevice();
+        
+        // Update network status after disconnecting
+        await fetchNetworkStatus();
+      }
       
-      // Clear the stored network name
-      localStorage.removeItem('last_connected_network');
-      localStorage.removeItem('connected_network_name');
-      localStorage.removeItem('current_browser_network');
-      
-      // Simulate a device disconnecting when the network changes
-      disconnectDevice();
-      
-      // Update network status after disconnecting
-      await fetchNetworkStatus();
-      
-      toast.success(`Disconnected from ${currentNetworkName}`);
-      return true;
+      return success;
     } catch (err) {
-      console.error('Error disconnecting from network:', err);
-      toast.error('Failed to disconnect from network');
+      console.error('Error in disconnectFromNetwork:', err);
       return false;
     }
   };
-
-  // Monitor real network connection status using navigator.onLine and network change events
-  useEffect(() => {
-    const handleOnline = () => {
-      console.log("Browser reports online status change: ONLINE");
-      toast.success("Your device is connected to the internet");
-      fetchNetworkStatus();
-    };
-    
-    const handleOffline = () => {
-      console.log("Browser reports online status change: OFFLINE");
-      toast.error("Your device lost internet connection");
-      fetchNetworkStatus();
-    };
-    
-    // Add event listeners
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    // Try to detect network changes more accurately on supported browsers
-    if ((navigator as any).connection) {
-      const connection = (navigator as any).connection;
-      
-      const handleConnectionChange = () => {
-        console.log("Network connection changed:", connection);
-        fetchNetworkStatus();
-      };
-      
-      connection.addEventListener('change', handleConnectionChange);
-      
-      return () => {
-        window.removeEventListener('online', handleOnline);
-        window.removeEventListener('offline', handleOffline);
-        connection.removeEventListener('change', handleConnectionChange);
-      };
-    }
-    
-    // Cleanup
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [fetchNetworkStatus]);
 
   // Setup/cleanup for the interval timer with proper dependency tracking
   useEffect(() => {
@@ -177,56 +125,14 @@ export const useNetworkStatus = () => {
     };
   }, [fetchNetworkStatus, isLiveUpdating, updateInterval]);
 
-  // Additional effect to perform network status check whenever online status changes
+  // Monitor real network connection status using navigator.onLine and network change events
   useEffect(() => {
-    const checkNetworkOnVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        console.log("Page became visible, checking network status");
-        fetchNetworkStatus();
-      }
-    };
-    
-    // Listen for visibility changes to update when tab becomes active
-    document.addEventListener('visibilitychange', checkNetworkOnVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', checkNetworkOnVisibilityChange);
-    };
+    return setupNetworkChangeListeners(fetchNetworkStatus);
   }, [fetchNetworkStatus]);
 
-  // Additional network detection through various browser events
+  // Additional effect to perform network status check whenever online status changes
   useEffect(() => {
-    // Function to capture potential network changes
-    const captureNetworkChange = () => {
-      console.log("Potential network change detected, refreshing status");
-      fetchNetworkStatus();
-    };
-    
-    // Listen to various browser events that might indicate network changes
-    window.addEventListener('focus', captureNetworkChange);
-    window.addEventListener('blur', captureNetworkChange);
-    
-    // Listen to mouse movements as they could indicate user is active and network might have changed
-    const handleMouseMove = (() => {
-      let lastChecked = Date.now();
-      const throttleTime = 5000; // Only check every 5 seconds at most
-      
-      return () => {
-        const now = Date.now();
-        if (now - lastChecked > throttleTime) {
-          lastChecked = now;
-          captureNetworkChange();
-        }
-      };
-    })();
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    
-    return () => {
-      window.removeEventListener('focus', captureNetworkChange);
-      window.removeEventListener('blur', captureNetworkChange);
-      document.removeEventListener('mousemove', handleMouseMove);
-    };
+    return setupMouseMoveListener(fetchNetworkStatus);
   }, [fetchNetworkStatus]);
 
   const refreshNetworkStatus = () => {
