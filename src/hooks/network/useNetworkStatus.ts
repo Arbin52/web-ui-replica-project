@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { generateNetworkStatus } from './networkStatusGenerator';
 import { NetworkStatus } from './types';
@@ -18,6 +18,7 @@ import {
   setupNetworkChangeListeners,
   setupMouseMoveListener
 } from './refreshUtils';
+import { useNetworkPolling } from './useNetworkPolling';
 
 export const useNetworkStatus = () => {
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus | null>(null);
@@ -30,6 +31,10 @@ export const useNetworkStatus = () => {
   // Use a ref to store the interval ID to prevent it from being affected by state changes
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Set up polling for network status
+  useNetworkPolling(isLiveUpdating, updateInterval, fetchNetworkStatus, intervalRef);
+  
+  // Network status fetching function
   const fetchNetworkStatus = useCallback(async () => {
     console.log("Fetching network status...");
     // In a real application, this would make API calls to get actual network data
@@ -97,43 +102,6 @@ export const useNetworkStatus = () => {
       return false;
     }
   };
-
-  // Setup/cleanup for the interval timer with proper dependency tracking
-  useEffect(() => {
-    // Initial fetch
-    fetchNetworkStatus();
-    
-    // Set up polling for real-time updates if live updating is enabled
-    if (isLiveUpdating) {
-      // Clear any existing interval first
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      
-      // Set a new interval
-      intervalRef.current = setInterval(() => {
-        fetchNetworkStatus();
-      }, updateInterval);
-    }
-    
-    // Cleanup function to clear interval when component unmounts or dependencies change
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [fetchNetworkStatus, isLiveUpdating, updateInterval]);
-
-  // Monitor real network connection status using navigator.onLine and network change events
-  useEffect(() => {
-    return setupNetworkChangeListeners(fetchNetworkStatus);
-  }, [fetchNetworkStatus]);
-
-  // Additional effect to perform network status check whenever online status changes
-  useEffect(() => {
-    return setupMouseMoveListener(fetchNetworkStatus);
-  }, [fetchNetworkStatus]);
 
   const refreshNetworkStatus = () => {
     setIsLoading(true);
