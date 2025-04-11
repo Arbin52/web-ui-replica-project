@@ -2,77 +2,140 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+ 
 @layer base {
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
+
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
+ 
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 142 69% 58%;
+ 
+    --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
+ 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
+ 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
+ 
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
+ 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
+
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 221.2 83.2% 53.3%;
+ 
     --radius: 0.5rem;
-    --sidebar-bg: 196 33% 29%;
-    --sidebar-hover: 196 33% 25%;
-    --sidebar-active: 196 33% 22%;
-    --sidebar-text: 0 0% 100%;
   }
-
+ 
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+ 
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+ 
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+ 
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+ 
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+ 
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+ 
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+ 
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+ 
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.5% 48%;
+  }
+}
+ 
+@layer base {
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   }
+}
 
-  .network-header {
-    @apply bg-primary text-white p-4 flex justify-between items-center;
-  }
-
-  .sidebar {
-    @apply w-48 bg-[#2d4c4c] text-white;
-  }
-
-  .sidebar-item {
-    @apply p-4 hover:bg-[#243f3f] cursor-pointer;
-  }
-
-  .sidebar-active {
-    @apply bg-[#1d3434];
-  }
-
+@layer components {
   .content-card {
-    @apply bg-white rounded-md shadow-sm p-6 m-4;
+    @apply bg-white p-6 rounded-lg shadow-sm border;
   }
-
+  
   .info-row {
-    @apply flex flex-col md:flex-row py-1;
+    @apply flex flex-col sm:flex-row py-2 border-b border-gray-100;
   }
-
+  
   .info-label {
-    @apply font-semibold w-full md:w-48;
+    @apply font-medium text-gray-600 min-w-[180px];
   }
-
+  
   .info-value {
-    @apply w-full;
+    @apply text-gray-800;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
-  .link-color {
-    @apply text-blue-500 hover:underline;
+  /* Slide animations for tab transitions */
+  .slide-left {
+    animation: slideLeftAnim 0.3s forwards;
+  }
+  
+  .slide-right {
+    animation: slideRightAnim 0.3s forwards;
+  }
+  
+  @keyframes slideLeftAnim {
+    from {
+      transform: translateX(10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideRightAnim {
+    from {
+      transform: translateX(-10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
   }
 }
