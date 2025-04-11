@@ -1,0 +1,12 @@
+
+.info-row {
+  @apply flex flex-col sm:flex-row py-2 border-b border-gray-100;
+}
+
+.info-label {
+  @apply text-sm font-medium text-gray-500 sm:w-48;
+}
+
+.info-value {
+  @apply text-sm text-gray-900 font-normal mt-1 sm:mt-0;
+}

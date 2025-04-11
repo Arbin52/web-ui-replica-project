@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
-import Overview from '../components/Overview';
+import Overview from '../components/overview';
 import Security from '../components/Security';
 import Reports from '../components/Reports';
 import Speed from '../components/Speed';
