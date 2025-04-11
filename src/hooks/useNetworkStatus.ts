@@ -43,9 +43,66 @@ export const useNetworkStatus = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLiveUpdating, setIsLiveUpdating] = useState(true);
   const [updateInterval, setUpdateInterval] = useState(5000); // 5 seconds by default
+  
+  // This function fetches the real network information using browser APIs
+  const fetchRealNetworkInfo = async (): Promise<Partial<NetworkStatus>> => {
+    try {
+      // Check if online
+      const isOnline = navigator.onLine;
+      
+      // Get network information if available
+      let networkType = "Unknown";
+      let signalStrength = "Unknown";
+      let signalStrengthDb = "Unknown";
+      
+      // Try to get connection information if available
+      if ('connection' in navigator) {
+        const connection = (navigator as any).connection;
+        if (connection) {
+          networkType = connection.effectiveType || connection.type || "Unknown";
+        }
+      }
+      
+      // Fetch public IP from API
+      let publicIp = "";
+      try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        if (response.ok) {
+          const data = await response.json();
+          publicIp = data.ip;
+        }
+      } catch (e) {
+        console.error("Failed to fetch public IP", e);
+        publicIp = "Unable to determine";
+      }
+      
+      // Get local network information
+      // This is limited due to browser security restrictions
+      // In a real app, you'd need a native app or browser extension for more details
+      
+      return {
+        networkName: navigator.userAgent.includes("Win") ? "Windows Network" : 
+                     navigator.userAgent.includes("Mac") ? "Mac Network" : 
+                     navigator.userAgent.includes("Linux") ? "Linux Network" : 
+                     navigator.userAgent.includes("Android") ? "Android Network" : 
+                     navigator.userAgent.includes("iPhone") || navigator.userAgent.includes("iPad") ? "iOS Network" : 
+                     "My Network",
+        isOnline,
+        publicIp,
+        networkType: networkType,
+        lastUpdated: new Date()
+      };
+    } catch (err) {
+      console.error("Error fetching real network info:", err);
+      return {};
+    }
+  };
 
-  const generateNetworkStatus = (): NetworkStatus => {
-    // Generate realistic dynamic values
+  const generateNetworkStatus = async (): Promise<NetworkStatus> => {
+    // Try to get real network information where possible
+    const realNetworkInfo = await fetchRealNetworkInfo();
+    
+    // Generate realistic dynamic values for what we can't get from the browser
     const signalStrengthDb = -(Math.floor(Math.random() * 30) + 50);
     const downloadSpeed = Math.floor(Math.random() * 30) + 70;
     const uploadSpeed = Math.floor(Math.random() * 10) + 15;
@@ -59,8 +116,8 @@ export const useNetworkStatus = () => {
     const history = networkStatus?.connectionHistory || [];
     if (history.length > 20) history.shift(); // Keep only last 20 entries
 
-    // Simulate occasional disconnection (1% chance)
-    const isCurrentlyOnline = Math.random() > 0.01;
+    // Use real online status if available, otherwise simulate occasional disconnection
+    const isCurrentlyOnline = realNetworkInfo.isOnline ?? (Math.random() > 0.01);
     
     // Add connection event if status changed
     if (networkStatus?.isOnline !== isCurrentlyOnline) {
@@ -79,13 +136,13 @@ export const useNetworkStatus = () => {
     }
     
     return {
-      networkName: 'MyNetwork',
+      networkName: realNetworkInfo.networkName || 'MyNetwork',
       localIp: '192.168.1.2',
-      publicIp: '203.0.113.1',
+      publicIp: realNetworkInfo.publicIp || '203.0.113.1',
       gatewayIp: '192.168.1.1',
       signalStrength: signalStrengthDb > -60 ? 'Good' : signalStrengthDb > -70 ? 'Fair' : 'Poor',
       signalStrengthDb: `${signalStrengthDb} dBm`,
-      networkType: '802.11ac (5GHz)',
+      networkType: realNetworkInfo.networkType || '802.11ac (5GHz)',
       macAddress: '00:1B:44:11:3A:B7',
       dnsServer: '8.8.8.8, 8.8.4.4',
       connectedDevices: [
@@ -116,8 +173,8 @@ export const useNetworkStatus = () => {
       // Simulate network request delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Generate simulated network status data
-      const data = generateNetworkStatus();
+      // Generate network status data with real information where possible
+      const data = await generateNetworkStatus();
       
       setNetworkStatus(data);
       setError(null);

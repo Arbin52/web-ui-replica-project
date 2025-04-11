@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Info, Router, ExternalLink, RefreshCw, Wifi, Globe, Activity, PauseCircle, PlayCircle, Clock, BarChart2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -26,7 +25,11 @@ const Overview: React.FC = () => {
 
   const handleGatewayClick = () => {
     if (networkStatus?.gatewayIp) {
-      window.open(`http://${networkStatus.gatewayIp}`, '_blank');
+      let url = networkStatus.gatewayIp;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = `http://${url}`;
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
 
