@@ -9,7 +9,14 @@ import { TracerouteProgress } from './traceroute/TracerouteProgress';
 import { TracerouteResults, HopResult } from './traceroute/TracerouteResults';
 import { TracerouteVisualization } from './traceroute/TracerouteVisualization';
 import { TracerouteEmptyState } from './traceroute/TracerouteEmptyState';
-import { generateRandomIP, generateGeoLocation } from './traceroute/utils';
+import { 
+  generateRandomIP, 
+  generateGeoLocation, 
+  calculateNetworkMetrics,
+  classifyRoute,
+  detectAnomalies
+} from './traceroute/utils';
+import { TracerouteAnalysis } from './traceroute/TracerouteAnalysis';
 
 const Traceroute: React.FC = () => {
   const [targetHost, setTargetHost] = useState('8.8.8.8');
@@ -19,6 +26,10 @@ const Traceroute: React.FC = () => {
   const [traceProgress, setTraceProgress] = useState(0);
   const [packetSize, setPacketSize] = useState(64);
   const [timeout, setTimeout] = useState(3);
+  const [showAnalysis, setShowAnalysis] = useState(false);
+  const [networkMetrics, setNetworkMetrics] = useState<any>(null);
+  const [routeClassification, setRouteClassification] = useState<string>('');
+  const [anomalies, setAnomalies] = useState<any[]>([]);
   
   useEffect(() => {
     // Reset progress when not tracing
@@ -27,12 +38,27 @@ const Traceroute: React.FC = () => {
     }
   }, [isTracing]);
 
+  useEffect(() => {
+    // Calculate network metrics when results change
+    if (traceResults.length > 0) {
+      const metrics = calculateNetworkMetrics(traceResults);
+      setNetworkMetrics(metrics);
+      
+      const classification = classifyRoute(traceResults);
+      setRouteClassification(classification);
+      
+      const detectedAnomalies = detectAnomalies(traceResults);
+      setAnomalies(detectedAnomalies);
+    }
+  }, [traceResults]);
+
   const handleTrace = () => {
     if (!targetHost) return;
     
     toast.info(`Starting traceroute to ${targetHost}`);
     setIsTracing(true);
     setTraceResults([]);
+    setShowAnalysis(false);
     
     // Simulate traceroute results
     const totalHops = Math.floor(Math.random() * 8) + 5; // Random number between 5-12 hops
@@ -72,6 +98,7 @@ const Traceroute: React.FC = () => {
         clearInterval(interval);
         setIsTracing(false);
         toast.success(`Traceroute to ${targetHost} completed with ${totalHops} hops`);
+        setShowAnalysis(true);
       }
     }, 800);
   };
@@ -127,6 +154,15 @@ const Traceroute: React.FC = () => {
               isTracing={isTracing}
               onTraceAgain={handleTrace}
             />
+
+            {showAnalysis && (
+              <TracerouteAnalysis 
+                results={traceResults}
+                networkMetrics={networkMetrics}
+                routeClassification={routeClassification}
+                anomalies={anomalies}
+              />
+            )}
           </div>
         )}
         
