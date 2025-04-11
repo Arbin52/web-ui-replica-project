@@ -48,16 +48,20 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   const browserDetectedNetworkName = realNetworkInfo.networkName;
   const storedNetworkName = localStorage.getItem('connected_network_name');
   const lastConnectedNetwork = localStorage.getItem('last_connected_network');
+  const userProvidedNetwork = localStorage.getItem('user_provided_network_name');
+  const webrtcDetectedNetwork = localStorage.getItem('webrtc_detected_ssid');
   
   // Log all possible network name sources for debugging
   console.log("Network name sources:", {
     "Browser detected": browserDetectedNetworkName,
     "Manually connected": storedNetworkName,
-    "Last connected": lastConnectedNetwork
+    "Last connected": lastConnectedNetwork,
+    "User provided": userProvidedNetwork,
+    "WebRTC detected": webrtcDetectedNetwork
   });
   
-  // Select the most accurate network name available
-  let networkName = browserDetectedNetworkName;
+  // Select the most accurate network name available - prioritize user input or direct detection
+  let networkName = userProvidedNetwork || webrtcDetectedNetwork || browserDetectedNetworkName;
   
   // If browser detection didn't work, fall back to stored values
   if (!networkName && isCurrentlyOnline) {
@@ -71,8 +75,13 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
     try {
       if ((navigator as any).connection && (navigator as any).connection.type === 'wifi') {
         // We know we're on WiFi but don't know the name
-        networkName = storedNetworkName || lastConnectedNetwork || "WiFi Connection";
-        console.log("WiFi connection detected, using:", networkName);
+        networkName = "Unknown WiFi Network";
+        console.log("WiFi connection detected, using generic name:", networkName);
+        
+        // Prompt user to provide network name if not yet provided
+        if (!userProvidedNetwork) {
+          console.log("Consider prompting user for network name");
+        }
       } 
     } catch (e) {
       console.log("Error detecting connection type:", e);
@@ -92,7 +101,7 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
     const currentNetworkInList = availableNetworks.some(network => network.ssid === networkName);
     
     // If current network not in list, add it with strong signal
-    if (!currentNetworkInList) {
+    if (!currentNetworkInList && networkName !== 'Unknown WiFi Network' && networkName !== 'Unknown Network') {
       console.log("Adding current network to available list:", networkName);
       availableNetworks.unshift({
         id: availableNetworks.length + 1,
@@ -111,8 +120,11 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
     }
   }
   
+  // Calculate the actual available network count correctly
+  const actualNetworkCount = availableNetworks.length;
+  
   return {
-    networkName: networkName,
+    networkName: networkName || undefined,
     localIp: '192.168.1.2',
     publicIp: realNetworkInfo.publicIp || '203.0.113.1',
     gatewayIp: realNetworkInfo.gatewayIp || '192.168.1.1',

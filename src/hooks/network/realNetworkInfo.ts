@@ -25,16 +25,25 @@ export const fetchRealNetworkInfo = async (): Promise<{
 
     // Try to use more accurate method to detect network
     try {
-      // This is a special approach to try to get the actual network name
-      // First check if we can access network information
-      if ('connection' in navigator && (navigator as any).connection) {
+      // Get WiFi network name if available (for modern browsers)
+      if ('navigator' in window && 'connection' in navigator) {
         const connection = (navigator as any).connection;
-        networkType = connection.effectiveType || connection.type || "Unknown";
-        console.log("Connection type detected:", networkType);
+        
+        // Get connection type
+        if (connection) {
+          networkType = connection.effectiveType || connection.type || "Unknown";
+          console.log("Connection type detected:", networkType);
+          
+          // Some browsers expose WiFi SSID
+          if (connection.ssid) {
+            networkName = connection.ssid;
+            console.log("SSID from connection API:", networkName);
+          }
+        }
       }
-
-      // Check if Network Information API is available and try to use it
-      if ('getNetworkInformation' in navigator) {
+      
+      // Try another approach for Chrome/Android
+      if (!networkName && 'getNetworkInformation' in navigator) {
         try {
           const networkInfo = await (navigator as any).getNetworkInformation();
           if (networkInfo && networkInfo.ssid) {
@@ -46,11 +55,35 @@ export const fetchRealNetworkInfo = async (): Promise<{
         }
       }
       
-      // Try to get information from device memory (if available)
-      if (!networkName && 'deviceMemory' in navigator) {
-        console.log("Device memory:", (navigator as any).deviceMemory);
+      // Try to detect WiFi name via alternative means
+      if (!networkName) {
+        // Try to detect via performance API or other browser-specific APIs
+        try {
+          const rtcPeerConnection = new RTCPeerConnection({ iceServers: [] });
+          rtcPeerConnection.createDataChannel('');
+          
+          rtcPeerConnection.createOffer().then(offer => {
+            const sdp = offer.sdp;
+            if (sdp && sdp.includes('SSID:')) {
+              const ssidMatch = sdp.match(/SSID:(.*?)\r\n/);
+              if (ssidMatch && ssidMatch[1]) {
+                networkName = ssidMatch[1].trim();
+                console.log("Detected SSID via WebRTC:", networkName);
+                
+                // Store this for future use
+                if (networkName) {
+                  localStorage.setItem('webrtc_detected_ssid', networkName);
+                }
+              }
+            }
+          }).catch(e => {
+            console.log("WebRTC detection failed:", e);
+          });
+        } catch (e) {
+          console.log("Alternative detection method failed:", e);
+        }
       }
-      
+
       // Check if any version of network details API is available
       if (!networkName && 'connection' in navigator) {
         const conn = (navigator as any).connection;
@@ -74,6 +107,14 @@ export const fetchRealNetworkInfo = async (): Promise<{
       console.log("Error accessing experimental network APIs:", e);
     }
 
+    // Try to use any previously detected network name
+    if (!networkName) {
+      networkName = localStorage.getItem('webrtc_detected_ssid') || undefined;
+      if (networkName) {
+        console.log("Using previously detected WebRTC SSID:", networkName);
+      }
+    }
+
     // If we couldn't get the network name but we're online and 
     // have a previously stored network name, use it
     if (!networkName && isOnline) {
@@ -91,13 +132,24 @@ export const fetchRealNetworkInfo = async (): Promise<{
       // Try to get the network name from local storage that might have been
       // populated by other parts of the app
       const browserNetwork = localStorage.getItem('current_browser_network');
-      if (browserNetwork) {
+      if (browserNetwork && browserNetwork !== 'Connected Network') {
         networkName = browserNetwork;
         console.log("Using detected browser network from storage:", networkName);
+      } else if (storedNetworkName && storedNetworkName !== 'Connected Network') {
+        networkName = storedNetworkName;
+      } else if (lastConnectedNetwork && lastConnectedNetwork !== 'Connected Network') {
+        networkName = lastConnectedNetwork;
       } else {
-        // If we really can't determine the name but we are online, use a generic name
-        networkName = storedNetworkName || lastConnectedNetwork || "Connected Network";
-        console.log("Online but no network name detected, using fallback:", networkName);
+        // If we really can't determine the name but we are online, check if user provided a name
+        const userProvidedName = localStorage.getItem('user_provided_network_name');
+        if (userProvidedName) {
+          networkName = userProvidedName;
+          console.log("Using user-provided network name:", networkName);
+        } else {
+          // Last resort - use generic name
+          networkName = "Unknown Network";
+          console.log("Online but no network name detected, using generic name:", networkName);
+        }
       }
     }
     
@@ -107,8 +159,8 @@ export const fetchRealNetworkInfo = async (): Promise<{
       console.log("Device is offline, clearing network name");
     }
     
-    // Store the network name for other parts of the app to use
-    if (networkName && isOnline) {
+    // Store the network name for other parts of the app to use if it's not a generic name
+    if (networkName && isOnline && networkName !== 'Unknown Network' && networkName !== 'Connected Network') {
       localStorage.setItem('current_browser_network', networkName);
       console.log("Stored detected network name:", networkName);
     }

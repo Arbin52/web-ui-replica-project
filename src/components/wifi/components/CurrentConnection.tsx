@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { Wifi, WifiOff, RefreshCw, Edit2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +14,7 @@ interface CurrentConnectionProps {
   handleScanNetworks: () => void;
   handleDisconnect: () => void;
   scanInProgress: boolean;
+  onEditNetworkName?: () => void;
 }
 
 const CurrentConnection: React.FC<CurrentConnectionProps> = ({
@@ -22,7 +23,8 @@ const CurrentConnection: React.FC<CurrentConnectionProps> = ({
   isDisconnecting,
   handleScanNetworks,
   handleDisconnect,
-  scanInProgress
+  scanInProgress,
+  onEditNetworkName
 }) => {
   return (
     <Card>
@@ -49,7 +51,20 @@ const CurrentConnection: React.FC<CurrentConnectionProps> = ({
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <div>
-                <p className="font-semibold text-lg">{networkStatus.networkName}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-lg">{networkStatus.networkName || "Unknown Network"}</p>
+                  {onEditNetworkName && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6" 
+                      onClick={onEditNetworkName}
+                      title="Edit network name"
+                    >
+                      <Edit2 size={14} />
+                    </Button>
+                  )}
+                </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Connected since {new Date(networkStatus.lastUpdated).toLocaleTimeString()}
                 </p>

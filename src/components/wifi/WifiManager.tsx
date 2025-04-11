@@ -4,8 +4,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { Button } from '@/components/ui/button';
-import { Smartphone, WifiOff, RefreshCw, Loader2 } from 'lucide-react';
+import { Smartphone, WifiOff, RefreshCw, Loader2, Edit2 } from 'lucide-react';
 import '../overview/index.css';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 // Import our components
 import CurrentConnection from './components/CurrentConnection';
@@ -34,7 +37,9 @@ const WifiManager: React.FC = () => {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [scanInProgress, setScanInProgress] = useState(false);
   const [detectedNetworkName, setDetectedNetworkName] = useState<string | null>(null);
-
+  const [showNetworkNameDialog, setShowNetworkNameDialog] = useState(false);
+  const [customNetworkName, setCustomNetworkName] = useState('');
+  
   // Monitor navigator.onLine directly for immediate feedback
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   
@@ -77,7 +82,10 @@ const WifiManager: React.FC = () => {
       await refreshNetworkStatus();
       
       // Try to detect the OS-reported network name
-      const detectedName = localStorage.getItem('current_browser_network') || 
+      const userProvidedName = localStorage.getItem('user_provided_network_name');
+      const detectedName = userProvidedName ||
+                           localStorage.getItem('webrtc_detected_ssid') ||
+                           localStorage.getItem('current_browser_network') || 
                            localStorage.getItem('connected_network_name') ||
                            localStorage.getItem('last_connected_network');
       
@@ -89,7 +97,7 @@ const WifiManager: React.FC = () => {
     
     doInitialCheck();
     
-    // Refresh network status every 2 seconds to detect changes
+    // Refresh network status every second to detect changes
     const fastUpdateInterval = setInterval(() => {
       checkCurrentNetworkImmediately();
     }, 1000);
@@ -99,7 +107,7 @@ const WifiManager: React.FC = () => {
 
   // Update detected network name when network status changes
   useEffect(() => {
-    if (networkStatus?.networkName) {
+    if (networkStatus?.networkName && networkStatus.networkName !== 'Unknown Network' && networkStatus.networkName !== 'Unknown WiFi Network') {
       setDetectedNetworkName(networkStatus.networkName);
     }
   }, [networkStatus?.networkName]);
@@ -148,6 +156,9 @@ const WifiManager: React.FC = () => {
         setShowPasswordDialog(false);
         setPassword('');
         setDetectedNetworkName(selectedNetwork.ssid);
+        
+        // Store as user-provided network name
+        localStorage.setItem('user_provided_network_name', selectedNetwork.ssid);
       }
     } catch (error) {
       console.error("Connection error:", error);
@@ -171,6 +182,21 @@ const WifiManager: React.FC = () => {
     } finally {
       setIsDisconnecting(false);
     }
+  };
+
+  const handleEditNetworkName = () => {
+    setCustomNetworkName(detectedNetworkName || networkStatus?.networkName || '');
+    setShowNetworkNameDialog(true);
+  };
+
+  const handleSaveNetworkName = () => {
+    if (customNetworkName.trim()) {
+      localStorage.setItem('user_provided_network_name', customNetworkName.trim());
+      setDetectedNetworkName(customNetworkName.trim());
+      toast.success(`Network name set to ${customNetworkName.trim()}`);
+      refreshNetworkStatus();
+    }
+    setShowNetworkNameDialog(false);
   };
 
   // Calculate the actual number of available networks
@@ -207,9 +233,18 @@ const WifiManager: React.FC = () => {
             {isOnline ? 'Your device is online' : 'Your device is offline'}
           </span>
           {detectedNetworkName && (
-            <span className="ml-2 text-sm font-medium">
-              Connected to: <span className="text-primary">{detectedNetworkName}</span>
-            </span>
+            <div className="ml-2 text-sm font-medium flex items-center">
+              Connected to: <span className="text-primary ml-1">{detectedNetworkName}</span>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-6 w-6 ml-1" 
+                onClick={handleEditNetworkName} 
+                title="Edit network name"
+              >
+                <Edit2 size={12} />
+              </Button>
+            </div>
           )}
         </div>
 
@@ -260,6 +295,7 @@ const WifiManager: React.FC = () => {
             handleScanNetworks={handleScanNetworks}
             handleDisconnect={handleDisconnect}
             scanInProgress={scanInProgress}
+            onEditNetworkName={handleEditNetworkName}
           />
         </TabsContent>
         
@@ -291,6 +327,46 @@ const WifiManager: React.FC = () => {
         isConnecting={isConnecting}
         error={connectionError}
       />
+
+      {/* Network Name Dialog */}
+      <Dialog open={showNetworkNameDialog} onOpenChange={setShowNetworkNameDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Network Name</DialogTitle>
+            <DialogDescription>
+              Enter the actual name of the network you're connected to
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="networkName">Network Name</Label>
+              <Input 
+                id="networkName" 
+                type="text" 
+                placeholder="Enter network name" 
+                value={customNetworkName}
+                onChange={(e) => setCustomNetworkName(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowNetworkNameDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveNetworkName}
+              disabled={!customNetworkName.trim()}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
