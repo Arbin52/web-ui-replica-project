@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
 import Overview from '../components/Overview';
@@ -9,9 +10,19 @@ import Speed from '../components/Speed';
 import Ping from '../components/Ping';
 import Traceroute from '../components/Traceroute';
 import WifiAnalysis from '../components/WifiAnalysis';
+import NetworkManagement from './NetworkManagement';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  const navigate = useNavigate();
+
+  const handleTabChange = (tab: string) => {
+    if (tab === 'networks') {
+      navigate('/networks');
+    } else {
+      setActiveTab(tab);
+    }
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -36,10 +47,10 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Header activeTab={activeTab} setActiveTab={handleTabChange} />
       <div className="flex flex-grow">
         <div className="hidden md:block">
-          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+          <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} />
         </div>
         <div className="flex-grow">
           <div className="max-w-screen-xl mx-auto p-4 md:p-6 animate-fade-in">

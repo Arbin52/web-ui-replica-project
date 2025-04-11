@@ -31,6 +31,13 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
     navigate('/auth');
   };
   
+  const handleLogoClick = () => {
+    navigate('/');
+    if (setActiveTab) {
+      setActiveTab('overview');
+    }
+  };
+  
   return (
     <div className="network-header shadow-md">
       <div className="flex items-center gap-2">
@@ -44,7 +51,7 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
             {setActiveTab && <Sidebar activeTab={activeTab || 'overview'} setActiveTab={setActiveTab} />}
           </SheetContent>
         </Sheet>
-        <h1 className="text-2xl font-bold">Network Monitor</h1>
+        <h1 className="text-2xl font-bold cursor-pointer" onClick={handleLogoClick}>Network Monitor</h1>
       </div>
       <div className="hidden md:flex rounded-md bg-white/10 px-3 py-1.5 w-64">
         <input 
@@ -70,7 +77,7 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
               <User size={18} />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="bg-white">
             <DropdownMenuItem className="font-medium">{user?.email}</DropdownMenuItem>
             <DropdownMenuItem onClick={handleSignOut}>
               <LogOut size={16} className="mr-2" />

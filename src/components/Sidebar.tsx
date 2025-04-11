@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ActivitySquare, Shield, FileBarChart, Gauge, Signal, Network, Wifi } from 'lucide-react';
+import { ActivitySquare, Shield, FileBarChart, Gauge, Signal, Network, Wifi, Laptop } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -10,6 +10,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: <ActivitySquare size={18} /> },
+    { id: 'networks', label: 'Networks', icon: <Laptop size={18} /> },
     { id: 'security', label: 'Security', icon: <Shield size={18} /> },
     { id: 'reports', label: 'Reports', icon: <FileBarChart size={18} /> },
     { id: 'speed', label: 'Speed', icon: <Gauge size={18} /> },
