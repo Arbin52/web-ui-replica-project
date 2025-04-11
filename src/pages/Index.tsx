@@ -35,14 +35,14 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Header activeTab={activeTab} setActiveTab={setActiveTab} />
       <div className="flex flex-grow">
         <div className="hidden md:block">
           <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         </div>
-        <div className="flex-grow bg-gray-100">
-          <div className="max-w-screen-xl mx-auto">
+        <div className="flex-grow">
+          <div className="max-w-screen-xl mx-auto p-4 md:p-6 animate-fade-in">
             {renderContent()}
           </div>
         </div>
