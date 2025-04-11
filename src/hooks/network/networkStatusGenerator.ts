@@ -1,9 +1,14 @@
+
 import { fetchRealNetworkInfo } from './realNetworkInfo';
 import { generateConnectedDevices, getConnectedDeviceStatus } from './connectedDevices';
 import { getAvailableNetworks } from './availableNetworks';
 import { getConnectionHistory } from './networkHistoryUtils';
 import { NetworkStatus } from './types';
 import { toast } from 'sonner';
+
+let previousDownloadSpeed = 0;
+let previousUploadSpeed = 0;
+let previousLatency = 0;
 
 export const generateNetworkStatus = async (previousStatus: NetworkStatus | null): Promise<NetworkStatus> => {
   console.log("Generating network status, previous status:", previousStatus?.networkName);
@@ -15,11 +20,36 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   // Get device connection status to show real-time connected devices
   const connectedDevices = getConnectedDeviceStatus();
   
-  // Generate realistic dynamic values for what we can't get from the browser
+  // Generate realistic dynamic values with smoothing to prevent rapid changes
   const signalStrengthDb = -(Math.floor(Math.random() * 30) + 40); // Stronger signal than before
-  const downloadSpeed = Math.floor(Math.random() * 30) + 90; // Higher speed for 5G network
-  const uploadSpeed = Math.floor(Math.random() * 10) + 20; // Higher upload for 5G
-  const latency = Math.floor(Math.random() * 10) + 3; // Lower latency for 5G
+  
+  // Smooth the network speed values to prevent rapid changes
+  let downloadSpeed, uploadSpeed, latency;
+  
+  if (previousStatus) {
+    // Apply smoothing - only change by up to 5% of current value
+    const maxDownloadChange = previousDownloadSpeed * 0.05;
+    downloadSpeed = previousDownloadSpeed + (Math.random() * maxDownloadChange * 2 - maxDownloadChange);
+    downloadSpeed = Math.floor(downloadSpeed * 10) / 10; // Round to 1 decimal place
+    
+    const maxUploadChange = previousUploadSpeed * 0.05;
+    uploadSpeed = previousUploadSpeed + (Math.random() * maxUploadChange * 2 - maxUploadChange);
+    uploadSpeed = Math.floor(uploadSpeed * 10) / 10; // Round to 1 decimal place
+    
+    const maxLatencyChange = Math.max(1, previousLatency * 0.05);
+    latency = previousLatency + (Math.random() * maxLatencyChange * 2 - maxLatencyChange);
+    latency = Math.floor(latency * 10) / 10; // Round to 1 decimal place
+  } else {
+    // Initial values
+    downloadSpeed = Math.floor(Math.random() * 30) + 90; // Higher speed for 5G network
+    uploadSpeed = Math.floor(Math.random() * 10) + 20; // Higher upload for 5G
+    latency = Math.floor(Math.random() * 10) + 3; // Lower latency for 5G
+  }
+  
+  // Update previous values for next time
+  previousDownloadSpeed = downloadSpeed;
+  previousUploadSpeed = uploadSpeed;
+  previousLatency = latency;
   
   // Data usage simulated values
   const downloadData = Math.floor(Math.random() * 500) + 1000; // Between 1000-1500 MB

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Activity, Download, Upload, RefreshCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -11,12 +11,61 @@ const Speed: React.FC = () => {
   const [uploadSpeed, setUploadSpeed] = useState<number | null>(null);
   const [ping, setPing] = useState<number | null>(null);
   const [progressPercent, setProgressPercent] = useState(0);
+  const [displayDownload, setDisplayDownload] = useState<number | null>(null);
+  const [displayUpload, setDisplayUpload] = useState<number | null>(null);
+  const [displayPing, setDisplayPing] = useState<number | null>(null);
+
+  // Effect to smoothly animate displayed values
+  useEffect(() => {
+    if (downloadSpeed !== null) {
+      const interval = setInterval(() => {
+        setDisplayDownload(prev => {
+          if (prev === null) return downloadSpeed;
+          const diff = downloadSpeed - prev;
+          if (Math.abs(diff) < 0.1) return downloadSpeed;
+          return prev + (diff * 0.1);
+        });
+      }, 50);
+      return () => clearInterval(interval);
+    }
+  }, [downloadSpeed]);
+
+  useEffect(() => {
+    if (uploadSpeed !== null) {
+      const interval = setInterval(() => {
+        setDisplayUpload(prev => {
+          if (prev === null) return uploadSpeed;
+          const diff = uploadSpeed - prev;
+          if (Math.abs(diff) < 0.1) return uploadSpeed;
+          return prev + (diff * 0.1);
+        });
+      }, 50);
+      return () => clearInterval(interval);
+    }
+  }, [uploadSpeed]);
+
+  useEffect(() => {
+    if (ping !== null) {
+      const interval = setInterval(() => {
+        setDisplayPing(prev => {
+          if (prev === null) return ping;
+          const diff = ping - prev;
+          if (Math.abs(diff) < 0.1) return ping;
+          return prev + (diff * 0.1);
+        });
+      }, 50);
+      return () => clearInterval(interval);
+    }
+  }, [ping]);
 
   const simulateSpeedTest = () => {
     setIsLoading(true);
     setDownloadSpeed(null);
     setUploadSpeed(null);
     setPing(null);
+    setDisplayDownload(null);
+    setDisplayUpload(null);
+    setDisplayPing(null);
     setProgressPercent(0);
     
     // Simulate measuring ping
@@ -58,9 +107,9 @@ const Speed: React.FC = () => {
             <div className="text-center">
               {isLoading ? (
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-2"></div>
-              ) : downloadSpeed ? (
+              ) : displayDownload ? (
                 <>
-                  <div className="text-3xl font-bold text-primary mb-1">{downloadSpeed}</div>
+                  <div className="text-3xl font-bold text-primary mb-1">{displayDownload.toFixed(1)}</div>
                   <div className="text-sm text-gray-500">Mbps</div>
                 </>
               ) : (
@@ -97,7 +146,7 @@ const Speed: React.FC = () => {
               <h3 className="font-semibold">Download</h3>
             </div>
             <div className="text-2xl font-bold">
-              {downloadSpeed ? `${downloadSpeed} Mbps` : '-'}
+              {displayDownload ? `${displayDownload.toFixed(1)} Mbps` : '-'}
             </div>
           </div>
           
@@ -107,7 +156,7 @@ const Speed: React.FC = () => {
               <h3 className="font-semibold">Upload</h3>
             </div>
             <div className="text-2xl font-bold">
-              {uploadSpeed ? `${uploadSpeed} Mbps` : '-'}
+              {displayUpload ? `${displayUpload.toFixed(1)} Mbps` : '-'}
             </div>
           </div>
           
@@ -117,12 +166,12 @@ const Speed: React.FC = () => {
               <h3 className="font-semibold">Ping</h3>
             </div>
             <div className="text-2xl font-bold">
-              {ping ? `${ping} ms` : '-'}
+              {displayPing ? `${displayPing.toFixed(1)} ms` : '-'}
             </div>
           </div>
         </div>
         
-        {(downloadSpeed || uploadSpeed) && (
+        {(displayDownload || displayUpload) && (
           <div className="mt-8 border-t pt-6">
             <h3 className="font-semibold mb-3">Speed Test Results</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">

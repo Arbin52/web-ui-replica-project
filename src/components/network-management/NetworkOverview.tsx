@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { RefreshCw, Signal, Database, Shield, Wifi } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { NetworkStatusCards } from '../overview/NetworkStatusCards';
@@ -28,6 +28,44 @@ export const NetworkOverview: React.FC<NetworkOverviewProps> = ({
   updateInterval,
   setRefreshRate
 }) => {
+  // State for smooth display values
+  const [displayDownload, setDisplayDownload] = useState<number>(0);
+  const [displayUpload, setDisplayUpload] = useState<number>(0);
+  
+  // Effect to smoothly transition download speed
+  useEffect(() => {
+    if (!networkStatus) return;
+    
+    const targetDownload = networkStatus.connectionSpeed.download;
+    const updateDownload = () => {
+      setDisplayDownload(prev => {
+        const diff = targetDownload - prev;
+        if (Math.abs(diff) < 0.1) return targetDownload;
+        return prev + (diff * 0.1);
+      });
+    };
+    
+    const intervalId = setInterval(updateDownload, 50);
+    return () => clearInterval(intervalId);
+  }, [networkStatus?.connectionSpeed.download]);
+  
+  // Effect to smoothly transition upload speed
+  useEffect(() => {
+    if (!networkStatus) return;
+    
+    const targetUpload = networkStatus.connectionSpeed.upload;
+    const updateUpload = () => {
+      setDisplayUpload(prev => {
+        const diff = targetUpload - prev;
+        if (Math.abs(diff) < 0.1) return targetUpload;
+        return prev + (diff * 0.1);
+      });
+    };
+    
+    const intervalId = setInterval(updateUpload, 50);
+    return () => clearInterval(intervalId);
+  }, [networkStatus?.connectionSpeed.upload]);
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -41,14 +79,14 @@ export const NetworkOverview: React.FC<NetworkOverviewProps> = ({
         />
         <DashboardCard 
           title="Download Speed"
-          value={`${networkStatus?.connectionSpeed.download || 0} Mbps`}
+          value={`${displayDownload.toFixed(1)} Mbps`}
           icon={<Database size={18} />}
           description="Current download speed"
           isLoading={isLoading}
         />
         <DashboardCard 
           title="Upload Speed"
-          value={`${networkStatus?.connectionSpeed.upload || 0} Mbps`}
+          value={`${displayUpload.toFixed(1)} Mbps`}
           icon={<Database size={18} />}
           description="Current upload speed"
           isLoading={isLoading}
