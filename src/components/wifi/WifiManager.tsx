@@ -21,7 +21,9 @@ const WifiManager: React.FC = () => {
     connectToNetwork,
     disconnectFromNetwork,
     simulateDeviceConnect,
-    simulateDeviceDisconnect
+    simulateDeviceDisconnect,
+    connectionError,
+    clearConnectionError
   } = useNetworkStatus();
   
   const [isConnecting, setIsConnecting] = useState(false);
@@ -50,10 +52,17 @@ const WifiManager: React.FC = () => {
       if (networkName && !isConnecting && !isDisconnecting) {
         refreshNetworkStatus();
       }
-    }, 5000);
+    }, 3000); // Check more frequently
 
     return () => clearInterval(connectionCheck);
   }, [isConnecting, isDisconnecting, refreshNetworkStatus]);
+
+  // Reset error state when dialog closes
+  useEffect(() => {
+    if (!showPasswordDialog) {
+      clearConnectionError?.();
+    }
+  }, [showPasswordDialog, clearConnectionError]);
 
   const getSignalStrength = (signalValue: number) => {
     const percentage = 100 - (Math.abs(signalValue) - 30) * 1.5;
@@ -115,6 +124,27 @@ const WifiManager: React.FC = () => {
 
   // Calculate the actual number of available networks
   const availableNetworksCount = networkStatus?.availableNetworks?.length || 0;
+
+  // Function to detect if current network is in available networks
+  const checkIfCurrentNetworkIsInList = () => {
+    // If not online or no network status, nothing to check
+    if (!isOnline || !networkStatus?.networkName) return;
+    
+    // Check if currently connected network is in the available networks list
+    const currentNetworkInList = networkStatus.availableNetworks?.some(
+      network => network.ssid === networkStatus.networkName
+    );
+    
+    // If not in list, trigger a refresh to update the list
+    if (!currentNetworkInList) {
+      refreshNetworkStatus();
+    }
+  };
+
+  // Check if current network is in list when component mounts or network changes
+  useEffect(() => {
+    checkIfCurrentNetworkIsInList();
+  }, [networkStatus?.networkName, isOnline]);
 
   return (
     <div className="space-y-6">
@@ -207,6 +237,7 @@ const WifiManager: React.FC = () => {
         setPassword={setPassword}
         handleSubmitPassword={handleSubmitPassword}
         isConnecting={isConnecting}
+        error={connectionError}
       />
     </div>
   );

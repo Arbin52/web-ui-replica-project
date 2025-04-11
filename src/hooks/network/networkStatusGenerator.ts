@@ -27,7 +27,7 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   if (history.length > 20) history.shift(); // Keep only last 20 entries
 
   // Use real online status if available, otherwise simulate occasional disconnection
-  const isCurrentlyOnline = realNetworkInfo.isOnline ?? (Math.random() > 0.01);
+  const isCurrentlyOnline = realNetworkInfo.isOnline ?? navigator.onLine;
   
   // Add connection event if status changed
   if (previousStatus?.isOnline !== isCurrentlyOnline) {
@@ -35,15 +35,20 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
       timestamp: new Date(),
       status: isCurrentlyOnline ? 'connected' : 'disconnected'
     });
-    
-    // Toast notification happens in the useNetworkStatus hook
   }
   
   // Generate sample available networks
-  const availableNetworks = getAvailableNetworks();
+  let availableNetworks = getAvailableNetworks();
   
   // Get the connected network name
   const networkName = realNetworkInfo.networkName || localStorage.getItem('connected_network_name') || (isCurrentlyOnline ? 'Connected WiFi' : undefined);
+  
+  // Get the actual connected network (OS level) from browser's navigator
+  const browserConnectedNetwork = navigator.connection ? 
+    (navigator.connection as any).type === 'wifi' ? 'WiFi Connection' : 
+    (navigator.connection as any).type === 'cellular' ? 'Cellular Connection' : 
+    undefined : 
+    undefined;
   
   // Check if the network we're connected to is in the available networks list
   const connectedNetworkExists = availableNetworks.some(network => network.ssid === networkName);

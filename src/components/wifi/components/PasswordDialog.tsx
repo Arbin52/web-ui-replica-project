@@ -8,6 +8,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface PasswordDialogProps {
   showPasswordDialog: boolean;
@@ -17,6 +19,7 @@ interface PasswordDialogProps {
   setPassword: React.Dispatch<React.SetStateAction<string>>;
   handleSubmitPassword: () => void;
   isConnecting: boolean;
+  error?: string | null;
 }
 
 // Create a schema for the password
@@ -34,7 +37,8 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({
   password,
   setPassword,
   handleSubmitPassword,
-  isConnecting
+  isConnecting,
+  error
 }) => {
   // Initialize the form with react-hook-form
   const form = useForm<z.infer<typeof formSchema>>({
@@ -66,6 +70,13 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({
             Enter the password for this network to connect.
           </DialogDescription>
         </DialogHeader>
+
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">

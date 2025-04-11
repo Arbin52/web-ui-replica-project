@@ -31,16 +31,41 @@ export const fetchRealNetworkInfo = async (): Promise<{
       }
     }
 
-    // Try to get the actual connected network name
-    // First check if we have a stored network from a previous connection
-    networkName = localStorage.getItem('last_connected_network');
-
-    // If no stored network and the device is online, we'll provide a default name
-    // In a real app, this would be retrieved from the system's network interfaces
-    if (!networkName && isOnline) {
-      // Check if any network is marked as connected in localStorage
-      const connectedNetworkFromStorage = localStorage.getItem('connected_network_name');
-      networkName = connectedNetworkFromStorage || "Connected WiFi";
+    // First attempt to get network name through the NetworkInformation API (if available)
+    let networkNameFromAPI = false;
+    
+    // Check if we can access Network Information API (not available in all browsers)
+    if ('getNetworkInformation' in navigator) {
+      try {
+        // @ts-ignore - This is experimental and not widely supported
+        const networkInfo = await navigator.getNetworkInformation();
+        if (networkInfo && networkInfo.ssid) {
+          networkName = networkInfo.ssid;
+          networkNameFromAPI = true;
+        }
+      } catch (e) {
+        console.log("Network Information API not available");
+      }
+    }
+    
+    // If we couldn't get the name through the API, try other methods
+    if (!networkNameFromAPI) {
+      // Try to get the actual connected network name
+      networkName = localStorage.getItem('last_connected_network');
+      
+      // If no stored network and the device is online, we need to detect current connection
+      if (!networkName && isOnline) {
+        // Query the connection type to make a good guess
+        if (networkType.includes("WiFi")) {
+          const connectedNetworkFromStorage = localStorage.getItem('connected_network_name');
+          networkName = connectedNetworkFromStorage || "WiFi Network";
+        } else if (networkType.includes("Cellular")) {
+          networkName = "Cellular Connection";
+        } else if (isOnline) {
+          // Device is online, but we don't know what type of connection
+          networkName = "Connected Network";
+        }
+      }
     }
     
     // Fetch public IP from API

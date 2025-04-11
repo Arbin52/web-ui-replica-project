@@ -11,6 +11,7 @@ export const useNetworkStatus = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLiveUpdating, setIsLiveUpdating] = useState(true);
   const [updateInterval, setUpdateInterval] = useState(5000); // 5 seconds by default
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   
   // Use a ref to store the interval ID to prevent it from being affected by state changes
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -39,13 +40,25 @@ export const useNetworkStatus = () => {
   const connectToNetwork = async (ssid: string, password: string) => {
     try {
       toast.info(`Connecting to ${ssid}...`);
+      setConnectionError(null);
       
       // Simulate connection delay
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Simple password validation (in a real system, this would be done by the router)
       if (password.length < 8) {
-        toast.error(`Failed to connect to ${ssid}: Invalid password (must be at least 8 characters)`);
+        const errorMsg = `Failed to connect to ${ssid}: Invalid password (must be at least 8 characters)`;
+        toast.error(errorMsg);
+        setConnectionError(errorMsg);
+        return false;
+      }
+      
+      // Simulate incorrect password (for specific test networks)
+      const testNetworks = ['YAKSO HOSTEL', 'NTFiber_9498_2.4G'];
+      if (testNetworks.includes(ssid) && password !== 'correctpassword') {
+        const errorMsg = `Failed to connect to ${ssid}: Incorrect password`;
+        toast.error(errorMsg);
+        setConnectionError(errorMsg);
         return false;
       }
       
@@ -64,7 +77,9 @@ export const useNetworkStatus = () => {
       return true;
     } catch (err) {
       console.error('Error connecting to network:', err);
-      toast.error(`Failed to connect to ${ssid}`);
+      const errorMsg = `Failed to connect to ${ssid}: Network error`;
+      toast.error(errorMsg);
+      setConnectionError(errorMsg);
       return false;
     }
   };
@@ -197,6 +212,10 @@ export const useNetworkStatus = () => {
     return updated;
   };
 
+  const clearConnectionError = () => {
+    setConnectionError(null);
+  };
+
   return {
     networkStatus,
     isLoading,
@@ -211,6 +230,8 @@ export const useNetworkStatus = () => {
     simulateDeviceConnect,
     simulateDeviceDisconnect,
     getDeviceStatus,
-    setDeviceStatus
+    setDeviceStatus,
+    connectionError,
+    clearConnectionError
   };
 };
