@@ -22,7 +22,7 @@ export const useNetworkConnection = (
   };
 
   // Handle connecting to a network
-  const handleSubmitPassword = async (selectedNetwork: {id: number, ssid: string}, password: string) => {
+  const handleSubmitPassword = async (selectedNetwork: {id: number, ssid: string}, password: string): Promise<boolean> => {
     if (!selectedNetwork) return false;
     
     setIsConnecting(true);
@@ -50,7 +50,7 @@ export const useNetworkConnection = (
   };
 
   // Handle disconnecting from a network
-  const handleDisconnect = async () => {
+  const handleDisconnect = async (): Promise<void> => {
     if (!networkStatus?.networkName) return;
     
     setIsDisconnecting(true);

@@ -120,11 +120,11 @@ export const useNetworkStatus = () => {
     }
   };
 
-  const refreshNetworkStatus = () => {
+  const refreshNetworkStatus = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     console.log("Manual refresh requested");
-    fetchNetworkStatus();
-  };
+    return fetchNetworkStatus();
+  }, [fetchNetworkStatus]);
 
   const toggleLiveUpdates = () => {
     setIsLiveUpdating(prev => !prev);
@@ -170,10 +170,10 @@ export const useNetworkStatus = () => {
   };
 
   // Additional function to immediately check current network status (useful for UI events)
-  const checkCurrentNetworkImmediately = async () => {
+  const checkCurrentNetworkImmediately = useCallback(async (): Promise<void> => {
     console.log("Immediate network check requested");
-    return await fetchNetworkStatus();
-  };
+    return fetchNetworkStatus();
+  }, [fetchNetworkStatus]);
 
   return {
     networkStatus,
