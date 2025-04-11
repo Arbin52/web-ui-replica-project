@@ -11,6 +11,7 @@ import '../overview/index.css';
 import CurrentConnection from './components/CurrentConnection';
 import AvailableNetworks from './components/AvailableNetworks';
 import NetworkDiagnostics from './components/NetworkDiagnostics';
+import NetworkHistory from './components/NetworkHistory';
 import PasswordDialog from './components/PasswordDialog';
 import StatusBar from './components/StatusBar';
 import DeviceSimulation from './components/DeviceSimulation';
@@ -324,9 +325,10 @@ const WifiManager: React.FC = () => {
       </div>
 
       <Tabs defaultValue="current">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="current">Current Connection</TabsTrigger>
           <TabsTrigger value="available">Available Networks ({availableNetworksCount})</TabsTrigger>
+          <TabsTrigger value="history">Connection History</TabsTrigger>
           <TabsTrigger value="diagnostics">Network Diagnostics</TabsTrigger>
         </TabsList>
         
@@ -353,6 +355,10 @@ const WifiManager: React.FC = () => {
             isDisconnecting={isDisconnecting}
             getSignalStrength={getSignalStrength}
           />
+        </TabsContent>
+        
+        <TabsContent value="history" className="space-y-4">
+          <NetworkHistory onRefresh={refreshNetworkStatus} />
         </TabsContent>
         
         <TabsContent value="diagnostics" className="space-y-4">

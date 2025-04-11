@@ -1,4 +1,6 @@
 
+import { getConnectionHistory } from './networkHistoryUtils';
+
 // This function fetches the real network information using browser APIs
 export const fetchRealNetworkInfo = async (): Promise<{
   networkName?: string;
@@ -7,6 +9,7 @@ export const fetchRealNetworkInfo = async (): Promise<{
   networkType?: string;
   gatewayIp?: string;
   lastUpdated?: Date;
+  connectionHistory?: any[];
 }> => {
   try {
     // Check if online
@@ -184,6 +187,9 @@ export const fetchRealNetworkInfo = async (): Promise<{
     // Generate a realistic gateway IP
     const gatewayIp = "192.168.1.1";
     
+    // Get connection history
+    const connectionHistory = getConnectionHistory();
+    
     // Return the collected network information
     return {
       networkName,
@@ -191,12 +197,14 @@ export const fetchRealNetworkInfo = async (): Promise<{
       publicIp,
       networkType,
       gatewayIp,
+      connectionHistory,
       lastUpdated: new Date()
     };
   } catch (err) {
     console.error("Error fetching real network info:", err);
     return {
       isOnline: navigator.onLine,
+      connectionHistory: getConnectionHistory(),
       lastUpdated: new Date()
     };
   }

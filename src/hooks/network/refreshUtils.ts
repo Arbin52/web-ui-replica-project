@@ -92,3 +92,52 @@ export const setupMouseMoveListener = (
     document.removeEventListener('mousemove', handleMouseMove);
   };
 };
+
+// Optimize refresh rate based on network activity
+export const optimizeRefreshRate = (
+  currentUpdateInterval: number,
+  networkStatus: any,
+  setInterval: (ms: number) => void
+) => {
+  // If we're offline, slow down updates to save resources
+  if (!networkStatus?.isOnline) {
+    if (currentUpdateInterval < 5000) {
+      console.log("Network offline, reducing update frequency");
+      setInterval(5000);
+    }
+    return;
+  }
+  
+  // If we're online but there's no activity, use moderate refresh rate
+  const hasRecentActivity = networkStatus?.connectionHistory?.some((event: any) => {
+    const eventTime = new Date(event.timestamp).getTime();
+    return (Date.now() - eventTime) < 60000; // Activity in the last minute
+  });
+  
+  if (!hasRecentActivity) {
+    if (currentUpdateInterval < 2000) {
+      console.log("No recent activity, using moderate update frequency");
+      setInterval(2000);
+    }
+  }
+};
+
+// Function to check if browser supports network information API
+export const supportsNetworkInformation = () => {
+  return !!(navigator as any).connection;
+};
+
+// Get connection type if available
+export const getConnectionType = () => {
+  if ((navigator as any).connection) {
+    const connection = (navigator as any).connection;
+    return {
+      type: connection.type || 'unknown',
+      effectiveType: connection.effectiveType || 'unknown',
+      downlink: connection.downlink || 0,
+      rtt: connection.rtt || 0
+    };
+  }
+  
+  return null;
+};

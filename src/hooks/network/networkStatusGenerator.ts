@@ -1,7 +1,7 @@
-
 import { fetchRealNetworkInfo } from './realNetworkInfo';
 import { generateConnectedDevices, getConnectedDeviceStatus } from './connectedDevices';
 import { getAvailableNetworks } from './availableNetworks';
+import { getConnectionHistory } from './networkHistoryUtils';
 import { NetworkStatus } from './types';
 import { toast } from 'sonner';
 
@@ -25,21 +25,12 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   const downloadData = Math.floor(Math.random() * 500) + 1000; // Between 1000-1500 MB
   const uploadData = Math.floor(Math.random() * 200) + 300; // Between 300-500 MB
 
-  // Connection status history 
-  const history = previousStatus?.connectionHistory || [];
-  if (history.length > 20) history.shift(); // Keep only last 20 entries
-
+  // Get connection history from storage
+  const connectionHistory = realNetworkInfo.connectionHistory || getConnectionHistory();
+  
   // Use real online status if available, otherwise simulate occasional disconnection
   const isCurrentlyOnline = realNetworkInfo.isOnline !== undefined ? realNetworkInfo.isOnline : navigator.onLine;
   console.log("Is currently online:", isCurrentlyOnline);
-  
-  // Add connection event if status changed
-  if (previousStatus?.isOnline !== isCurrentlyOnline) {
-    history.push({
-      timestamp: new Date(),
-      status: isCurrentlyOnline ? 'connected' : 'disconnected'
-    });
-  }
   
   // Generate available networks with the real one included
   let availableNetworks = getAvailableNetworks();
@@ -138,7 +129,7 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
       upload: uploadData,
       total: downloadData + uploadData
     },
-    connectionHistory: history,
+    connectionHistory: connectionHistory,
     availableNetworks: availableNetworks
   };
 };

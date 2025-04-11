@@ -3,9 +3,11 @@ import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Wifi, WifiOff, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Wifi, WifiOff, RefreshCw, AlertTriangle, History } from 'lucide-react';
 import { NetworkStatus } from '@/hooks/network/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getNetworkStabilityRating } from '@/hooks/network/networkHistoryUtils';
+import { useNavigate } from 'react-router-dom';
 
 interface NetworkStatusMonitorProps {
   networkStatus: NetworkStatus | null;
@@ -24,6 +26,8 @@ export const NetworkStatusMonitor: React.FC<NetworkStatusMonitorProps> = ({
   refreshNetworkStatus,
   updateInterval
 }) => {
+  const navigate = useNavigate();
+  
   // Function to format time
   const formatTime = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -39,6 +43,9 @@ export const NetworkStatusMonitor: React.FC<NetworkStatusMonitorProps> = ({
   
   // Get correct count of available networks
   const availableNetworksCount = networkStatus?.availableNetworks?.length || 0;
+  
+  // Get network stability info
+  const stabilityInfo = getNetworkStabilityRating();
 
   return (
     <Card>
@@ -86,11 +93,40 @@ export const NetworkStatusMonitor: React.FC<NetworkStatusMonitorProps> = ({
               </div>
             </div>
             
+            {stabilityInfo.score !== null && (
+              <div className="flex items-center justify-between px-2 py-1.5 bg-muted/50 rounded-md">
+                <span className="text-sm">Network Stability:</span>
+                <Badge 
+                  variant="outline" 
+                  className={`capitalize ${
+                    stabilityInfo.rating === 'excellent' ? 'bg-green-100 text-green-800' : 
+                    stabilityInfo.rating === 'good' ? 'bg-blue-100 text-blue-800' : 
+                    stabilityInfo.rating === 'fair' ? 'bg-amber-100 text-amber-800' : 
+                    'bg-red-100 text-red-800'
+                  }`}
+                >
+                  {stabilityInfo.rating}
+                </Badge>
+              </div>
+            )}
+            
             <div>
-              <h4 className="text-sm font-medium mb-2">Connection History</h4>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium">Connection History</h4>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="h-6 text-xs flex items-center gap-1"
+                  onClick={() => navigate('/wifi')}
+                >
+                  <History size={12} />
+                  View All
+                </Button>
+              </div>
+              
               {connectionEvents.length > 0 ? (
                 <div className="max-h-40 overflow-y-auto border rounded-md">
-                  {connectionEvents.slice().reverse().map((event, idx) => (
+                  {connectionEvents.slice().reverse().slice(0, 5).map((event, idx) => (
                     <div key={idx} className="p-2 flex items-center justify-between border-b last:border-b-0">
                       <div className="flex items-center gap-2">
                         {event.status === 'connected' ? (
@@ -99,12 +135,21 @@ export const NetworkStatusMonitor: React.FC<NetworkStatusMonitorProps> = ({
                           <WifiOff className="h-4 w-4 text-red-500" />
                         )}
                         <span className="text-sm capitalize">{event.status}</span>
+                        <span className="text-xs text-gray-500">
+                          to {event.ssid}
+                        </span>
                       </div>
                       <span className="text-xs text-gray-500">
-                        {formatTime(event.timestamp)}
+                        {formatTime(new Date(event.timestamp))}
                       </span>
                     </div>
                   ))}
+                  
+                  {connectionEvents.length > 5 && (
+                    <div className="p-2 text-center text-sm text-muted-foreground border-t">
+                      {connectionEvents.length - 5} more events
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center p-4 border rounded-md bg-muted/40">

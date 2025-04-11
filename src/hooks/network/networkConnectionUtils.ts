@@ -21,6 +21,25 @@ export const connectToNetwork = async (ssid: string, password: string) => {
     localStorage.setItem('connected_network_name', ssid);
     localStorage.setItem('current_browser_network', ssid);
     
+    // Store connection timestamp
+    const connectionEvent = {
+      timestamp: new Date(),
+      ssid,
+      status: 'connected'
+    };
+    
+    // Store connection history
+    const historyString = localStorage.getItem('connection_history');
+    const history = historyString ? JSON.parse(historyString) : [];
+    history.push(connectionEvent);
+    
+    // Limit history to last 20 entries
+    if (history.length > 20) {
+      history.shift();
+    }
+    
+    localStorage.setItem('connection_history', JSON.stringify(history));
+    
     toast.success(`Connected to ${ssid}`);
     return { success: true, error: null };
   } catch (err) {
@@ -44,6 +63,25 @@ export const disconnectFromNetwork = async (currentNetworkName?: string) => {
     // Simulate disconnection delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     
+    // Store disconnection event
+    const disconnectEvent = {
+      timestamp: new Date(),
+      ssid: currentNetworkName,
+      status: 'disconnected'
+    };
+    
+    // Update connection history
+    const historyString = localStorage.getItem('connection_history');
+    const history = historyString ? JSON.parse(historyString) : [];
+    history.push(disconnectEvent);
+    
+    // Limit history to last 20 entries
+    if (history.length > 20) {
+      history.shift();
+    }
+    
+    localStorage.setItem('connection_history', JSON.stringify(history));
+    
     // Clear the stored network name
     localStorage.removeItem('last_connected_network');
     localStorage.removeItem('connected_network_name');
@@ -56,4 +94,47 @@ export const disconnectFromNetwork = async (currentNetworkName?: string) => {
     toast.error('Failed to disconnect from network');
     return false;
   }
+};
+
+// Function to get connection history
+export const getConnectionHistory = () => {
+  const historyString = localStorage.getItem('connection_history');
+  if (!historyString) return [];
+  
+  try {
+    const history = JSON.parse(historyString);
+    // Convert string timestamps to Date objects
+    return history.map((event: any) => ({
+      ...event,
+      timestamp: new Date(event.timestamp)
+    }));
+  } catch (err) {
+    console.error('Error parsing connection history:', err);
+    return [];
+  }
+};
+
+// Function to clear connection history
+export const clearConnectionHistory = () => {
+  localStorage.removeItem('connection_history');
+  toast.info('Connection history cleared');
+  return true;
+};
+
+// Function to check if the device is currently connected to a network
+export const isDeviceConnected = () => {
+  return navigator.onLine;
+};
+
+// Function to get current network SSID
+export const getCurrentNetworkName = () => {
+  // Try multiple potential sources for the network name
+  const userProvidedName = localStorage.getItem('user_provided_network_name');
+  const detectedName = localStorage.getItem('webrtc_detected_ssid');
+  const browserNetwork = localStorage.getItem('current_browser_network');
+  const connectedNetwork = localStorage.getItem('connected_network_name');
+  const lastConnected = localStorage.getItem('last_connected_network');
+  
+  // Return the first available network name
+  return userProvidedName || detectedName || browserNetwork || connectedNetwork || lastConnected;
 };
