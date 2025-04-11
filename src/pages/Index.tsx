@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
@@ -13,13 +13,18 @@ import WifiAnalysis from '../components/WifiAnalysis';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const navigate = useNavigate();
 
   const handleTabChange = (tab: string) => {
     if (tab === 'networks') {
       navigate('/networks');
     } else {
-      setActiveTab(tab);
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setActiveTab(tab);
+        setIsTransitioning(false);
+      }, 300);
     }
   };
 
@@ -52,8 +57,10 @@ const Index = () => {
           <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} />
         </div>
         <div className="flex-grow overflow-y-auto">
-          <div className="max-w-screen-xl mx-auto p-4 md:p-6 animate-fade-in">
-            {renderContent()}
+          <div className="max-w-screen-xl mx-auto p-4 md:p-6">
+            <div className={`transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100 animate-fade-in'}`}>
+              {renderContent()}
+            </div>
           </div>
         </div>
       </div>
