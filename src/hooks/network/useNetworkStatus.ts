@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { generateNetworkStatus } from './networkStatusGenerator';
 import { NetworkStatus } from './types';
+import { connectNewDevice, disconnectDevice } from './connectedDevices';
 
 export const useNetworkStatus = () => {
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus | null>(null);
@@ -34,7 +35,7 @@ export const useNetworkStatus = () => {
     }
   }, [networkStatus]);
 
-  // Function to connect to a WiFi network (simulated)
+  // Function to connect to a WiFi network
   const connectToNetwork = async (ssid: string, password: string) => {
     try {
       toast.info(`Connecting to ${ssid}...`);
@@ -43,15 +44,20 @@ export const useNetworkStatus = () => {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Simple password validation (in a real system, this would be done by the router)
-      // Most WiFi passwords require at least 8 characters
       if (password.length < 8) {
         toast.error(`Failed to connect to ${ssid}: Invalid password (must be at least 8 characters)`);
         return false;
       }
       
+      // Store the connected network name for real-time detection
+      localStorage.setItem('last_connected_network', ssid);
+      
       // In a real app, this would make API calls to your router/gateway
       // Update the network status after connecting
       await fetchNetworkStatus();
+      
+      // Simulate a new device connecting when the network changes
+      connectNewDevice();
       
       toast.success(`Connected to ${ssid}`);
       return true;
@@ -62,7 +68,7 @@ export const useNetworkStatus = () => {
     }
   };
 
-  // Function to disconnect from current network (simulated)
+  // Function to disconnect from current network
   const disconnectFromNetwork = async () => {
     try {
       if (!networkStatus?.networkName) {
@@ -70,15 +76,22 @@ export const useNetworkStatus = () => {
         return false;
       }
       
-      toast.info(`Disconnecting from ${networkStatus.networkName}...`);
+      const currentNetworkName = networkStatus.networkName;
+      toast.info(`Disconnecting from ${currentNetworkName}...`);
       
       // Simulate disconnection delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // Clear the stored network name
+      localStorage.removeItem('last_connected_network');
+      
+      // Simulate a device disconnecting when the network changes
+      disconnectDevice();
+      
       // In a real app, this would make API calls to your router/gateway
       await fetchNetworkStatus();
       
-      toast.success(`Disconnected from ${networkStatus.networkName}`);
+      toast.success(`Disconnected from ${currentNetworkName}`);
       return true;
     } catch (err) {
       console.error('Error disconnecting from network:', err);
@@ -86,6 +99,29 @@ export const useNetworkStatus = () => {
       return false;
     }
   };
+
+  // Monitor real network connection status using navigator.onLine
+  useEffect(() => {
+    const handleOnline = () => {
+      toast.success("Your device is connected to the internet");
+      fetchNetworkStatus();
+    };
+    
+    const handleOffline = () => {
+      toast.error("Your device lost internet connection");
+      fetchNetworkStatus();
+    };
+    
+    // Add event listeners
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [fetchNetworkStatus]);
 
   // Setup/cleanup for the interval timer with proper dependency tracking
   useEffect(() => {
@@ -130,6 +166,21 @@ export const useNetworkStatus = () => {
     toast.info(`Update interval set to ${ms/1000} seconds`);
   };
 
+  // Simulate device connection/disconnection
+  const simulateDeviceConnect = async () => {
+    const newCount = connectNewDevice();
+    toast.info(`New device connected to network (${newCount} devices total)`);
+    await fetchNetworkStatus();
+    return true;
+  };
+  
+  const simulateDeviceDisconnect = async () => {
+    const newCount = disconnectDevice();
+    toast.info(`Device disconnected from network (${newCount} devices remaining)`);
+    await fetchNetworkStatus();
+    return true;
+  };
+
   return {
     networkStatus,
     isLoading,
@@ -140,6 +191,8 @@ export const useNetworkStatus = () => {
     updateInterval,
     setRefreshRate,
     connectToNetwork,
-    disconnectFromNetwork
+    disconnectFromNetwork,
+    simulateDeviceConnect,
+    simulateDeviceDisconnect
   };
 };

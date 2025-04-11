@@ -9,6 +9,9 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   // Try to get real network information where possible
   const realNetworkInfo = await fetchRealNetworkInfo();
   
+  // Get device connection counts to simulate real-time connected devices
+  const connectedDeviceCount = parseInt(localStorage.getItem('connected_device_count') || '5');
+  
   // Generate realistic dynamic values for what we can't get from the browser
   const signalStrengthDb = -(Math.floor(Math.random() * 30) + 40); // Stronger signal than before
   const downloadSpeed = Math.floor(Math.random() * 30) + 90; // Higher speed for 5G network
@@ -45,8 +48,24 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   // Generate sample available networks from the user's image
   const availableNetworks = getAvailableNetworks();
   
+  // Check for connected network in available networks
+  const networkName = realNetworkInfo.networkName || 'YAKSO HOSTEL 5G';
+  
+  // Check if the network we're connected to is in the available networks list
+  const connectedNetworkExists = availableNetworks.some(network => network.ssid === networkName);
+  
+  // If not, add it (this ensures our connected network shows in the available list)
+  if (!connectedNetworkExists && networkName) {
+    availableNetworks.unshift({
+      id: availableNetworks.length + 1,
+      ssid: networkName,
+      signal: -50, // Strong signal since we're connected to it
+      security: 'WPA2'
+    });
+  }
+  
   return {
-    networkName: realNetworkInfo.networkName || 'YAKSO HOSTEL 5G',
+    networkName: networkName,
     localIp: '192.168.1.2',
     publicIp: realNetworkInfo.publicIp || '203.0.113.1',
     gatewayIp: realNetworkInfo.gatewayIp || '192.168.1.1',
@@ -55,7 +74,7 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
     networkType: realNetworkInfo.networkType || '802.11ac (5GHz)',
     macAddress: '00:1B:44:11:3A:B7',
     dnsServer: '8.8.8.8, 8.8.4.4',
-    connectedDevices: generateConnectedDevices(),
+    connectedDevices: generateConnectedDevices(connectedDeviceCount),
     lastUpdated: new Date(),
     isOnline: isCurrentlyOnline,
     connectionSpeed: {

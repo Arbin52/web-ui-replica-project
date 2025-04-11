@@ -1,8 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { Button } from '@/components/ui/button';
+import { Smartphone, WifiOff } from 'lucide-react';
 import '../overview/index.css';
 
 // Import our components
@@ -17,7 +19,9 @@ const WifiManager: React.FC = () => {
     isLoading, 
     refreshNetworkStatus,
     connectToNetwork,
-    disconnectFromNetwork
+    disconnectFromNetwork,
+    simulateDeviceConnect,
+    simulateDeviceDisconnect
   } = useNetworkStatus();
   
   const [isConnecting, setIsConnecting] = useState(false);
@@ -26,6 +30,18 @@ const WifiManager: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [scanInProgress, setScanInProgress] = useState(false);
+
+  // Monitor navigator.onLine directly for immediate feedback
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  useEffect(() => {
+    const handleOnlineStatus = () => setIsOnline(navigator.onLine);
+    window.addEventListener('online', handleOnlineStatus);
+    window.addEventListener('offline', handleOnlineStatus);
+    return () => {
+      window.removeEventListener('online', handleOnlineStatus);
+      window.removeEventListener('offline', handleOnlineStatus);
+    };
+  }, []);
 
   const getSignalStrength = (signalValue: number) => {
     const percentage = 100 - (Math.abs(signalValue) - 30) * 1.5;
@@ -90,6 +106,36 @@ const WifiManager: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2">
+          <div className={`h-3 w-3 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+          <span className="text-sm text-muted-foreground">
+            {isOnline ? 'Your device is online' : 'Your device is offline'}
+          </span>
+        </div>
+
+        <div className="flex gap-2">
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={simulateDeviceConnect}
+            className="flex items-center gap-1"
+          >
+            <Smartphone size={14} />
+            Sim. Device Connect
+          </Button>
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={simulateDeviceDisconnect}
+            className="flex items-center gap-1"
+          >
+            <WifiOff size={14} />
+            Sim. Device Disconnect
+          </Button>
+        </div>
+      </div>
+
       <Tabs defaultValue="current">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="current">Current Connection</TabsTrigger>

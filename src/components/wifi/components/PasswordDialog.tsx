@@ -40,6 +40,11 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({
       return;
     }
     
+    // Store the selected network name for real-time detection simulation
+    if (selectedNetwork) {
+      localStorage.setItem('last_connected_network', selectedNetwork.ssid);
+    }
+    
     handleSubmitPassword();
   };
 
