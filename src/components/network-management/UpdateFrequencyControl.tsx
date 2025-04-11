@@ -18,14 +18,14 @@ export const UpdateFrequencyControl: React.FC<UpdateFrequencyControlProps> = ({
         <p className="text-sm text-muted-foreground">Adjust how often network data is refreshed</p>
       </div>
       <div className="flex gap-2">
-        {[2000, 5000, 10000].map(interval => (
+        {[10000, 30000, 60000].map(interval => (
           <Button 
             key={interval} 
             size="sm"
             variant={updateInterval === interval ? "default" : "outline"}
             onClick={() => setRefreshRate(interval)}
           >
-            {interval / 1000}s
+            {interval === 60000 ? '1m' : `${interval / 1000}s`}
           </Button>
         ))}
       </div>

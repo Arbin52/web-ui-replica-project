@@ -25,7 +25,7 @@ export const useNetworkStatus = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLiveUpdating, setIsLiveUpdating] = useState(true);
-  const [updateInterval, setUpdateInterval] = useState(500); // Even faster updates (500ms)
+  const [updateInterval, setUpdateInterval] = useState(60000); // Changed to 1 minute (60000ms)
   const [connectionError, setConnectionError] = useState<string | null>(null);
   
   // Use a ref to store the interval ID to prevent it from being affected by state changes
@@ -133,7 +133,7 @@ export const useNetworkStatus = () => {
 
   const setRefreshRate = (ms: number) => {
     setUpdateInterval(ms);
-    toast.info(`Update interval set to ${ms/1000} seconds`);
+    toast.info(`Update interval set to ${ms >= 60000 ? (ms/60000) + ' minute' + (ms === 60000 ? '' : 's') : (ms/1000) + ' seconds'}`);
   };
 
   // Simulate device connection/disconnection
