@@ -10,8 +10,8 @@ export const useWifiScan = (
 ) => {
   const [scanInProgress, setScanInProgress] = useState(false);
   
-  // Handle scanning for networks
-  const handleScanNetworks = useCallback(async () => {
+  // Handle scanning for networks - return Promise<void> to match expected type
+  const handleScanNetworks = useCallback(async (): Promise<void> => {
     setScanInProgress(true);
     
     // Do an immediate refresh

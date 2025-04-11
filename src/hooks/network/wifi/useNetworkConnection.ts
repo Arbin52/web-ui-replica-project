@@ -35,7 +35,7 @@ export const useNetworkConnection = (
         
         // Force immediate refresh after successful connection
         setTimeout(() => {
-          refreshNetworkStatus();
+          void refreshNetworkStatus();
         }, 500);
         
         return true;
@@ -64,14 +64,14 @@ export const useNetworkConnection = (
     }
   };
   
-  // Handle saving a custom network name
-  const handleSaveNetworkName = useCallback((customNetworkName: string) => {
+  // Handle saving a custom network name - return Promise<boolean> to ensure consistent async handling
+  const handleSaveNetworkName = useCallback(async (customNetworkName: string): Promise<boolean> => {
     if (customNetworkName.trim()) {
       localStorage.setItem('user_provided_network_name', customNetworkName.trim());
       
       // Apply changes immediately
       setTimeout(() => {
-        refreshNetworkStatus();
+        void refreshNetworkStatus();
       }, 100);
       
       return true;
@@ -92,7 +92,7 @@ export const useNetworkConnection = (
     // If not in list, trigger a refresh to update the list
     if (!currentNetworkInList) {
       console.log("Current network not in available list, refreshing");
-      refreshNetworkStatus();
+      void refreshNetworkStatus();
     }
   }, [networkStatus, refreshNetworkStatus]);
 
