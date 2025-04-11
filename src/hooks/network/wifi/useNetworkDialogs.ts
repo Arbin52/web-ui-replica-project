@@ -14,15 +14,14 @@ export const useNetworkDialogs = () => {
   const [showNetworkNameDialog, setShowNetworkNameDialog] = useState(false);
   const [customNetworkName, setCustomNetworkName] = useState('');
   
-  // Handle network name editing - return Promise<void> to match expected type
+  // Handle network name editing - ensure it returns Promise<void> to match expected type
   const handleEditNetworkName = useCallback(async (): Promise<void> => {
-    return new Promise((resolve) => {
-      // Get current network name if any
-      const currentName = localStorage.getItem('user_provided_network_name') || '';
-      setCustomNetworkName(currentName);
-      setShowNetworkNameDialog(true);
-      resolve();
-    });
+    // Get current network name if any
+    const currentName = localStorage.getItem('user_provided_network_name') || '';
+    setCustomNetworkName(currentName);
+    setShowNetworkNameDialog(true);
+    // Return resolved promise to satisfy Promise<void> return type
+    return Promise.resolve();
   }, []);
   
   return {

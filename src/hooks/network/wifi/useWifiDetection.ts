@@ -8,35 +8,31 @@ export const useWifiDetection = () => {
   const [detectedNetworkName, setDetectedNetworkName] = useState<string | null>(null);
   const [shouldPromptForNetworkName, setShouldPromptForNetworkName] = useState(false);
   
-  // Detect the current network name from various sources
+  // Detect the current network name from various sources - ensure it properly returns Promise<string | null>
   const detectRealNetworkName = useCallback(async (): Promise<string | null> => {
-    return new Promise((resolve) => {
-      const userProvidedName = localStorage.getItem('user_provided_network_name');
-      const detectedName = userProvidedName ||
-                          localStorage.getItem('webrtc_detected_ssid') ||
-                          localStorage.getItem('current_browser_network') || 
-                          localStorage.getItem('connected_network_name') ||
-                          localStorage.getItem('last_connected_network');
-      
-      if (detectedName && detectedName !== "Connected Network" && detectedName !== "Unknown Network") {
-        console.log("Detected network name:", detectedName);
-        setDetectedNetworkName(detectedName);
-        resolve(detectedName);
-        return;
+    const userProvidedName = localStorage.getItem('user_provided_network_name');
+    const detectedName = userProvidedName ||
+                        localStorage.getItem('webrtc_detected_ssid') ||
+                        localStorage.getItem('current_browser_network') || 
+                        localStorage.getItem('connected_network_name') ||
+                        localStorage.getItem('last_connected_network');
+    
+    if (detectedName && detectedName !== "Connected Network" && detectedName !== "Unknown Network") {
+      console.log("Detected network name:", detectedName);
+      setDetectedNetworkName(detectedName);
+      return detectedName;
+    }
+    
+    // If online but no name detected, we might need user input
+    if (navigator.onLine && (!detectedName || detectedName === "Connected Network" || detectedName === "Unknown Network")) {
+      if (!userProvidedName) {
+        console.log("No network name detected but online - user input may be needed");
+        setShouldPromptForNetworkName(true);
+        return null;
       }
-      
-      // If online but no name detected, we might need user input
-      if (navigator.onLine && (!detectedName || detectedName === "Connected Network" || detectedName === "Unknown Network")) {
-        if (!userProvidedName) {
-          console.log("No network name detected but online - user input may be needed");
-          setShouldPromptForNetworkName(true);
-          resolve(null);
-          return;
-        }
-      }
-      
-      resolve(detectedName);
-    });
+    }
+    
+    return detectedName;
   }, []);
   
   // Check if we need to prompt for network name
