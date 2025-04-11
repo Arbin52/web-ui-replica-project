@@ -6,9 +6,10 @@ import { DashboardCard } from '@/components/ui/dashboard-card';
 interface NetworkStatusCardsProps {
   networkStatus: any;
   isLoading: boolean;
+  handleGatewayClick?: () => void; // Added this prop
 }
 
-export const NetworkStatusCards: React.FC<NetworkStatusCardsProps> = ({ networkStatus, isLoading }) => {
+export const NetworkStatusCards: React.FC<NetworkStatusCardsProps> = ({ networkStatus, isLoading, handleGatewayClick }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <DashboardCard
