@@ -31,10 +31,7 @@ export const useNetworkStatus = () => {
   // Use a ref to store the interval ID to prevent it from being affected by state changes
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Set up polling for network status
-  useNetworkPolling(isLiveUpdating, updateInterval, fetchNetworkStatus, intervalRef);
-  
-  // Network status fetching function
+  // Network status fetching function - moved before useNetworkPolling to fix the order issue
   const fetchNetworkStatus = useCallback(async () => {
     console.log("Fetching network status...");
     // In a real application, this would make API calls to get actual network data
@@ -52,6 +49,9 @@ export const useNetworkStatus = () => {
       setIsLoading(false);
     }
   }, [networkStatus]);
+  
+  // Set up polling for network status - now this comes after fetchNetworkStatus is declared
+  useNetworkPolling(isLiveUpdating, updateInterval, fetchNetworkStatus, intervalRef);
 
   // Function to connect to a WiFi network
   const connectToNetwork = async (ssid: string, password: string) => {

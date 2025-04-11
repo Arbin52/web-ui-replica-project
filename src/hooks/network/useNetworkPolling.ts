@@ -1,5 +1,6 @@
 
 import { useEffect, MutableRefObject } from 'react';
+import { setupNetworkChangeListeners, setupMouseMoveListener } from './refreshUtils';
 
 export const useNetworkPolling = (
   isLiveUpdating: boolean,
