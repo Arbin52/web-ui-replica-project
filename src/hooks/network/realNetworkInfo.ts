@@ -31,23 +31,16 @@ export const fetchRealNetworkInfo = async (): Promise<{
       }
     }
 
-    // For modern browsers, we can try to get WiFi network information
-    // Note: This is experimental and may only work with appropriate permissions
-    try {
-      if ('getNetworkInformation' in navigator) {
-        const networkInfo = await (navigator as any).getNetworkInformation();
-        if (networkInfo?.wifi?.ssid) {
-          networkName = networkInfo.wifi.ssid;
-        }
-      }
-    } catch (e) {
-      console.log("Could not access detailed network information:", e);
-    }
-    
-    // If we couldn't get the actual SSID, we'll check some common patterns
-    if (!networkName) {
-      // For demo purposes, try to simulate looking at the actual connected network
-      networkName = localStorage.getItem('last_connected_network') || "YAKSO HOSTEL 5G";
+    // Try to get the actual connected network name
+    // First check if we have a stored network from a previous connection
+    networkName = localStorage.getItem('last_connected_network');
+
+    // If no stored network and the device is online, we'll provide a default name
+    // In a real app, this would be retrieved from the system's network interfaces
+    if (!networkName && isOnline) {
+      // Check if any network is marked as connected in localStorage
+      const connectedNetworkFromStorage = localStorage.getItem('connected_network_name');
+      networkName = connectedNetworkFromStorage || "Connected WiFi";
     }
     
     // Fetch public IP from API

@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { Button } from '@/components/ui/button';
-import { Smartphone, WifiOff } from 'lucide-react';
+import { Smartphone, WifiOff, RefreshCw } from 'lucide-react';
 import '../overview/index.css';
 
 // Import our components
@@ -42,6 +42,18 @@ const WifiManager: React.FC = () => {
       window.removeEventListener('offline', handleOnlineStatus);
     };
   }, []);
+
+  // Periodically check the connection status
+  useEffect(() => {
+    const connectionCheck = setInterval(() => {
+      const networkName = localStorage.getItem('connected_network_name');
+      if (networkName && !isConnecting && !isDisconnecting) {
+        refreshNetworkStatus();
+      }
+    }, 5000);
+
+    return () => clearInterval(connectionCheck);
+  }, [isConnecting, isDisconnecting, refreshNetworkStatus]);
 
   const getSignalStrength = (signalValue: number) => {
     const percentage = 100 - (Math.abs(signalValue) - 30) * 1.5;
@@ -112,9 +124,24 @@ const WifiManager: React.FC = () => {
           <span className="text-sm text-muted-foreground">
             {isOnline ? 'Your device is online' : 'Your device is offline'}
           </span>
+          {networkStatus?.networkName && (
+            <span className="ml-2 text-sm font-medium">
+              Connected to: <span className="text-primary">{networkStatus.networkName}</span>
+            </span>
+          )}
         </div>
 
         <div className="flex gap-2">
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={handleScanNetworks}
+            disabled={scanInProgress}
+            className="flex items-center gap-1"
+          >
+            <RefreshCw size={14} className={scanInProgress ? 'animate-spin' : ''} />
+            {scanInProgress ? 'Scanning...' : 'Scan Networks'}
+          </Button>
           <Button 
             size="sm" 
             variant="outline"
@@ -157,7 +184,7 @@ const WifiManager: React.FC = () => {
         <TabsContent value="available" className="space-y-4">
           <AvailableNetworks 
             networkStatus={networkStatus}
-            isLoading={isLoading}
+            isLoading={isLoading || scanInProgress}
             scanInProgress={scanInProgress}
             handleScanNetworks={handleScanNetworks}
             handleConnect={handleConnect}

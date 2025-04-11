@@ -1,6 +1,6 @@
 
 import { fetchRealNetworkInfo } from './realNetworkInfo';
-import { generateConnectedDevices } from './connectedDevices';
+import { generateConnectedDevices, getConnectedDeviceStatus } from './connectedDevices';
 import { getAvailableNetworks } from './availableNetworks';
 import { NetworkStatus } from './types';
 import { toast } from 'sonner';
@@ -9,8 +9,8 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   // Try to get real network information where possible
   const realNetworkInfo = await fetchRealNetworkInfo();
   
-  // Get device connection counts to simulate real-time connected devices
-  const connectedDeviceCount = parseInt(localStorage.getItem('connected_device_count') || '5');
+  // Get device connection status to show real-time connected devices
+  const connectedDevices = getConnectedDeviceStatus();
   
   // Generate realistic dynamic values for what we can't get from the browser
   const signalStrengthDb = -(Math.floor(Math.random() * 30) + 40); // Stronger signal than before
@@ -36,20 +36,14 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
       status: isCurrentlyOnline ? 'connected' : 'disconnected'
     });
     
-    // Show toast notification on disconnection
-    if (!isCurrentlyOnline) {
-      toast.error("Network connection lost");
-    } else if (previousStatus !== null) {
-      // Only show reconnect toast if not first connection
-      toast.success("Network connection restored");
-    }
+    // Toast notification happens in the useNetworkStatus hook
   }
   
-  // Generate sample available networks from the user's image
+  // Generate sample available networks
   const availableNetworks = getAvailableNetworks();
   
-  // Check for connected network in available networks
-  const networkName = realNetworkInfo.networkName || 'YAKSO HOSTEL 5G';
+  // Get the connected network name
+  const networkName = realNetworkInfo.networkName || localStorage.getItem('connected_network_name') || (isCurrentlyOnline ? 'Connected WiFi' : undefined);
   
   // Check if the network we're connected to is in the available networks list
   const connectedNetworkExists = availableNetworks.some(network => network.ssid === networkName);
@@ -74,7 +68,7 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
     networkType: realNetworkInfo.networkType || '802.11ac (5GHz)',
     macAddress: '00:1B:44:11:3A:B7',
     dnsServer: '8.8.8.8, 8.8.4.4',
-    connectedDevices: generateConnectedDevices(connectedDeviceCount),
+    connectedDevices: connectedDevices.length > 0 ? connectedDevices : generateConnectedDevices(),
     lastUpdated: new Date(),
     isOnline: isCurrentlyOnline,
     connectionSpeed: {

@@ -1,20 +1,31 @@
 
-import React, { useState } from 'react';
+import React from 'react';
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { AlertCircle } from 'lucide-react';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 interface PasswordDialogProps {
   showPasswordDialog: boolean;
-  setShowPasswordDialog: (show: boolean) => void;
-  selectedNetwork: { id: number, ssid: string } | null;
+  setShowPasswordDialog: React.Dispatch<React.SetStateAction<boolean>>;
+  selectedNetwork: { id: number; ssid: string } | null;
   password: string;
-  setPassword: (password: string) => void;
+  setPassword: React.Dispatch<React.SetStateAction<string>>;
   handleSubmitPassword: () => void;
   isConnecting: boolean;
 }
+
+// Create a schema for the password
+const formSchema = z.object({
+  password: z
+    .string()
+    .min(8, { message: "Password must be at least 8 characters" })
+    .max(63, { message: "WiFi passwords can't be longer than 63 characters" })
+});
 
 const PasswordDialog: React.FC<PasswordDialogProps> = ({
   showPasswordDialog,
@@ -25,80 +36,77 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({
   handleSubmitPassword,
   isConnecting
 }) => {
-  const [passwordError, setPasswordError] = useState('');
-
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPassword(e.target.value);
-    // Clear error when user types
-    if (passwordError) setPasswordError('');
-  };
-
-  const validateAndSubmit = () => {
-    // Basic validation - most WiFi passwords require at least 8 characters
-    if (password.length < 8) {
-      setPasswordError('Password must be at least 8 characters');
-      return;
+  // Initialize the form with react-hook-form
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      password: ""
     }
-    
-    // Store the selected network name for real-time detection simulation
-    if (selectedNetwork) {
-      localStorage.setItem('last_connected_network', selectedNetwork.ssid);
-    }
-    
+  });
+
+  // Handle form submission
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    setPassword(values.password);
     handleSubmitPassword();
   };
 
+  // When dialog opens, reset the form
+  React.useEffect(() => {
+    if (showPasswordDialog) {
+      form.reset({ password: "" });
+    }
+  }, [showPasswordDialog, form]);
+
   return (
     <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Connect to {selectedNetwork?.ssid}</DialogTitle>
           <DialogDescription>
             Enter the password for this network to connect.
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input 
-              id="password" 
-              type="password" 
-              placeholder="Enter network password" 
-              value={password}
-              onChange={handlePasswordChange}
-              className={passwordError ? "border-red-500" : ""}
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input 
+                      id="password" 
+                      type="password" 
+                      placeholder="Enter network password" 
+                      {...field} 
+                      disabled={isConnecting}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {passwordError && (
-              <div className="flex items-center gap-2 text-sm text-red-500 mt-1">
-                <AlertCircle className="h-4 w-4" />
-                {passwordError}
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground mt-1">
-              Password should be at least 8 characters long
-            </p>
-          </div>
-        </div>
-        
-        <DialogFooter>
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              setPasswordError('');
-              setShowPasswordDialog(false);
-            }}
-            disabled={isConnecting}
-          >
-            Cancel
-          </Button>
-          <Button 
-            onClick={validateAndSubmit}
-            disabled={!password || isConnecting}
-          >
-            {isConnecting ? "Connecting..." : "Connect"}
-          </Button>
-        </DialogFooter>
+
+            <DialogFooter className="pt-4">
+              <Button 
+                variant="outline" 
+                type="button"
+                onClick={() => setShowPasswordDialog(false)}
+                disabled={isConnecting}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit"
+                disabled={isConnecting}
+              >
+                {isConnecting ? "Connecting..." : "Connect"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

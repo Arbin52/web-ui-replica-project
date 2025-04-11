@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { generateNetworkStatus } from './networkStatusGenerator';
 import { NetworkStatus } from './types';
-import { connectNewDevice, disconnectDevice } from './connectedDevices';
+import { connectNewDevice, disconnectDevice, getConnectedDeviceStatus, updateDeviceStatus } from './connectedDevices';
 
 export const useNetworkStatus = () => {
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus | null>(null);
@@ -19,7 +19,7 @@ export const useNetworkStatus = () => {
     // In a real application, this would make API calls to get actual network data
     try {
       // Simulate network request delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       // Generate network status data with real information where possible
       const data = await generateNetworkStatus(networkStatus);
@@ -51,6 +51,7 @@ export const useNetworkStatus = () => {
       
       // Store the connected network name for real-time detection
       localStorage.setItem('last_connected_network', ssid);
+      localStorage.setItem('connected_network_name', ssid);
       
       // In a real app, this would make API calls to your router/gateway
       // Update the network status after connecting
@@ -84,6 +85,7 @@ export const useNetworkStatus = () => {
       
       // Clear the stored network name
       localStorage.removeItem('last_connected_network');
+      localStorage.removeItem('connected_network_name');
       
       // Simulate a device disconnecting when the network changes
       disconnectDevice();
@@ -181,6 +183,20 @@ export const useNetworkStatus = () => {
     return true;
   };
 
+  // Get actual device status
+  const getDeviceStatus = () => {
+    return getConnectedDeviceStatus();
+  };
+
+  // Update a specific device's status
+  const setDeviceStatus = (deviceId: number, status: 'Online' | 'Offline') => {
+    const updated = updateDeviceStatus(deviceId, status);
+    if (updated) {
+      fetchNetworkStatus();
+    }
+    return updated;
+  };
+
   return {
     networkStatus,
     isLoading,
@@ -193,6 +209,8 @@ export const useNetworkStatus = () => {
     connectToNetwork,
     disconnectFromNetwork,
     simulateDeviceConnect,
-    simulateDeviceDisconnect
+    simulateDeviceDisconnect,
+    getDeviceStatus,
+    setDeviceStatus
   };
 };
