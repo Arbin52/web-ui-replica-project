@@ -9,7 +9,7 @@ import { TracerouteProgress } from './traceroute/TracerouteProgress';
 import { TracerouteResults, HopResult } from './traceroute/TracerouteResults';
 import { TracerouteVisualization } from './traceroute/TracerouteVisualization';
 import { TracerouteEmptyState } from './traceroute/TracerouteEmptyState';
-import { generateRandomIP } from './traceroute/utils';
+import { generateRandomIP, generateGeoLocation } from './traceroute/utils';
 
 const Traceroute: React.FC = () => {
   const [targetHost, setTargetHost] = useState('8.8.8.8');
@@ -43,6 +43,9 @@ const Traceroute: React.FC = () => {
       const progressPercent = (hopCount / totalHops) * 100;
       setTraceProgress(progressPercent);
       
+      // Generate geolocation data
+      const { country, city } = generateGeoLocation();
+      
       // Generate a random hop result
       const newHop: HopResult = {
         hop: hopCount,
@@ -52,7 +55,9 @@ const Traceroute: React.FC = () => {
         responseTime2: Math.random() > 0.2 ? Math.floor(Math.random() * 50 + 5) : null,
         responseTime3: Math.random() > 0.15 ? Math.floor(Math.random() * 50 + 5) : null,
         status: hopCount === totalHops ? 'success' : 
-                Math.random() > 0.9 ? 'timeout' : 'success'
+                Math.random() > 0.9 ? 'timeout' : 'success',
+        country,
+        city
       };
       
       setTraceResults(prev => [...prev, newHop]);

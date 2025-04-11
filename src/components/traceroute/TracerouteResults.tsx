@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Signal, AlertCircle } from 'lucide-react';
+import { Signal, AlertCircle, Globe } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -18,6 +18,8 @@ export interface HopResult {
   responseTime2: number | null;
   responseTime3: number | null;
   status: 'success' | 'timeout' | 'error';
+  country?: string;
+  city?: string;
 }
 
 interface TracerouteResultsProps {
@@ -55,6 +57,7 @@ export const TracerouteResults: React.FC<TracerouteResultsProps> = ({
             <TableHead className="hidden md:table-cell">Hostname</TableHead>
             <TableHead>Response Time (ms)</TableHead>
             <TableHead className="w-20">Status</TableHead>
+            <TableHead className="hidden md:table-cell">Location</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -91,6 +94,16 @@ export const TracerouteResults: React.FC<TracerouteResultsProps> = ({
                   <span className={`flex items-center ${getHopStatusColor(hop)}`}>
                     <Signal size={16} className="mr-1" /> OK
                   </span>
+                )}
+              </TableCell>
+              <TableCell className="hidden md:table-cell">
+                {hop.country && hop.city ? (
+                  <span className="flex items-center">
+                    <Globe size={16} className="mr-1 text-blue-500" />
+                    {hop.city}, {hop.country}
+                  </span>
+                ) : (
+                  <span className="text-gray-400">Unknown</span>
                 )}
               </TableCell>
             </TableRow>
