@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Info, Router, ExternalLink, RefreshCw, Wifi, Globe, Activity, PauseCircle, PlayCircle, Clock, BarChart2, Signal } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -24,9 +25,14 @@ const Overview: React.FC = () => {
   const [activeInfoTab, setActiveInfoTab] = useState('basic');
   const [activeNetworkTab, setActiveNetworkTab] = useState('connected');
 
+  // Fixed gateway IP handler to open in new tab with proper URL formatting
   const handleGatewayClick = () => {
     if (networkStatus?.gatewayIp) {
       let url = networkStatus.gatewayIp;
+      // Make sure URL has proper protocol prefix
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'http://' + url;
+      }
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
@@ -63,6 +69,7 @@ const Overview: React.FC = () => {
 
   return (
     <div className="content-card animate-fade-in">
+      {/* Header section */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <Info size={24} />
@@ -114,6 +121,7 @@ const Overview: React.FC = () => {
         </div>
       </div>
 
+      {/* Network status cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <DashboardCard
           title="Network Status"
@@ -149,6 +157,7 @@ const Overview: React.FC = () => {
         />
       </div>
 
+      {/* Data usage cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <DashboardCard
           title="Data Downloaded"
@@ -172,6 +181,7 @@ const Overview: React.FC = () => {
         />
       </div>
       
+      {/* Network info and device tabs */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div>
           <Tabs value={activeInfoTab} onValueChange={setActiveInfoTab} className="w-full">
@@ -194,7 +204,7 @@ const Overview: React.FC = () => {
                 <>
                   <div className="info-row">
                     <div className="info-label">Wi-Fi Network Name:</div> 
-                    <div className="info-value">{networkStatus?.networkName}</div>
+                    <div className="info-value font-semibold">{networkStatus?.networkName || "Not Available"}</div>
                   </div>
                   
                   <div className="info-row">
@@ -217,7 +227,7 @@ const Overview: React.FC = () => {
                               onClick={handleGatewayClick} 
                               className="flex items-center gap-1 text-primary hover:underline"
                             >
-                              {networkStatus?.gatewayIp.replace('http://', '')}
+                              {networkStatus?.gatewayIp}
                               <ExternalLink size={14} />
                             </button>
                           </TooltipTrigger>
@@ -356,7 +366,7 @@ const Overview: React.FC = () => {
                         <tbody className="divide-y divide-gray-100">
                           {networkStatus.availableNetworks.map((network) => (
                             <tr key={network.id} className="hover:bg-gray-50">
-                              <td className="py-3">{network.ssid}</td>
+                              <td className="py-3 font-medium">{network.ssid}</td>
                               <td className="py-3">
                                 <div className="flex items-center gap-2">
                                   <div className="w-16 bg-gray-200 rounded-full h-2">
