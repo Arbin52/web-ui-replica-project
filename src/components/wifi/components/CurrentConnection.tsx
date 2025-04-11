@@ -26,6 +26,13 @@ const CurrentConnection: React.FC<CurrentConnectionProps> = ({
   scanInProgress,
   onEditNetworkName
 }) => {
+  // Format network name for display - don't show generic names like "Connected Network"
+  const displayNetworkName = () => {
+    const name = networkStatus?.networkName || "Unknown Network";
+    if (name === "Connected Network") return "Unknown Network";
+    return name;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -52,18 +59,16 @@ const CurrentConnection: React.FC<CurrentConnectionProps> = ({
             <div className="flex justify-between items-center">
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="font-semibold text-lg">{networkStatus.networkName || "Unknown Network"}</p>
-                  {onEditNetworkName && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6" 
-                      onClick={onEditNetworkName}
-                      title="Edit network name"
-                    >
-                      <Edit2 size={14} />
-                    </Button>
-                  )}
+                  <p className="font-semibold text-lg">{displayNetworkName()}</p>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6" 
+                    onClick={onEditNetworkName}
+                    title="Edit network name"
+                  >
+                    <Edit2 size={14} />
+                  </Button>
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Connected since {new Date(networkStatus.lastUpdated).toLocaleTimeString()}

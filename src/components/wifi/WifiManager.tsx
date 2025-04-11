@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
@@ -43,12 +43,40 @@ const WifiManager: React.FC = () => {
   // Monitor navigator.onLine directly for immediate feedback
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   
+  // Enhanced network detection that runs more frequently
+  const detectRealNetworkName = useCallback(() => {
+    const userProvidedName = localStorage.getItem('user_provided_network_name');
+    const detectedName = userProvidedName ||
+                         localStorage.getItem('webrtc_detected_ssid') ||
+                         localStorage.getItem('current_browser_network') || 
+                         localStorage.getItem('connected_network_name') ||
+                         localStorage.getItem('last_connected_network');
+    
+    if (detectedName && detectedName !== "Connected Network" && detectedName !== "Unknown Network") {
+      console.log("Detected network name:", detectedName);
+      setDetectedNetworkName(detectedName);
+      return detectedName;
+    }
+    
+    // If online but no name detected, prompt user to provide one
+    if (navigator.onLine && (!detectedName || detectedName === "Connected Network" || detectedName === "Unknown Network")) {
+      // Don't automatically show the dialog, but update the state to show we need user input
+      if (!userProvidedName) {
+        console.log("No network name detected but online - user input may be needed");
+        return null;
+      }
+    }
+    
+    return detectedName;
+  }, []);
+  
   useEffect(() => {
     const handleOnlineStatus = () => {
       console.log("Online status changed:", navigator.onLine);
       setIsOnline(navigator.onLine);
       // Refresh network status when online state changes
       refreshNetworkStatus();
+      detectRealNetworkName();
     };
     window.addEventListener('online', handleOnlineStatus);
     window.addEventListener('offline', handleOnlineStatus);
@@ -56,7 +84,7 @@ const WifiManager: React.FC = () => {
       window.removeEventListener('online', handleOnlineStatus);
       window.removeEventListener('offline', handleOnlineStatus);
     };
-  }, [refreshNetworkStatus]);
+  }, [refreshNetworkStatus, detectRealNetworkName]);
 
   // Monitor real network connection changes if available
   useEffect(() => {
@@ -65,6 +93,7 @@ const WifiManager: React.FC = () => {
       const handleConnectionChange = () => {
         console.log("Network connection type changed:", connection);
         refreshNetworkStatus();
+        detectRealNetworkName();
       };
       
       connection.addEventListener('change', handleConnectionChange);
@@ -73,41 +102,30 @@ const WifiManager: React.FC = () => {
         connection.removeEventListener('change', handleConnectionChange);
       };
     }
-  }, [refreshNetworkStatus]);
+  }, [refreshNetworkStatus, detectRealNetworkName]);
 
   // Initial detection of network status
   useEffect(() => {
     const doInitialCheck = async () => {
       console.log("Doing initial network check");
       await refreshNetworkStatus();
-      
-      // Try to detect the OS-reported network name
-      const userProvidedName = localStorage.getItem('user_provided_network_name');
-      const detectedName = userProvidedName ||
-                           localStorage.getItem('webrtc_detected_ssid') ||
-                           localStorage.getItem('current_browser_network') || 
-                           localStorage.getItem('connected_network_name') ||
-                           localStorage.getItem('last_connected_network');
-      
-      if (detectedName) {
-        console.log("Detected network name on initial load:", detectedName);
-        setDetectedNetworkName(detectedName);
-      }
+      detectRealNetworkName();
     };
     
     doInitialCheck();
     
-    // Refresh network status every second to detect changes
+    // Check network status very frequently for real-time updates
     const fastUpdateInterval = setInterval(() => {
       checkCurrentNetworkImmediately();
+      detectRealNetworkName();
     }, 1000);
     
     return () => clearInterval(fastUpdateInterval);
-  }, [refreshNetworkStatus, checkCurrentNetworkImmediately]);
+  }, [refreshNetworkStatus, checkCurrentNetworkImmediately, detectRealNetworkName]);
 
   // Update detected network name when network status changes
   useEffect(() => {
-    if (networkStatus?.networkName && networkStatus.networkName !== 'Unknown Network' && networkStatus.networkName !== 'Unknown WiFi Network') {
+    if (networkStatus?.networkName && networkStatus.networkName !== 'Unknown Network' && networkStatus.networkName !== 'Connected Network') {
       setDetectedNetworkName(networkStatus.networkName);
     }
   }, [networkStatus?.networkName]);
@@ -185,7 +203,18 @@ const WifiManager: React.FC = () => {
   };
 
   const handleEditNetworkName = () => {
-    setCustomNetworkName(detectedNetworkName || networkStatus?.networkName || '');
+    // When editing, start with the best name we have
+    const startingName = detectedNetworkName || 
+                        networkStatus?.networkName || 
+                        localStorage.getItem('user_provided_network_name') || 
+                        '';
+                        
+    // Don't use "Connected Network" or "Unknown Network" as starting values
+    const cleanedName = startingName === "Connected Network" || startingName === "Unknown Network" 
+                        ? "" 
+                        : startingName;
+                        
+    setCustomNetworkName(cleanedName);
     setShowNetworkNameDialog(true);
   };
 
@@ -224,6 +253,12 @@ const WifiManager: React.FC = () => {
     checkIfCurrentNetworkIsInList();
   }, [networkStatus?.networkName, isOnline]);
 
+  // Calculate if we need to prompt for network name
+  const shouldPromptForNetworkName = isOnline && 
+                                     (!detectedNetworkName || 
+                                      detectedNetworkName === "Unknown Network" || 
+                                      detectedNetworkName === "Connected Network");
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-4">
@@ -232,9 +267,14 @@ const WifiManager: React.FC = () => {
           <span className="text-sm text-muted-foreground">
             {isOnline ? 'Your device is online' : 'Your device is offline'}
           </span>
-          {detectedNetworkName && (
+          
+          {/* Always show network name section if online, with edit button */}
+          {isOnline && (
             <div className="ml-2 text-sm font-medium flex items-center">
-              Connected to: <span className="text-primary ml-1">{detectedNetworkName}</span>
+              Connected to: 
+              <span className={`ml-1 ${shouldPromptForNetworkName ? 'text-amber-500' : 'text-primary'}`}>
+                {shouldPromptForNetworkName ? 'Unknown Network' : detectedNetworkName}
+              </span>
               <Button 
                 variant="ghost" 
                 size="icon" 
@@ -244,6 +284,18 @@ const WifiManager: React.FC = () => {
               >
                 <Edit2 size={12} />
               </Button>
+              
+              {/* Show prompt button if we can't detect the network name */}
+              {shouldPromptForNetworkName && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs ml-2 h-6"
+                  onClick={handleEditNetworkName}
+                >
+                  Set Network Name
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -347,6 +399,7 @@ const WifiManager: React.FC = () => {
                 placeholder="Enter network name" 
                 value={customNetworkName}
                 onChange={(e) => setCustomNetworkName(e.target.value)}
+                autoFocus
               />
             </div>
           </div>
