@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Router, Smartphone, Laptop, Desktop, Tv, TvIcon, TabletIcon } from 'lucide-react';
+import { Router, Smartphone, Laptop, Monitor, Tv, TabletIcon } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DeviceList } from '@/components/devices/DeviceList';
@@ -20,7 +20,8 @@ export const ConnectedDevices: React.FC<ConnectedDevicesProps> = ({ networkStatu
       case 'laptop':
         return <Laptop size={16} />;
       case 'desktop':
-        return <Desktop size={16} />;
+      case 'computer':
+        return <Monitor size={16} />;
       case 'tv':
       case 'television':
         return <Tv size={16} />;
@@ -59,16 +60,16 @@ export const ConnectedDevices: React.FC<ConnectedDevicesProps> = ({ networkStatu
                   <div key={device.id} className="flex items-center justify-between p-3 rounded-md bg-background hover:bg-muted/50 transition-colors border border-muted">
                     <div className="flex items-center space-x-3">
                       <div className="p-2 bg-primary/10 rounded-full text-primary">
-                        {getDeviceIcon(device.deviceType)}
+                        {getDeviceIcon(device.type)}
                       </div>
                       <div>
-                        <div className="font-medium">{device.deviceName}</div>
-                        <div className="text-sm text-muted-foreground">{device.ipAddress}</div>
+                        <div className="font-medium">{device.name}</div>
+                        <div className="text-sm text-muted-foreground">{device.ip}</div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className={`h-2.5 w-2.5 rounded-full ${device.connectionStatus === 'Online' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                      <span className="text-sm">{device.connectionStatus}</span>
+                      <div className={`h-2.5 w-2.5 rounded-full ${device.status === 'Online' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                      <span className="text-sm">{device.status || 'Online'}</span>
                     </div>
                   </div>
                 ))}
