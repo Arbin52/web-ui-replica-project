@@ -22,7 +22,7 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
         <CardDescription>
           Manage devices connected to your network
         </CardDescription>
-        <Alert variant="outline" className="mt-2">
+        <Alert variant="default" className="mt-2">
           <Info className="h-4 w-4" />
           <AlertDescription>
             For accurate device detection, ensure the local network scanner is running on http://localhost:3001
@@ -35,3 +35,4 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
     </Card>
   );
 };
+
