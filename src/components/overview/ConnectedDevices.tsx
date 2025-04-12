@@ -68,7 +68,7 @@ export const ConnectedDevices: React.FC<ConnectedDevicesProps> = ({ networkStatu
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className={`h-2.5 w-2.5 rounded-full ${device.status === 'Online' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                      <div className={`h-2.5 w-2.5 rounded-full ${device.status ? (device.status === 'Online' ? 'bg-green-500' : 'bg-red-500') : 'bg-green-500'}`}></div>
                       <span className="text-sm">{device.status || 'Online'}</span>
                     </div>
                   </div>
