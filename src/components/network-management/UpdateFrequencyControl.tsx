@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { debounce } from 'lodash';
 
 interface UpdateFrequencyControlProps {
   updateInterval: number;
@@ -12,6 +13,13 @@ export const UpdateFrequencyControl: React.FC<UpdateFrequencyControlProps> = ({
   updateInterval,
   setRefreshRate
 }) => {
+  // Create a debounced version of the toast to prevent rapid notifications
+  const debouncedToast = useRef(
+    debounce((message: string) => {
+      toast.success(message);
+    }, 2000) // 2 seconds between toasts
+  ).current;
+
   const handleIntervalChange = (interval: number) => {
     // Only change if it's different than the current interval
     if (interval !== updateInterval) {
@@ -23,7 +31,7 @@ export const UpdateFrequencyControl: React.FC<UpdateFrequencyControlProps> = ({
                           interval === 120000 ? '2 minutes' :
                           interval === 60000 ? '1 minute' : `${interval / 1000} seconds`;
       
-      toast.success(`Update interval changed to ${intervalText}`);
+      debouncedToast(`Update interval changed to ${intervalText}`);
     }
   };
 
