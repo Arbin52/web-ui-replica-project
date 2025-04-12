@@ -1,13 +1,18 @@
 
-# Basic requirements
+# Basic network scanning requirements
 scapy>=2.4.5
 python-nmap>=0.7.1
 netifaces>=0.11.0
 
-# Additional dependencies for enhanced scanning
+# System and resource monitoring
 psutil>=5.9.0
 getmac>=0.8.2
 requests>=2.28.0
 
-# Optional dependencies
+# Optional but recommended dependencies
 colorama>=0.4.4  # For terminal colors in debug mode
+ipaddress>=1.0.23  # IP address manipulation
+dns.resolver>=2.1.0  # DNS resolution
+
+# Error handling and logging
+rich>=10.16.2  # Enhanced console output
