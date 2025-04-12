@@ -15,7 +15,9 @@ export const useOnlineStatus = (
     const handleOnlineStatus = async () => {
       console.log("Online status changed:", navigator.onLine);
       setIsOnline(navigator.onLine);
-      // Refresh network status when online state changes
+      
+      // Only refresh when the browser reports a state change
+      // This is a system event, not an automatic refresh
       await refreshNetworkStatus();
       await detectRealNetworkName();
     };
@@ -35,6 +37,7 @@ export const useOnlineStatus = (
     if (connection) {
       const handleConnectionChange = async () => {
         console.log("Network connection type changed:", connection);
+        // This is a system event, not an automatic refresh
         await refreshNetworkStatus();
         await detectRealNetworkName();
       };

@@ -34,51 +34,31 @@ export const useWifiManager = () => {
     useNetworkConnection(connectToNetwork, disconnectFromNetwork, clearConnectionError, refreshNetworkStatus, networkStatus);
   const { isOnline } = useOnlineStatus(refreshNetworkStatus, detectRealNetworkName);
   
-  // Set a refresh rate on component mount
+  // Set refresh rate on component mount but disable automatic updates
   useEffect(() => {
-    // Use a 1-minute (60,000ms) refresh rate 
+    // Set refresh rate but we won't be using automatic updates
     setRefreshRate(60000);
     
-    // Clean up function
     return () => {
       // Restore the same refresh rate when component unmounts
       setRefreshRate(60000);
     };
   }, [setRefreshRate]);
   
-  // Initial detection of network status with reduced polling frequency
+  // Initial detection of network status only once on mount
   useEffect(() => {
     const doInitialCheck = async () => {
       console.log("Doing initial network check");
       await refreshNetworkStatus();
       await detectRealNetworkName();
-      
-      // A single follow-up check after initial load
-      setTimeout(async () => {
-        await checkCurrentNetworkImmediately();
-        await detectRealNetworkName();
-      }, 1500);
     };
     
     void doInitialCheck();
     
-    // Periodic check at a reasonable interval (60 seconds) instead of the aggressive 300ms
-    const normalUpdateInterval = setInterval(async () => {
-      await checkCurrentNetworkImmediately();
-      await detectRealNetworkName();
-    }, 60000); // Changed from 300ms to 60 seconds (60000ms)
+    // No automatic refresh intervals are set
+    // Only manual refresh will be allowed
     
-    // Additional periodic check but at lower frequency
-    const secondaryInterval = setInterval(() => {
-      console.log("Secondary network check");
-      void refreshNetworkStatus();
-    }, 120000); // Changed from 2000ms to 2 minutes (120000ms)
-    
-    return () => {
-      clearInterval(normalUpdateInterval);
-      clearInterval(secondaryInterval);
-    };
-  }, [refreshNetworkStatus, checkCurrentNetworkImmediately, detectRealNetworkName]);
+  }, [refreshNetworkStatus, detectRealNetworkName]);
 
   // Update detected network name when network status changes
   useEffect(() => {

@@ -52,12 +52,12 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
         {isLiveUpdating ? (
           <>
             <PauseCircle size={16} />
-            <span>Pause</span>
+            <span>Pause Auto</span>
           </>
         ) : (
           <>
             <PlayCircle size={16} />
-            <span>Resume</span>
+            <span>Enable Auto</span>
           </>
         )}
       </Button>

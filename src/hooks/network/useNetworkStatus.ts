@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { generateNetworkStatus } from './networkStatusGenerator';
@@ -12,19 +13,16 @@ import {
   connectToNetwork as connectToNetworkUtil, 
   disconnectFromNetwork as disconnectFromNetworkUtil 
 } from './networkConnectionUtils';
-import {
-  scheduleNetworkChecks,
-  setupNetworkChangeListeners,
-  setupMouseMoveListener
-} from './refreshUtils';
-import { useNetworkPolling } from './useNetworkPolling';
+
+// We're not using automatic polling functions anymore
+// import { useNetworkPolling } from './useNetworkPolling';
 
 export const useNetworkStatus = () => {
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isLiveUpdating, setIsLiveUpdating] = useState(true);
-  const [updateInterval, setUpdateInterval] = useState(60000); // Changed to 1 minute (60,000ms)
+  const [isLiveUpdating, setIsLiveUpdating] = useState(false); // Start with live updates off
+  const [updateInterval, setUpdateInterval] = useState(60000); // 1 minute, but not used for auto updates
   const [connectionError, setConnectionError] = useState<string | null>(null);
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -45,7 +43,8 @@ export const useNetworkStatus = () => {
     }
   }, [networkStatus]);
   
-  useNetworkPolling(isLiveUpdating, updateInterval, fetchNetworkStatus, intervalRef);
+  // We're not using automatic polling anymore
+  // useNetworkPolling(isLiveUpdating, updateInterval, fetchNetworkStatus, intervalRef);
 
   const connectToNetwork = async (ssid: string, password: string) => {
     try {
@@ -114,12 +113,38 @@ export const useNetworkStatus = () => {
 
   const toggleLiveUpdates = () => {
     setIsLiveUpdating(prev => !prev);
-    toast.info(!isLiveUpdating ? 'Live updates resumed' : 'Live updates paused');
+    
+    // Clear any existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    
+    // Only set up a new interval if we're turning on live updates
+    if (!isLiveUpdating) {
+      toast.info('Live updates resumed');
+      intervalRef.current = setInterval(() => {
+        console.log("Auto-update interval triggered");
+        fetchNetworkStatus();
+      }, updateInterval);
+    } else {
+      toast.info('Live updates paused');
+    }
   };
 
   const setRefreshRate = (ms: number) => {
     console.log(`Setting refresh rate to ${ms}ms (${ms/1000} seconds)`);
     setUpdateInterval(ms);
+    
+    // Update the interval if live updates are currently enabled
+    if (isLiveUpdating && intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = setInterval(() => {
+        console.log("Auto-update interval triggered with new rate");
+        fetchNetworkStatus();
+      }, ms);
+    }
+    
     toast.info(`Update interval set to ${ms >= 60000 ? (ms/60000) + ' minute' + (ms === 60000 ? '' : 's') : (ms/1000) + ' seconds'}`);
   };
 

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, PlayCircle, PauseCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 interface NetworkHeaderProps {
@@ -27,15 +27,26 @@ export const NetworkHeader: React.FC<NetworkHeaderProps> = ({
         <div className="flex items-center gap-2 mr-2">
           <div className={`w-3 h-3 rounded-full ${isLiveUpdating ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
           <span className="text-sm text-muted-foreground">
-            {isLiveUpdating ? `Live (${updateInterval/1000}s)` : 'Live updates paused'}
+            {isLiveUpdating ? `Live (${updateInterval/1000}s)` : 'Manual updates only'}
           </span>
         </div>
         <Button 
           variant="outline" 
           size="sm"
           onClick={toggleLiveUpdates}
+          className="flex items-center gap-1"
         >
-          {isLiveUpdating ? 'Pause' : 'Resume'} Updates
+          {isLiveUpdating ? (
+            <>
+              <PauseCircle size={16} />
+              <span>Pause</span>
+            </>
+          ) : (
+            <>
+              <PlayCircle size={16} />
+              <span>Auto-update</span>
+            </>
+          )}
         </Button>
         <Button 
           size="icon" 
