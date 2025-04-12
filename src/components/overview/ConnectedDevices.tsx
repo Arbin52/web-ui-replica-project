@@ -85,4 +85,3 @@ export const ConnectedDevices: React.FC<ConnectedDevicesProps> = ({ networkStatu
     </Card>
   );
 };
-
