@@ -50,8 +50,8 @@ export const NetworkOverview: React.FC<NetworkOverviewProps> = ({
     const updateDownload = () => {
       setDisplayDownload(prev => {
         const diff = targetDownload - prev;
-        // Slow down transition speed for more readable display
-        const step = diff * 0.03; // Reduced from 0.1 to 0.03 for smoother transition
+        // Drastically slow down transition speed for more readable display
+        const step = diff * 0.01; // Reduced from 0.03 to 0.01 for much smoother transition
         
         if (Math.abs(diff) < 0.1) return targetDownload;
         const newValue = prev + step;
@@ -88,8 +88,8 @@ export const NetworkOverview: React.FC<NetworkOverviewProps> = ({
     const updateUpload = () => {
       setDisplayUpload(prev => {
         const diff = targetUpload - prev;
-        // Slow down transition speed for more readable display
-        const step = diff * 0.03; // Reduced from 0.1 to 0.03 for smoother transition
+        // Drastically slow down transition speed for more readable display
+        const step = diff * 0.01; // Reduced from 0.03 to 0.01 for much smoother transition
         
         if (Math.abs(diff) < 0.1) return targetUpload;
         const newValue = prev + step;

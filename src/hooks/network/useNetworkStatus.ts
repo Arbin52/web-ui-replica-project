@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { generateNetworkStatus } from './networkStatusGenerator';
@@ -14,15 +13,12 @@ import {
   disconnectFromNetwork as disconnectFromNetworkUtil 
 } from './networkConnectionUtils';
 
-// We're not using automatic polling functions anymore
-// import { useNetworkPolling } from './useNetworkPolling';
-
 export const useNetworkStatus = () => {
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLiveUpdating, setIsLiveUpdating] = useState(false); // Start with live updates off
-  const [updateInterval, setUpdateInterval] = useState(60000); // 1 minute, but not used for auto updates
+  const [updateInterval, setUpdateInterval] = useState(300000); // Default to 5 minutes
   const [connectionError, setConnectionError] = useState<string | null>(null);
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -43,9 +39,6 @@ export const useNetworkStatus = () => {
     }
   }, [networkStatus]);
   
-  // We're not using automatic polling anymore
-  // useNetworkPolling(isLiveUpdating, updateInterval, fetchNetworkStatus, intervalRef);
-
   const connectToNetwork = async (ssid: string, password: string) => {
     try {
       setConnectionError(null);
@@ -145,7 +138,10 @@ export const useNetworkStatus = () => {
       }, ms);
     }
     
-    toast.info(`Update interval set to ${ms >= 60000 ? (ms/60000) + ' minute' + (ms === 60000 ? '' : 's') : (ms/1000) + ' seconds'}`);
+    // Only show toast for significant changes (over 1 minute difference)
+    if (Math.abs(ms - updateInterval) > 60000) {
+      toast.info(`Update interval set to ${ms >= 60000 ? (ms/60000) + ' minute' + (ms === 60000 ? '' : 's') : (ms/1000) + ' seconds'}`);
+    }
   };
 
   const simulateDeviceConnect = async () => {

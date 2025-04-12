@@ -13,11 +13,11 @@ export const UpdateFrequencyControl: React.FC<UpdateFrequencyControlProps> = ({
   updateInterval,
   setRefreshRate
 }) => {
-  // Create a debounced version of the toast to prevent rapid notifications
+  // Create a highly debounced version of the toast to prevent frequent notifications
   const debouncedToast = useRef(
     debounce((message: string) => {
       toast.success(message);
-    }, 2000) // 2 seconds between toasts
+    }, 5000) // 5 seconds between toasts
   ).current;
 
   const handleIntervalChange = (interval: number) => {
@@ -26,10 +26,9 @@ export const UpdateFrequencyControl: React.FC<UpdateFrequencyControlProps> = ({
       console.log(`Changing update interval from ${updateInterval}ms to ${interval}ms`);
       setRefreshRate(interval);
       
-      const intervalText = interval === 300000 ? '5 minutes' : 
-                          interval === 180000 ? '3 minutes' :
-                          interval === 120000 ? '2 minutes' :
-                          interval === 60000 ? '1 minute' : `${interval / 1000} seconds`;
+      const intervalText = interval === 900000 ? '15 minutes' : 
+                          interval === 600000 ? '10 minutes' :
+                          interval === 300000 ? '5 minutes' : `${interval / 60000} minutes`;
       
       debouncedToast(`Update interval changed to ${intervalText}`);
     }
@@ -42,17 +41,16 @@ export const UpdateFrequencyControl: React.FC<UpdateFrequencyControlProps> = ({
         <p className="text-sm text-muted-foreground">Adjust how often network data is refreshed</p>
       </div>
       <div className="flex gap-2">
-        {[300000, 180000, 120000, 60000].map(interval => (
+        {[900000, 600000, 300000].map(interval => (
           <Button 
             key={interval} 
             size="sm"
             variant={updateInterval === interval ? "default" : "outline"}
             onClick={() => handleIntervalChange(interval)}
           >
-            {interval === 300000 ? '5 min' : 
-             interval === 180000 ? '3 min' :
-             interval === 120000 ? '2 min' : 
-             interval === 60000 ? '1 min' : `${interval / 1000} sec`}
+            {interval === 900000 ? '15 min' : 
+             interval === 600000 ? '10 min' :
+             interval === 300000 ? '5 min' : `${interval / 60000} min`}
           </Button>
         ))}
       </div>
