@@ -1,0 +1,14 @@
+
+# System Requirements
+Node.js >= 16.0.0
+npm >= 8.0.0
+Python >= 3.8
+pip >= 20.0.0
+
+# Operating System
+Compatible with: Windows 10+, macOS 10.15+, Ubuntu 20.04+
+
+# Hardware Requirements
+RAM: 4GB minimum, 8GB recommended
+Storage: 500MB free disk space
+Network: Active internet connection for initial setup

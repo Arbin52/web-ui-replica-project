@@ -1,0 +1,27 @@
+
+# React and core UI libraries
+react@18.3.1
+react-dom@18.3.1
+sonner@1.5.0
+lucide-react@0.462.0
+
+# State management and data fetching
+@tanstack/react-query@5.56.2
+zod@3.23.8
+
+# UI components and styling
+tailwindcss@3.3.0
+tailwind-merge@2.5.2
+tailwindcss-animate@1.0.7
+class-variance-authority@0.7.1
+clsx@2.1.1
+
+# Forms and validation
+react-hook-form@7.53.0
+@hookform/resolvers@3.9.0
+
+# Routing
+react-router-dom@6.26.2
+
+# Data visualization
+recharts@2.12.7
