@@ -11,7 +11,11 @@ app.use(express.json());
 
 // Add a /status endpoint to check if the server is running
 app.get('/status', (req, res) => {
-  res.json({ status: 'running' });
+  res.json({ 
+    status: 'running',
+    pythonAvailable: networkScanner.isPythonAvailable,
+    version: '1.1.0'
+  });
 });
 
 // Endpoint to scan for all devices
@@ -20,7 +24,8 @@ app.get('/devices', async (req, res) => {
     const devices = await networkScanner.scan();
     res.json(devices);
   } catch (error) {
-    res.status(500).json({ error: 'Network scan failed' });
+    console.error('Network scan failed:', error);
+    res.status(500).json({ error: 'Network scan failed', details: error.message });
   }
 });
 
@@ -36,7 +41,34 @@ app.get('/device/:ip', async (req, res) => {
       res.status(404).json({ error: 'Device not found or details unavailable' });
     }
   } catch (error) {
+    console.error(`Failed to get device details: ${error.message}`);
     res.status(500).json({ error: `Failed to get device details: ${error.message}` });
+  }
+});
+
+// Endpoint to get Python scanner status
+app.get('/scanner-status', async (req, res) => {
+  try {
+    if (networkScanner.isPythonAvailable) {
+      const { runPythonScript } = require('./networkScanner'); // Import dynamically to avoid circular deps
+      const statusOutput = await runPythonScript(['status']);
+      const status = JSON.parse(statusOutput);
+      res.json({
+        ...status,
+        pythonAvailable: true
+      });
+    } else {
+      res.json({
+        pythonAvailable: false,
+        reason: "Python not available on this system"
+      });
+    }
+  } catch (error) {
+    console.error('Failed to get scanner status:', error);
+    res.status(500).json({ 
+      error: 'Failed to get scanner status',
+      message: error.message
+    });
   }
 });
 
@@ -53,4 +85,10 @@ app.post('/scan', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Network Scanner running on port ${PORT}`);
   console.log(`Python integration ${networkScanner.isPythonAvailable ? 'available' : 'not available'}`);
+
+  if (networkScanner.isPythonAvailable) {
+    console.log(`Using Python for enhanced network scanning capabilities`);
+  } else {
+    console.log(`Python not available - using fallback methods. For better results, install Python and required packages.`);
+  }
 });

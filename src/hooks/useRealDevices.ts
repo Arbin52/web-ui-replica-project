@@ -6,7 +6,8 @@ import {
   isScannerAvailable, 
   scanNetwork, 
   getDeviceDetails,
-  configureScannerSettings
+  configureScannerSettings,
+  getScannerStatus
 } from '../services/networkScanner';
 import { toast } from 'sonner';
 import { useConnectionErrorHandling } from './network/status/useConnectionErrorHandling';
@@ -17,10 +18,26 @@ interface ScannerSettings {
   excludedIpRanges: string[];
 }
 
+interface ScannerStatus {
+  os?: string;
+  pythonVersion?: string;
+  modules?: {
+    scapy: boolean;
+    nmap: boolean;
+    netifaces: boolean;
+    psutil: boolean;
+  };
+  defaultGateway?: string;
+  networkRange?: string;
+  pythonAvailable: boolean;
+}
+
 export const useRealDevices = () => {
   const [devices, setDevices] = useState<ConnectedDevice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasScanner, setHasScanner] = useState(false);
+  const [isPythonAvailable, setIsPythonAvailable] = useState(false);
+  const [scannerVersion, setScannerVersion] = useState<string | undefined>(undefined);
   const [isScanning, setIsScanning] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<ConnectedDevice | null>(null);
   const [scannerSettings, setScannerSettings] = useState<ScannerSettings>({
@@ -28,6 +45,8 @@ export const useRealDevices = () => {
     scanDepth: 'quick',
     excludedIpRanges: []
   });
+  const [scannerStatus, setScannerStatus] = useState<ScannerStatus | null>(null);
+  
   const { connectionError, setConnectionError, clearConnectionError } = useConnectionErrorHandling();
 
   // Check if scanner is available when component mounts
@@ -44,15 +63,30 @@ export const useRealDevices = () => {
   const checkScannerAvailability = async () => {
     setIsLoading(true);
     try {
-      const available = await isScannerAvailable();
+      const { available, pythonAvailable, version } = await isScannerAvailable();
       setHasScanner(available);
+      setIsPythonAvailable(pythonAvailable || false);
+      setScannerVersion(version);
       clearConnectionError();
       
       if (!available) {
         console.log('Network scanner not available - using mock data');
         toast.error('Network scanner not available. Please start the local scanner service.');
       } else {
-        toast.success('Connected to network scanner');
+        if (pythonAvailable) {
+          toast.success('Connected to network scanner with Python support');
+          
+          try {
+            // Get detailed scanner status with Python info
+            const status = await getScannerStatus();
+            setScannerStatus(status);
+            console.log('Scanner status:', status);
+          } catch (e) {
+            console.error('Failed to get scanner status:', e);
+          }
+        } else {
+          toast.success('Connected to network scanner (basic mode)');
+        }
         await refreshDevices();
       }
     } catch (error) {
@@ -86,7 +120,10 @@ export const useRealDevices = () => {
 
   // Initiate a network scan
   const startNetworkScan = async () => {
-    if (!hasScanner) return;
+    if (!hasScanner) {
+      toast.error('Network scanner not available');
+      return;
+    }
     
     setIsScanning(true);
     try {
@@ -138,8 +175,11 @@ export const useRealDevices = () => {
     devices,
     isLoading,
     hasScanner,
+    isPythonAvailable,
+    scannerVersion,
     isScanning,
     scannerSettings,
+    scannerStatus,
     selectedDevice,
     connectionError,
     refreshDevices,

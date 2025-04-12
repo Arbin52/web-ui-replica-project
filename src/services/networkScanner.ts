@@ -11,11 +11,12 @@ export const fetchRealDevices = async (): Promise<ConnectedDevice[]> => {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-      }
+      },
+      signal: AbortSignal.timeout(5000) // 5 second timeout
     });
 
     if (!response.ok) {
-      throw new Error('Network scanner not available');
+      throw new Error(`Network scanner returned ${response.status}: ${response.statusText}`);
     }
 
     const devices = await response.json();
@@ -28,12 +29,44 @@ export const fetchRealDevices = async (): Promise<ConnectedDevice[]> => {
 };
 
 // Function to check if the scanner service is available
-export const isScannerAvailable = async (): Promise<boolean> => {
+export const isScannerAvailable = async (): Promise<{
+  available: boolean;
+  pythonAvailable?: boolean;
+  version?: string;
+}> => {
   try {
-    const response = await fetch(`${LOCAL_SCANNER_URL}/status`);
-    return response.ok;
+    const response = await fetch(`${LOCAL_SCANNER_URL}/status`, {
+      signal: AbortSignal.timeout(2000) // 2 second timeout
+    });
+    
+    if (!response.ok) {
+      return { available: false };
+    }
+    
+    const data = await response.json();
+    return { 
+      available: true,
+      pythonAvailable: data.pythonAvailable,
+      version: data.version
+    };
   } catch {
-    return false;
+    return { available: false };
+  }
+};
+
+// Get scanner detailed status (Python modules, etc.)
+export const getScannerStatus = async (): Promise<any> => {
+  try {
+    const response = await fetch(`${LOCAL_SCANNER_URL}/scanner-status`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to get scanner status');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error getting scanner status:', error);
+    throw error;
   }
 };
 

@@ -51,6 +51,8 @@ const runPythonScript = (args: string[]): Promise<string> => {
       }
     })();
 
+    console.log(`Running Python script: ${pythonCommand} ${scriptPath} ${args.join(' ')}`);
+    
     const proc = spawn(pythonCommand, [scriptPath, ...args]);
     
     let stdout = '';
@@ -62,6 +64,7 @@ const runPythonScript = (args: string[]): Promise<string> => {
     
     proc.stderr.on('data', (data) => {
       stderr += data.toString();
+      console.error(`Python stderr: ${stderr}`);
     });
     
     proc.on('close', (code) => {
@@ -73,19 +76,28 @@ const runPythonScript = (args: string[]): Promise<string> => {
     });
     
     proc.on('error', (err) => {
+      console.error(`Python process error: ${err.message}`);
       reject(err);
     });
   });
 };
 
 export const networkScanner = {
+  isPythonAvailable: isPythonAvailable(),
+  
   scan: async (): Promise<NetworkDevice[]> => {
     try {
       // Try to use Python scanner first
       if (isPythonAvailable()) {
         console.log('Using Python network scanner');
         const output = await runPythonScript(['scan']);
-        return JSON.parse(output) as NetworkDevice[];
+        try {
+          return JSON.parse(output) as NetworkDevice[];
+        } catch (e) {
+          console.error('Failed to parse Python scanner output:', e);
+          console.log('Python output:', output);
+          throw e; // Let the next block handle fallback
+        }
       } 
       
       // Fallback to original method
@@ -99,7 +111,9 @@ export const networkScanner = {
             ip,
             mac,
             name: 'Unknown Device',
-            type: 'Unknown'
+            type: 'Unknown',
+            status: 'Online',
+            id: Math.random().toString(36).substring(2, 10)
           };
         });
       
@@ -113,10 +127,30 @@ export const networkScanner = {
   getDeviceDetails: async (ipAddress: string): Promise<NetworkDevice | null> => {
     try {
       if (isPythonAvailable()) {
+        console.log(`Getting device details for IP: ${ipAddress} using Python`);
         const output = await runPythonScript(['device', ipAddress]);
-        return JSON.parse(output) as NetworkDevice;
+        try {
+          const device = JSON.parse(output) as NetworkDevice;
+          if (!device.id) {
+            device.id = Math.random().toString(36).substring(2, 10);
+          }
+          return device;
+        } catch (e) {
+          console.error(`Failed to parse device details for ${ipAddress}:`, e);
+          console.log('Python output:', output);
+          return null;
+        }
       }
-      return null;
+      
+      console.log(`Python unavailable, using fallback for device ${ipAddress}`);
+      return {
+        ip: ipAddress,
+        mac: 'Unknown',
+        name: 'Unknown Device',
+        type: 'Unknown',
+        status: 'Unknown',
+        id: Math.random().toString(36).substring(2, 10)
+      };
     } catch (error) {
       console.error(`Error getting device details for ${ipAddress}:`, error);
       return null;
