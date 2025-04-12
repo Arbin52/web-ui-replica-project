@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 // Import our new components
 import { NetworkHeader } from '@/components/network-management/NetworkHeader';
 import { NetworkOverview } from '@/components/network-management/NetworkOverview';
-import { NetworkWiFi } from '@/components/network-management/NetworkWiFi';
+import { NetworkStatistics } from '@/components/network-management/NetworkStatistics';
 import { NetworkDevices } from '@/components/network-management/NetworkDevices';
 import { SavedNetworks } from '@/components/network-management/SavedNetworks';
 
@@ -70,7 +70,7 @@ const NetworkManagement = () => {
             <Tabs defaultValue="overview" className="space-y-4">
               <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="wifi">WiFi Networks</TabsTrigger>
+                <TabsTrigger value="statistics">Network Statistics</TabsTrigger>
                 <TabsTrigger value="devices">Connected Devices</TabsTrigger>
                 <TabsTrigger value="saved">Saved Networks</TabsTrigger>
               </TabsList>
@@ -87,8 +87,11 @@ const NetworkManagement = () => {
                 />
               </TabsContent>
               
-              <TabsContent value="wifi">
-                <NetworkWiFi />
+              <TabsContent value="statistics">
+                <NetworkStatistics 
+                  networkStatus={networkStatus}
+                  isLoading={isLoading}
+                />
               </TabsContent>
               
               <TabsContent value="devices">
