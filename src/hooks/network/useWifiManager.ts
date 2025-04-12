@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
-// Import our new modular hooks
+// Import our modular hooks
 import { useWifiDetection } from './wifi/useWifiDetection';
 import { useNetworkDialogs } from './wifi/useNetworkDialogs';
 import { useWifiScan } from './wifi/useWifiScan';
@@ -33,27 +34,26 @@ export const useWifiManager = () => {
     useNetworkConnection(connectToNetwork, disconnectFromNetwork, clearConnectionError, refreshNetworkStatus, networkStatus);
   const { isOnline } = useOnlineStatus(refreshNetworkStatus, detectRealNetworkName);
   
-  // Set a faster refresh rate on component mount
+  // Set a refresh rate on component mount
   useEffect(() => {
-    // Use a 1-minute (60,000ms) refresh rate for stable updates
+    // Use a 1-minute (60,000ms) refresh rate 
     setRefreshRate(60000);
     
     // Clean up function
     return () => {
-      // Restore a more reasonable refresh rate when component unmounts
+      // Restore the same refresh rate when component unmounts
       setRefreshRate(60000);
     };
   }, [setRefreshRate]);
   
-  // Initial detection of network status + aggressive polling
+  // Initial detection of network status with reduced polling frequency
   useEffect(() => {
     const doInitialCheck = async () => {
       console.log("Doing initial network check");
       await refreshNetworkStatus();
       await detectRealNetworkName();
       
-      // Try to detect network again after a short delay
-      // This can help with detecting network after the page has fully loaded
+      // A single follow-up check after initial load
       setTimeout(async () => {
         await checkCurrentNetworkImmediately();
         await detectRealNetworkName();
@@ -62,20 +62,20 @@ export const useWifiManager = () => {
     
     void doInitialCheck();
     
-    // Real-time updates at 300ms intervals
-    const fastUpdateInterval = setInterval(async () => {
+    // Periodic check at a reasonable interval (60 seconds) instead of the aggressive 300ms
+    const normalUpdateInterval = setInterval(async () => {
       await checkCurrentNetworkImmediately();
       await detectRealNetworkName();
-    }, 300);
+    }, 60000); // Changed from 300ms to 60 seconds (60000ms)
     
-    // Additional periodic check with different timing to catch any missed updates
+    // Additional periodic check but at lower frequency
     const secondaryInterval = setInterval(() => {
       console.log("Secondary network check");
       void refreshNetworkStatus();
-    }, 2000);
+    }, 120000); // Changed from 2000ms to 2 minutes (120000ms)
     
     return () => {
-      clearInterval(fastUpdateInterval);
+      clearInterval(normalUpdateInterval);
       clearInterval(secondaryInterval);
     };
   }, [refreshNetworkStatus, checkCurrentNetworkImmediately, detectRealNetworkName]);
