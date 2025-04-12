@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
@@ -36,13 +35,13 @@ export const useWifiManager = () => {
   
   // Set a faster refresh rate on component mount
   useEffect(() => {
-    // Use a 500ms refresh rate for truly real-time updates
-    setRefreshRate(500);
+    // Use a 1-minute (60,000ms) refresh rate for stable updates
+    setRefreshRate(60000);
     
     // Clean up function
     return () => {
       // Restore a more reasonable refresh rate when component unmounts
-      setRefreshRate(5000);
+      setRefreshRate(60000);
     };
   }, [setRefreshRate]);
   
