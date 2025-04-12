@@ -7,8 +7,9 @@ import { useState, useEffect, useCallback } from 'react';
 export const useWifiDetection = () => {
   const [detectedNetworkName, setDetectedNetworkName] = useState<string | null>(null);
   const [shouldPromptForNetworkName, setShouldPromptForNetworkName] = useState(false);
+  const [autoConnected, setAutoConnected] = useState(false);
   
-  // Detect the current network name from various sources - ensure it properly returns Promise<string | null>
+  // Detect the current network name from various sources
   const detectRealNetworkName = useCallback(async (): Promise<string | null> => {
     const userProvidedName = localStorage.getItem('user_provided_network_name');
     const detectedName = userProvidedName ||
@@ -52,6 +53,8 @@ export const useWifiDetection = () => {
     detectedNetworkName,
     setDetectedNetworkName,
     detectRealNetworkName,
-    shouldPromptForNetworkName
+    shouldPromptForNetworkName,
+    autoConnected,
+    setAutoConnected
   };
 };

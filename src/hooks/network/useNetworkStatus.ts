@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef } from 'react';
+
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { generateNetworkStatus } from './networkStatusGenerator';
 import { NetworkStatus } from './types';
@@ -10,7 +11,8 @@ import {
 } from './connectedDevices';
 import { 
   connectToNetwork as connectToNetworkUtil, 
-  disconnectFromNetwork as disconnectFromNetworkUtil 
+  disconnectFromNetwork as disconnectFromNetworkUtil,
+  getCurrentNetworkName
 } from './networkConnectionUtils';
 
 export const useNetworkStatus = () => {
@@ -20,6 +22,7 @@ export const useNetworkStatus = () => {
   const [isLiveUpdating, setIsLiveUpdating] = useState(false); // Start with live updates off
   const [updateInterval, setUpdateInterval] = useState(300000); // Default to 5 minutes
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [autoConnectAttempted, setAutoConnectAttempted] = useState(false);
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -38,6 +41,31 @@ export const useNetworkStatus = () => {
       setIsLoading(false);
     }
   }, [networkStatus]);
+  
+  // Try auto-connecting to the network
+  useEffect(() => {
+    const tryAutoConnect = async () => {
+      if (!autoConnectAttempted && navigator.onLine && !isLoading) {
+        setAutoConnectAttempted(true);
+        
+        const currentNetworkName = getCurrentNetworkName();
+        if (currentNetworkName && (!networkStatus?.isOnline || networkStatus?.networkName !== currentNetworkName)) {
+          console.log("Attempting to auto-connect to detected network:", currentNetworkName);
+          
+          // Simulate auto-connection (no password needed for auto-connection)
+          try {
+            await connectToNetworkUtil(currentNetworkName, "");
+            toast.success(`Automatically connected to ${currentNetworkName}`);
+            await fetchNetworkStatus();
+          } catch (err) {
+            console.error("Auto-connection failed:", err);
+          }
+        }
+      }
+    };
+    
+    tryAutoConnect();
+  }, [autoConnectAttempted, isLoading, networkStatus, fetchNetworkStatus]);
   
   const connectToNetwork = async (ssid: string, password: string) => {
     try {
@@ -197,6 +225,8 @@ export const useNetworkStatus = () => {
     connectionError,
     clearConnectionError,
     checkCurrentNetworkImmediately,
-    openGatewayInterface
+    openGatewayInterface,
+    autoConnectAttempted,
+    setAutoConnectAttempted
   };
 };

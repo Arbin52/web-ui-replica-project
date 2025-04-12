@@ -4,16 +4,23 @@ import { toast } from 'sonner';
 // Function to connect to a WiFi network
 export const connectToNetwork = async (ssid: string, password: string) => {
   try {
-    toast.info(`Connecting to ${ssid}...`);
+    // For auto-connection, we'll bypass validation
+    const isAutoConnect = password === "";
     
-    // Simulate connection delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simple password validation (in a real system, this would be done by the router)
-    if (password.length < 8) {
-      const errorMsg = `Failed to connect to ${ssid}: Invalid password (must be at least 8 characters)`;
-      toast.error(errorMsg);
-      return { success: false, error: errorMsg };
+    if (!isAutoConnect) {
+      toast.info(`Connecting to ${ssid}...`);
+      
+      // Simulate connection delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Simple password validation (in a real system, this would be done by the router)
+      if (password.length < 8) {
+        const errorMsg = `Failed to connect to ${ssid}: Invalid password (must be at least 8 characters)`;
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+    } else {
+      console.log(`Auto-connecting to ${ssid}...`);
     }
     
     // Success! Store the connection info for detection
@@ -40,7 +47,9 @@ export const connectToNetwork = async (ssid: string, password: string) => {
     
     localStorage.setItem('connection_history', JSON.stringify(history));
     
-    toast.success(`Connected to ${ssid}`);
+    if (!isAutoConnect) {
+      toast.success(`Connected to ${ssid}`);
+    }
     return { success: true, error: null };
   } catch (err) {
     console.error('Error connecting to network:', err);

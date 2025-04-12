@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { NetworkStatus } from '@/hooks/network/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getNetworkStabilityRating } from '@/hooks/network/networkHistoryUtils';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface NetworkStatusMonitorProps {
   networkStatus: NetworkStatus | null;
@@ -26,6 +27,19 @@ export const NetworkStatusMonitor: React.FC<NetworkStatusMonitorProps> = ({
   updateInterval
 }) => {
   const navigate = useNavigate();
+  
+  // Auto-connection notification
+  useEffect(() => {
+    if (networkStatus?.isOnline && networkStatus?.networkName) {
+      const autoConnected = localStorage.getItem('auto_connected') !== 'true';
+      if (autoConnected) {
+        localStorage.setItem('auto_connected', 'true');
+        toast.success(`Automatically connected to ${networkStatus.networkName}`, {
+          description: "Your laptop's current WiFi network was detected"
+        });
+      }
+    }
+  }, [networkStatus?.isOnline, networkStatus?.networkName]);
   
   // Function to format time
   const formatTime = (date: Date) => {
