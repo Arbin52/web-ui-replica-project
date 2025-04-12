@@ -1,11 +1,11 @@
 
 import React from 'react';
-import { BarChart, Zap, Activity, Clock } from 'lucide-react';
+import { BarChartIcon, Zap, Activity, Clock } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NetworkStatus } from '@/hooks/network/types';
 import {
-  BarChart as RechartsBarChart,
+  BarChart,
   Bar,
   XAxis,
   YAxis,
@@ -81,7 +81,7 @@ export const NetworkStatistics: React.FC<NetworkStatisticsProps> = ({ networkSta
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <BarChart size={18} className="text-primary" />
+            <BarChartIcon size={18} className="text-primary" />
             <CardTitle>Network Statistics</CardTitle>
           </div>
           <CardDescription>
