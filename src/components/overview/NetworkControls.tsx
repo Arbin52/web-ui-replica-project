@@ -21,7 +21,6 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
   setRefreshRate,
   handleRefresh
 }) => {
-  // Handler to log interval changes with reduced options
   const handleIntervalChange = (value: string) => {
     const ms = parseInt(value);
     console.log(`NetworkControls - changing interval to ${ms}ms`);
@@ -29,13 +28,13 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3 bg-muted/30 rounded-lg p-2 shadow-sm">
       <Select
         value={updateInterval.toString()}
         onValueChange={handleIntervalChange}
         disabled={!isLiveUpdating || isLoading}
       >
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger className="w-[180px] bg-background border-muted-foreground/20">
           <SelectValue placeholder="Refresh Rate" />
         </SelectTrigger>
         <SelectContent>
@@ -46,12 +45,12 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
       </Select>
       <Button 
         variant="outline" 
-        className="flex items-center gap-1" 
+        className={`flex items-center gap-1 transition-all duration-300 ${isLiveUpdating ? 'bg-primary/10 hover:bg-primary/20' : 'bg-background'}`}
         onClick={toggleLiveUpdates}
       >
         {isLiveUpdating ? (
           <>
-            <PauseCircle size={16} />
+            <PauseCircle size={16} className="text-primary" />
             <span>Pause Auto</span>
           </>
         ) : (

@@ -3,6 +3,7 @@ import React, { useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { debounce } from 'lodash';
+import { Clock } from 'lucide-react';
 
 interface UpdateFrequencyControlProps {
   updateInterval: number;
@@ -35,10 +36,15 @@ export const UpdateFrequencyControl: React.FC<UpdateFrequencyControlProps> = ({
   };
 
   return (
-    <div className="bg-muted/50 rounded-md p-3 flex justify-between items-center">
-      <div>
-        <h3 className="font-medium">Update Frequency</h3>
-        <p className="text-sm text-muted-foreground">Adjust how often network data is refreshed</p>
+    <div className="bg-muted/30 rounded-lg p-4 flex justify-between items-center shadow-sm border border-muted">
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-full bg-primary/10 text-primary">
+          <Clock size={18} />
+        </div>
+        <div>
+          <h3 className="font-medium">Update Frequency</h3>
+          <p className="text-sm text-muted-foreground">Adjust how often network data is refreshed</p>
+        </div>
       </div>
       <div className="flex gap-2">
         {[900000, 600000, 300000].map(interval => (
@@ -47,6 +53,7 @@ export const UpdateFrequencyControl: React.FC<UpdateFrequencyControlProps> = ({
             size="sm"
             variant={updateInterval === interval ? "default" : "outline"}
             onClick={() => handleIntervalChange(interval)}
+            className={updateInterval === interval ? "shadow-sm" : ""}
           >
             {interval === 900000 ? '15 min' : 
              interval === 600000 ? '10 min' :

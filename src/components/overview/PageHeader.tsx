@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Info } from 'lucide-react';
+import { Info, Wifi } from 'lucide-react';
 import { NetworkControls } from './NetworkControls';
 
 interface PageHeaderProps {
@@ -21,10 +21,15 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   handleRefresh
 }) => {
   return (
-    <div className="flex items-center justify-between mb-6">
-      <div className="flex items-center gap-2">
-        <Info size={24} />
-        <h2 className="text-xl font-bold">Network Overview</h2>
+    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-full bg-primary/10">
+          <Wifi size={24} className="text-primary" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold">Network Overview</h2>
+          <p className="text-sm text-muted-foreground">Monitor and manage your network connections</p>
+        </div>
       </div>
       <NetworkControls
         isLoading={isLoading}

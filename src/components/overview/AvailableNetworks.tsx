@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Signal, Lock } from 'lucide-react';
+import { Signal, Lock, WifiOff, Wifi } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NetworkStatus } from '@/hooks/network/types';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { toast } from 'sonner';
 
 interface AvailableNetworksProps {
   networkStatus: NetworkStatus | null;
@@ -29,6 +30,7 @@ export const AvailableNetworks: React.FC<AvailableNetworksProps> = ({ networkSta
 
   const handleConnect = (network: {id: number, ssid: string}) => {
     setSelectedNetwork(network);
+    setPassword('');
     setShowPasswordDialog(true);
   };
 
@@ -36,81 +38,103 @@ export const AvailableNetworks: React.FC<AvailableNetworksProps> = ({ networkSta
     if (!selectedNetwork) return;
     
     setIsConnecting(true);
-    await connectToNetwork(selectedNetwork.ssid, password);
-    setIsConnecting(false);
-    setShowPasswordDialog(false);
-    setPassword('');
+    toast.info(`Connecting to ${selectedNetwork.ssid}...`);
+    
+    try {
+      await connectToNetwork(selectedNetwork.ssid, password);
+      toast.success(`Connected to ${selectedNetwork.ssid}`);
+    } catch (error) {
+      toast.error('Failed to connect to network');
+    } finally {
+      setIsConnecting(false);
+      setShowPasswordDialog(false);
+      setPassword('');
+    }
   };
 
   return (
     <>
-      <Card>
-        <CardHeader className="pb-2">
+      <Card className="border shadow-sm">
+        <CardHeader className="pb-2 bg-muted/30">
           <div className="flex items-center gap-2">
-            <Signal size={18} />
-            <CardTitle className="text-lg">Available Networks ({isLoading ? '...' : networkStatus?.availableNetworks?.length || 0})</CardTitle>
+            <Signal size={18} className="text-primary" />
+            <CardTitle className="text-lg">
+              Available Networks
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({isLoading ? '...' : networkStatus?.availableNetworks?.length || 0})
+              </span>
+            </CardTitle>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           {isLoading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
+            <div className="space-y-3">
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
             </div>
           ) : networkStatus?.availableNetworks && networkStatus.availableNetworks.length > 0 ? (
-            <div className="max-h-80 overflow-y-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-left text-sm text-gray-500 dark:text-gray-400">
-                    <th className="pb-2">Network Name</th>
-                    <th className="pb-2">Signal</th>
-                    <th className="pb-2">Security</th>
-                    <th className="pb-2"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {networkStatus.availableNetworks.map((network) => (
-                    <tr key={network.id} className="hover:bg-gray-50 dark:hover:bg-gray-900">
-                      <td className="py-3 font-medium">{network.ssid}</td>
-                      <td className="py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                            <div 
-                              className={`h-2 rounded-full ${
-                                getSignalStrength(network.signal) > 70 ? 'bg-green-500' : 
-                                getSignalStrength(network.signal) > 40 ? 'bg-yellow-500' : 
-                                'bg-red-500'
-                              }`}
-                              style={{ width: `${getSignalStrength(network.signal)}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">{network.signal} dBm</span>
+            <div className="max-h-96 overflow-y-auto">
+              <div className="grid gap-2">
+                {networkStatus.availableNetworks.map((network) => {
+                  const signalStrength = getSignalStrength(network.signal);
+                  const isConnected = networkStatus.networkName === network.ssid && networkStatus.isOnline;
+                  
+                  return (
+                    <div key={network.id} 
+                      className={`flex items-center justify-between p-3 rounded-md border transition-colors
+                        ${isConnected 
+                          ? 'bg-primary/10 border-primary/30' 
+                          : 'bg-background hover:bg-muted/50 border-muted'}`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`p-2 rounded-full ${isConnected ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                          <Wifi size={16} />
                         </div>
-                      </td>
-                      <td className="py-3">
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs flex items-center w-fit gap-1">
-                          {network.security === 'WPA2' || network.security === 'WPA3' ? <Lock size={12} /> : null}
-                          {network.security}
-                        </span>
-                      </td>
-                      <td className="py-3 text-right">
+                        <div>
+                          <div className="flex items-center">
+                            <span className="font-medium">{network.ssid}</span>
+                            {network.security === 'WPA2' || network.security === 'WPA3' ? (
+                              <Lock size={12} className="ml-2 text-muted-foreground" />
+                            ) : null}
+                            {isConnected && (
+                              <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">Connected</span>
+                            )}
+                          </div>
+                          <div className="flex items-center mt-1">
+                            <div className="w-16 h-1.5 bg-muted rounded-full mr-2">
+                              <div 
+                                className={`h-1.5 rounded-full ${
+                                  signalStrength > 70 ? 'bg-green-500' : 
+                                  signalStrength > 40 ? 'bg-yellow-500' : 
+                                  'bg-red-500'
+                                }`}
+                                style={{ width: `${signalStrength}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-xs text-muted-foreground">{network.signal} dBm</span>
+                          </div>
+                        </div>
+                      </div>
+                      {!isConnected && (
                         <Button 
-                          variant="secondary" 
+                          variant="outline" 
                           size="sm"
                           onClick={() => handleConnect(network)}
+                          className="bg-background hover:bg-muted"
                         >
                           Connect
                         </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              No available networks found
+            <div className="text-center py-8 text-muted-foreground">
+              <WifiOff className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+              <p>No available networks found</p>
             </div>
           )}
         </CardContent>
@@ -135,6 +159,7 @@ export const AvailableNetworks: React.FC<AvailableNetworksProps> = ({ networkSta
                 placeholder="Enter network password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoFocus
               />
             </div>
           </div>
