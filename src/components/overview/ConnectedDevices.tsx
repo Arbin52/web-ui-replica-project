@@ -3,7 +3,6 @@ import React from 'react';
 import { Router, Smartphone, Laptop, Monitor, Tv, TabletIcon } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DeviceList } from '@/components/devices/DeviceList';
 import { NetworkStatus } from '@/hooks/network/types';
 
 interface ConnectedDevicesProps {
@@ -86,3 +85,4 @@ export const ConnectedDevices: React.FC<ConnectedDevicesProps> = ({ networkStatu
     </Card>
   );
 };
+

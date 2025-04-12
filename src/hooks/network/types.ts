@@ -15,6 +15,7 @@ export interface NetworkStatus {
     ip: string;
     mac: string;
     type: string;
+    status?: 'Online' | 'Offline'; // Add optional status property
   }[];
   lastUpdated: Date;
   isOnline: boolean;
@@ -24,14 +25,14 @@ export interface NetworkStatus {
     latency: number;
   };
   dataUsage?: {
-    download: number; // in MB
-    upload: number; // in MB
-    total: number; // in MB
+    download: number;
+    upload: number;
+    total: number;
   };
   connectionHistory?: {
     timestamp: Date;
     status: 'connected' | 'disconnected';
-    ssid?: string; // Make ssid optional
+    ssid?: string;
   }[];
   availableNetworks?: {
     id: number;
@@ -40,3 +41,4 @@ export interface NetworkStatus {
     security: string;
   }[];
 }
+
