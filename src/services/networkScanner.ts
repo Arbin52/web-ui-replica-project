@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { ConnectedDevice } from '../hooks/network/connectedDevices';
 
 // Local network scanner server URL - configurable via environment variable or default to localhost
-const LOCAL_SCANNER_URL = process.env.SCANNER_URL || 'http://localhost:3001';
+const LOCAL_SCANNER_URL = import.meta.env.VITE_SCANNER_URL || 'http://localhost:3001';
 
 // Fetch real connected devices from the local network scanner
 export const fetchRealDevices = async (): Promise<ConnectedDevice[]> => {
