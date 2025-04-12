@@ -39,9 +39,9 @@ export const NetworkControls: React.FC<NetworkControlsProps> = ({
           <SelectValue placeholder="Refresh Rate" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="10000">10 seconds</SelectItem>
-          <SelectItem value="30000">30 seconds</SelectItem>
           <SelectItem value="60000">1 minute</SelectItem>
+          <SelectItem value="120000">2 minutes</SelectItem>
+          <SelectItem value="180000">3 minutes</SelectItem>
         </SelectContent>
       </Select>
       <Button 

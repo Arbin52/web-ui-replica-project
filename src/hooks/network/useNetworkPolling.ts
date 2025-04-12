@@ -25,8 +25,8 @@ export const useNetworkPolling = (
   intervalRef: MutableRefObject<NodeJS.Timeout | null>
 ) => {
   // Create a debounced version of the fetch function to prevent multiple rapid calls
-  // Increased debounce time from 500ms to 1000ms for smoother updates
-  const debouncedFetch = debounce(fetchNetworkStatus, 1000);
+  // Increased debounce time to 2000ms for smoother updates
+  const debouncedFetch = debounce(fetchNetworkStatus, 2000);
   
   // Setup/cleanup for the interval timer with proper dependency tracking
   useEffect(() => {
@@ -45,7 +45,7 @@ export const useNetworkPolling = (
       
       // Set a new interval with the current updateInterval
       // Ensure minimum interval is respected to prevent too-rapid updates
-      const effectiveInterval = Math.max(updateInterval, 5000);
+      const effectiveInterval = Math.max(updateInterval, 60000); // Minimum 1 minute
       intervalRef.current = setInterval(() => {
         console.log(`Polling triggered at interval: ${effectiveInterval}ms`);
         fetchNetworkStatus();
@@ -68,7 +68,8 @@ export const useNetworkPolling = (
 
   // Additional effect to perform network status check whenever online status changes
   // Using a much higher debounce for mouse movement to prevent constant refreshing
+  // Increased debounce threshold to reduce refresh frequency on mouse movement
   useEffect(() => {
-    return setupMouseMoveListener(debouncedFetch);
+    return setupMouseMoveListener(debouncedFetch, 15000); // Increased to 15 seconds
   }, [debouncedFetch]);
 };

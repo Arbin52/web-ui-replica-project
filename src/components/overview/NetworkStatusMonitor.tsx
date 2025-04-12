@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +37,16 @@ export const NetworkStatusMonitor: React.FC<NetworkStatusMonitorProps> = ({
     }).format(date);
   };
 
+  // Format interval for display
+  const formatInterval = (ms: number) => {
+    if (ms >= 60000) {
+      const minutes = ms / 60000;
+      return `${minutes}m`;
+    } else {
+      return `${ms/1000}s`;
+    }
+  };
+
   // Get connection history events
   const connectionEvents = networkStatus?.connectionHistory || [];
   
@@ -63,7 +72,7 @@ export const NetworkStatusMonitor: React.FC<NetworkStatusMonitorProps> = ({
             {isLiveUpdating ? (
               <div className="flex items-center gap-2">
                 <span className="animate-pulse w-2 h-2 bg-green-500 rounded-full"></span>
-                Live ({updateInterval/1000}s)
+                Live ({formatInterval(updateInterval)})
               </div>
             ) : (
               "Paused"
