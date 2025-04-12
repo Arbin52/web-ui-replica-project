@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { ConnectionStatusHeader } from './connection/ConnectionStatusHeader';
@@ -8,7 +9,7 @@ import { DisconnectAction } from './connection/DisconnectAction';
 import { DisconnectedState } from './connection/DisconnectedState';
 import { LoadingState } from './connection/LoadingState';
 import { RealTimeIndicator } from './connection/RealTimeIndicator';
-import '../../overview/index.css';
+import '@/components/overview/index.css';
 
 const CurrentConnection: React.FC<{
   networkStatus: any; 
