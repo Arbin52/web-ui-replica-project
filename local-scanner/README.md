@@ -1,52 +1,77 @@
 
 # Local Network Scanner
 
-This is a simple network scanner service that provides device detection and network analysis capabilities.
+This is a comprehensive network scanner service that provides advanced device detection and network analysis capabilities using Python and Node.js.
+
+## Technology Stack
+
+- **Frontend:** React
+- **Backend API:** Node.js with Express
+- **Network Scanning:** Python
+
+## Python Network Scanner
+
+### Key Features
+
+- **Advanced Network Discovery**
+  - Scan local network devices
+  - Detect device types and manufacturers
+  - Retrieve detailed network information
+
+### Scanning Capabilities
+
+The Python backend (`network_scanner.py`) leverages multiple libraries for comprehensive network analysis:
+
+- **Scapy:** Advanced packet manipulation and network scanning
+- **python-nmap:** Network discovery and port scanning
+- **netifaces:** Network interface information retrieval
+- **psutil:** System and network resource monitoring
+
+### Supported Scanning Methods
+
+1. **Scapy Scanning:** Most accurate device detection
+2. **ARP (Address Resolution Protocol):** Fallback device discovery
+3. **nmap:** Additional network scanning capabilities
+
+### Python Script Functionality
+
+- Detect devices on local network
+- Identify device types (smartphone, computer, IoT)
+- Retrieve manufacturer information
+- Determine network range and gateway
+- Collect system and network metadata
 
 ## Prerequisites
 
-1. Node.js 16+ installed
-2. Python 3.6+ (optional, for enhanced scanning)
+1. Python 3.6+
+2. Node.js 16+
 
-## Setup
+## Python Setup
 
-### Basic Setup
-
-1. Install Node dependencies:
-   ```bash
-   cd local-scanner
-   npm install
-   ```
-
-2. For enhanced scanning (optional), install Python requirements:
+1. Install Python dependencies:
    ```bash
    pip install -r python/requirements.txt
    ```
 
 ## Running the Scanner
 
-You can start the network scanner with:
-
 ```bash
+# Start the Node.js backend (which calls the Python script)
 npm start
 ```
 
-The scanner will be available at http://localhost:3001
+## Endpoints Powered by Python
 
-## Available Endpoints
+- `/devices`: Discover network devices
+- `/device/:ip`: Get detailed device information
+- `/scanner-status`: Check Python module availability
 
-- `GET /status` - Check if the scanner is running
-- `GET /devices` - Get all connected devices
-- `GET /device/:ip` - Get details for a specific device
-- `GET /scanner-status` - Get detailed scanner status
-- `POST /scan` - Initiate a network scan
+## Advanced Usage
 
-## VS Code Integration
+The Python backend supports flexible network scanning with multiple detection strategies, ensuring robust device discovery across different network configurations.
 
-This scanner is designed to work with the Network Management app when developing in VS Code.
+## Troubleshooting
 
-### Running Both Projects Together
-
-1. Start the scanner service
-2. Start the main React application
-3. Use the Network Management dashboard to view and analyze your network
+- Ensure all required Python packages are installed
+- Check Python version compatibility
+- Verify network permissions for scanning
