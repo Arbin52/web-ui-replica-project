@@ -95,7 +95,9 @@ export const useNetworkActions = ({
   }, [fetchNetworkStatus, setIsLoading]);
 
   const toggleLiveUpdates = () => {
-    setIsLiveUpdating(prev => !prev);
+    // Here's the fix: using a direct boolean value instead of a function
+    const newIsLiveUpdating = !isLiveUpdating;
+    setIsLiveUpdating(newIsLiveUpdating);
     
     // Clear any existing interval
     if (intervalRef.current) {
@@ -104,7 +106,7 @@ export const useNetworkActions = ({
     }
     
     // Only set up a new interval if we're turning on live updates
-    if (!isLiveUpdating) {
+    if (newIsLiveUpdating) {
       toast.info('Live updates resumed');
       intervalRef.current = setInterval(() => {
         console.log("Auto-update interval triggered");
