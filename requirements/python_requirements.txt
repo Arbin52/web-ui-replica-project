@@ -2,12 +2,13 @@
 # Basic network scanning requirements
 scapy>=2.4.5
 python-nmap>=0.7.1
-# Using a specific version of netifaces to avoid compatibility issues
+
+# System-dependent networking packages
 netifaces==0.10.9; platform_system!="Windows"
 # For Windows systems, use a pre-compiled wheel or fallback
 pynetinfo>=0.1.0; platform_system=="Windows"
 
-# System and resource monitoring
+# System and resource monitoring (cross-platform)
 psutil>=5.9.0
 getmac>=0.8.2
 requests>=2.28.0
@@ -19,3 +20,8 @@ dnspython>=2.1.0  # DNS resolution (fixed package name)
 
 # Error handling and logging
 rich>=10.16.2  # Enhanced console output
+
+# Note: On Windows, if you have trouble with pynetinfo,
+# the scanner will fall back to basic functionality.
+# Try: pip install pynetinfo getmac colorama
+

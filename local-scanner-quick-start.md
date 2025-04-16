@@ -18,6 +18,27 @@ Run the script with:
 node setup-scanner.js
 ```
 
+## Windows-Specific Setup
+
+If you're on Windows and encountering issues with Python packages:
+
+```bash
+# Install Python for Windows if not already installed (from https://www.python.org/downloads/)
+
+# Install Windows-specific packages
+pip install pynetinfo
+pip install getmac
+pip install colorama
+
+# If you encounter permission issues, try running as administrator:
+# Right-click Command Prompt > Run as administrator
+
+# If you're still having issues with pynetinfo, you can use basic scanner mode
+# by starting the scanner without Python dependencies
+```
+
+The scanner will automatically fall back to basic functionality if Python packages aren't available.
+
 ## Manual Setup Steps
 
 If you prefer to set up manually, follow these steps:
@@ -61,7 +82,15 @@ If you encounter "Cannot find path" errors:
 
 If the scanner starts but isn't detecting devices:
 - Check if Python is installed: `python --version` or `python3 --version`
-- Install Python dependencies: `pip install -r local-scanner/python/requirements.txt`
+- On Windows, install Python dependencies: `pip install pynetinfo getmac colorama`
+- On Linux/macOS: `pip install -r local-scanner/python/requirements.txt`
+
+### Windows-Specific Issues
+
+If you see errors related to pynetinfo or other Python packages on Windows:
+1. The scanner will fall back to basic functionality automatically
+2. You'll still see network information, but with limited device detection
+3. Make sure you're using Python 3.8+ (`python --version` to check)
 
 ## What's Next?
 
