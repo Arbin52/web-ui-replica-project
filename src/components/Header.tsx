@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, LogOut, Search, Bell, Menu, User, X } from 'lucide-react';
+import { Shield, LogOut, Search, Bell, Menu, User, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -68,7 +67,7 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
           className="text-2xl font-bold cursor-pointer transition-transform hover:scale-105" 
           onClick={handleLogoClick}
         >
-          Network Monitor
+          WiFi Security Auditing
         </h1>
       </div>
       
@@ -116,7 +115,7 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
         <ThemeToggle />
         
         <Button variant="ghost" className="hidden md:flex items-center gap-1 text-white">
-          <Settings size={18} />
+          <Shield size={18} />
           <span className="hidden md:inline">Settings</span>
         </Button>
         
