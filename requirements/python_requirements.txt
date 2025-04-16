@@ -12,7 +12,7 @@ requests>=2.28.0
 # Optional but recommended dependencies
 colorama>=0.4.4  # For terminal colors in debug mode
 ipaddress>=1.0.23  # IP address manipulation
-dns.resolver>=2.1.0  # DNS resolution
+dnspython>=2.1.0  # DNS resolution (fixed package name)
 
 # Error handling and logging
 rich>=10.16.2  # Enhanced console output
