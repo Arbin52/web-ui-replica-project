@@ -63,21 +63,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data: {
             full_name: fullName,
           },
-          emailRedirectTo: window.location.origin + '/auth'
+          // Remove emailRedirectTo to prevent email confirmation requirement
         }
       });
 
       if (error) throw error;
       
-      if (data.user && !data.session) {
-        toast({
-          title: "Email confirmation required",
-          description: "Please check your email to confirm your account before signing in.",
+      if (data.user) {
+        // Automatically sign in after sign up
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
         });
-      } else {
+        
+        if (signInError) throw signInError;
+        
         toast({
           title: "Account created",
-          description: "Your account has been created successfully.",
+          description: "Your account has been created and you're now signed in.",
         });
       }
     } catch (error: any) {
