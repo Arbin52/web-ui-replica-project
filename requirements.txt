@@ -5,7 +5,10 @@
 # Basic network scanning requirements
 scapy>=2.4.5
 python-nmap>=0.7.1
-netifaces>=0.11.0
+# Using a specific version of netifaces to avoid compatibility issues
+netifaces==0.10.9; platform_system!="Windows"
+# For Windows systems, use a pre-compiled wheel or fallback
+pynetinfo>=0.1.0; platform_system=="Windows"
 
 # System and resource monitoring
 psutil>=5.9.0

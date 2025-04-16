@@ -50,13 +50,28 @@ app.get('/device/:ip', async (req, res) => {
 app.get('/scanner-status', async (req, res) => {
   try {
     if (networkScanner.isPythonAvailable) {
-      const { runPythonScript } = require('./networkScanner'); // Import dynamically to avoid circular deps
-      const statusOutput = await runPythonScript(['status']);
-      const status = JSON.parse(statusOutput);
-      res.json({
-        ...status,
-        pythonAvailable: true
-      });
+      try {
+        const statusOutput = await networkScanner.runPythonScript(['status']);
+        const status = JSON.parse(statusOutput);
+        res.json({
+          ...status,
+          pythonAvailable: true
+        });
+      } catch (error) {
+        // Handle case when status call fails (likely due to missing dependencies)
+        console.error('Failed to get detailed scanner status:', error);
+        res.json({
+          pythonAvailable: true,
+          modules: {
+            scapy: false,
+            nmap: false,
+            netifaces: false,
+            psutil: false
+          },
+          os: process.platform,
+          error: error.message
+        });
+      }
     } else {
       res.json({
         pythonAvailable: false,

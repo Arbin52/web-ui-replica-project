@@ -69,7 +69,35 @@ const runPythonScript = (args: string[]): Promise<string> => {
     
     proc.on('close', (code) => {
       if (code !== 0) {
-        reject(new Error(`Python script failed with code ${code}: ${stderr}`));
+        if (stderr.includes('netifaces')) {
+          console.warn('Python netifaces module not available. Using fallback methods.');
+          // Provide a simplified response when netifaces is not available
+          if (args[0] === 'scan') {
+            resolve(JSON.stringify([])); // Empty device list
+          } else if (args[0] === 'device') {
+            resolve(JSON.stringify({
+              ip: args[1],
+              mac: 'Unknown',
+              name: 'Unknown Device',
+              type: 'Unknown',
+              status: 'Unknown',
+              id: Math.random().toString(36).substring(2, 10)
+            }));
+          } else if (args[0] === 'status') {
+            resolve(JSON.stringify({
+              pythonAvailable: true,
+              modules: {
+                scapy: false,
+                nmap: false,
+                netifaces: false,
+                psutil: false
+              },
+              os: process.platform
+            }));
+          }
+        } else {
+          reject(new Error(`Python script failed with code ${code}: ${stderr}`));
+        }
       } else {
         resolve(stdout);
       }
@@ -84,6 +112,7 @@ const runPythonScript = (args: string[]): Promise<string> => {
 
 export const networkScanner = {
   isPythonAvailable: isPythonAvailable(),
+  runPythonScript, // Export for use in other files
   
   scan: async (): Promise<NetworkDevice[]> => {
     try {
@@ -102,22 +131,28 @@ export const networkScanner = {
       
       // Fallback to original method
       console.log('Using fallback network scanner (ARP)');
-      const output = execSync('arp -a').toString();
-      const devices = output.split('\n')
-        .filter(line => line.includes('('))
-        .map(line => {
-          const [ip, mac] = line.split(/\s+/);
-          return {
-            ip,
-            mac,
-            name: 'Unknown Device',
-            type: 'Unknown',
-            status: 'Online',
-            id: Math.random().toString(36).substring(2, 10)
-          };
-        });
-      
-      return devices;
+      try {
+        const output = execSync('arp -a').toString();
+        const devices = output.split('\n')
+          .filter(line => line.includes('('))
+          .map(line => {
+            const [ip, mac] = line.split(/\s+/);
+            return {
+              ip,
+              mac,
+              name: 'Unknown Device',
+              type: 'Unknown',
+              status: 'Online',
+              id: Math.random().toString(36).substring(2, 10)
+            };
+          });
+        
+        return devices;
+      } catch (arpError) {
+        console.error('ARP command failed:', arpError);
+        // Return empty array if both Python and ARP fail
+        return [];
+      }
     } catch (error) {
       console.error('Network scan error:', error);
       return [];
