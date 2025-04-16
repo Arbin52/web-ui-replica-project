@@ -1,12 +1,13 @@
 
 import React, { useEffect } from 'react';
-import { Router, Smartphone, Laptop, Monitor, Tv, TabletIcon, RefreshCw, WifiOff } from 'lucide-react';
+import { Router, Smartphone, Laptop, Monitor, Tv, TabletIcon, RefreshCw, WifiOff, AlertCircle, Info } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { NetworkStatus } from '@/hooks/network/types';
 import { useRealDevices } from '@/hooks/useRealDevices';
 import { toast } from 'sonner';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface ConnectedDevicesProps {
   networkStatus: NetworkStatus | null;
@@ -28,10 +29,17 @@ export const ConnectedDevices: React.FC<ConnectedDevicesProps> = ({ networkStatu
   const displayDevices = hasScanner ? devices : networkStatus?.connectedDevices || [];
   const isLoading = hasScanner ? devicesLoading : networkIsLoading;
   
+  // Check if we're running in deployed mode (not localhost)
+  const isDeployed = typeof window !== 'undefined' && 
+    window.location.hostname !== 'localhost' && 
+    window.location.hostname !== '127.0.0.1';
+  
   useEffect(() => {
-    // Check for scanner on component mount
-    checkScannerAvailability();
-  }, []);
+    // Check for scanner on component mount, but only if not deployed
+    if (!isDeployed) {
+      checkScannerAvailability();
+    }
+  }, [isDeployed]);
 
   // Function to get device icon based on device type
   const getDeviceIcon = (deviceType: string) => {
@@ -60,18 +68,22 @@ export const ConnectedDevices: React.FC<ConnectedDevicesProps> = ({ networkStatu
   const handleRefresh = async () => {
     if (hasScanner) {
       await refreshDevices();
-    } else {
+    } else if (!isDeployed) {
       toast.info('Checking for scanner availability...');
       await checkScannerAvailability();
+    } else {
+      toast.info('Network scanner is not available in deployed mode');
     }
   };
 
   const handleScan = async () => {
     if (hasScanner) {
       await startNetworkScan();
-    } else {
+    } else if (!isDeployed) {
       toast.error('Network scanner not available');
       checkScannerAvailability();
+    } else {
+      toast.info('Network scanner is not available in deployed mode');
     }
   };
 
@@ -93,16 +105,16 @@ export const ConnectedDevices: React.FC<ConnectedDevicesProps> = ({ networkStatu
               variant="outline" 
               size="sm" 
               onClick={handleRefresh} 
-              disabled={isLoading || isScanning}
+              disabled={isLoading || isScanning || isDeployed}
             >
               <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
             </Button>
-            {hasScanner && (
+            {(!isDeployed || hasScanner) && (
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={handleScan} 
-                disabled={isLoading || isScanning}
+                disabled={isLoading || isScanning || isDeployed}
               >
                 {isScanning ? "Scanning..." : "Scan"}
               </Button>
@@ -125,13 +137,23 @@ export const ConnectedDevices: React.FC<ConnectedDevicesProps> = ({ networkStatu
           </div>
         ) : (
           <div className="max-h-96 overflow-y-auto">
-            {!hasScanner && (
+            {isDeployed && !hasScanner ? (
+              <Alert variant="default" className="mb-4">
+                <Info size={16} />
+                <AlertTitle>Viewing Demo Data</AlertTitle>
+                <AlertDescription className="text-sm mt-1">
+                  You're seeing simulated device data because you're using the deployed version. For real device scanning, please run the app locally with the network scanner service.
+                </AlertDescription>
+              </Alert>
+            ) : !hasScanner && (
               <div className="mb-4 p-3 bg-amber-50 text-amber-800 border border-amber-200 rounded-md flex items-center gap-2 text-sm">
                 <WifiOff size={16} />
                 <span>Network scanner not connected. Device list may not be accurate.</span>
-                <Button variant="link" className="text-xs ml-auto p-0 h-auto" onClick={checkScannerAvailability}>
-                  Check scanner
-                </Button>
+                {!isDeployed && (
+                  <Button variant="link" className="text-xs ml-auto p-0 h-auto" onClick={checkScannerAvailability}>
+                    Check scanner
+                  </Button>
+                )}
               </div>
             )}
             
@@ -151,6 +173,9 @@ export const ConnectedDevices: React.FC<ConnectedDevicesProps> = ({ networkStatu
                     <div className="flex items-center space-x-2">
                       <div className={`h-2.5 w-2.5 rounded-full ${device.status ? (device.status === 'Online' ? 'bg-green-500' : 'bg-red-500') : 'bg-green-500'}`}></div>
                       <span className="text-sm">{device.status || 'Online'}</span>
+                      {isDeployed && !hasScanner && (
+                        <span className="text-xs ml-2 text-muted-foreground">(Demo)</span>
+                      )}
                     </div>
                   </div>
                 ))}

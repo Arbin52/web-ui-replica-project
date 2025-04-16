@@ -49,18 +49,38 @@ export const useRealDevices = () => {
   
   const { connectionError, setConnectionError, clearConnectionError } = useConnectionErrorHandling();
 
+  // Check if we're running in a deployed environment (not localhost)
+  const isDeployed = typeof window !== 'undefined' && 
+    window.location.hostname !== 'localhost' && 
+    window.location.hostname !== '127.0.0.1';
+
   // Check if scanner is available when component mounts
   useEffect(() => {
-    checkScannerAvailability();
+    // Only check for scanner if not in deployed mode
+    if (!isDeployed) {
+      checkScannerAvailability();
+    } else {
+      // We're in deployed mode, so we immediately know scanner isn't available
+      setHasScanner(false);
+      setIsLoading(false);
+      console.log('Running in deployed mode - network scanner not available');
+    }
     
     // Cleanup function to handle component unmount
     return () => {
       // Any cleanup needed
     };
-  }, []);
+  }, [isDeployed]);
 
   // Check if local scanner is available
   const checkScannerAvailability = async () => {
+    // If we're in deployed mode, scanner is definitely not available
+    if (isDeployed) {
+      setHasScanner(false);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const { available, pythonAvailable, version } = await isScannerAvailable();
@@ -100,7 +120,9 @@ export const useRealDevices = () => {
   // Refresh the list of connected devices
   const refreshDevices = useCallback(async () => {
     if (!hasScanner) {
-      toast.error('Network scanner not available');
+      if (!isDeployed) {
+        toast.error('Network scanner not available');
+      }
       return;
     }
     
@@ -116,12 +138,14 @@ export const useRealDevices = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [hasScanner, clearConnectionError, setConnectionError]);
+  }, [hasScanner, clearConnectionError, setConnectionError, isDeployed]);
 
   // Initiate a network scan
   const startNetworkScan = async () => {
     if (!hasScanner) {
-      toast.error('Network scanner not available');
+      if (!isDeployed) {
+        toast.error('Network scanner not available');
+      }
       return;
     }
     
@@ -182,6 +206,7 @@ export const useRealDevices = () => {
     scannerStatus,
     selectedDevice,
     connectionError,
+    isDeployed,
     refreshDevices,
     startNetworkScan,
     getDeviceInfo,
