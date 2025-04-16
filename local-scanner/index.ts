@@ -98,12 +98,23 @@ app.post('/scan', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Network Scanner running on port ${PORT}`);
-  console.log(`Python integration ${networkScanner.isPythonAvailable ? 'available' : 'not available'}`);
+  console.log(`\n========================`);
+  console.log(`Network Scanner Service`);
+  console.log(`========================`);
+  console.log(`✅ Server running at: http://localhost:${PORT}`);
+  console.log(`✅ Status endpoint: http://localhost:${PORT}/status`);
+  console.log(`✅ Python integration ${networkScanner.isPythonAvailable ? 'available ✓' : 'not available ✗'}`);
 
   if (networkScanner.isPythonAvailable) {
-    console.log(`Using Python for enhanced network scanning capabilities`);
+    console.log(`✅ Using Python for enhanced network scanning capabilities`);
   } else {
-    console.log(`Python not available - using fallback methods. For better results, install Python and required packages.`);
+    console.log(`⚠️  Python not available - using fallback methods.`);
+    console.log(`   For better results, install Python and required packages.`);
+    console.log(`   See local-scanner-quick-start.md for instructions.`);
   }
+  
+  console.log(`\nTo use the scanner with the main application:`);
+  console.log(`1. Keep this terminal window open`);
+  console.log(`2. Start the main application in another terminal with 'npm run dev'`);
+  console.log(`\n`);
 });

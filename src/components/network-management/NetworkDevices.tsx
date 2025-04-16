@@ -4,8 +4,9 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { ConnectedDevices } from '../overview/ConnectedDevices';
 import { NetworkStatus } from '@/hooks/network/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Info, AlertCircle } from 'lucide-react';
+import { Info, AlertCircle, ExternalLink } from 'lucide-react';
 import { useRealDevices } from '@/hooks/useRealDevices';
+import { Button } from '@/components/ui/button';
 
 interface NetworkDevicesProps {
   networkStatus: NetworkStatus | null;
@@ -42,10 +43,27 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
             </AlertDescription>
           </Alert>
         ) : !hasScanner ? (
-          <Alert variant="default" className="mt-2">
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              For accurate device detection, ensure the local network scanner is running on http://localhost:3001
+          <Alert variant="warning" className="mt-2 border-amber-200 bg-amber-50">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-800 font-medium">Local Network Scanner Not Running</AlertTitle>
+            <AlertDescription className="text-amber-700">
+              <p className="mb-2">Follow these steps to start the scanner service:</p>
+              <ol className="list-decimal pl-5 space-y-1">
+                <li>Open a terminal window</li>
+                <li>Navigate to the <code className="bg-amber-100 px-1 rounded">local-scanner</code> directory</li>
+                <li>Run <code className="bg-amber-100 px-1 rounded">npm start</code></li>
+                <li>Keep that terminal window open</li>
+              </ol>
+              <div className="flex gap-2 mt-3">
+                <Button
+                  variant="outline" 
+                  size="sm"
+                  className="border-amber-300 hover:bg-amber-100 text-amber-900"
+                  onClick={() => window.open('/local-scanner-quick-start.md', '_blank')}
+                >
+                  Setup Guide <ExternalLink className="ml-1 h-3 w-3" />
+                </Button>
+              </div>
             </AlertDescription>
           </Alert>
         ) : null}

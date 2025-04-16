@@ -1,100 +1,139 @@
 
 # Local Network Scanner - Quick Start Guide
 
-This guide will help you set up and run the local network scanner service even if you're experiencing issues with the directory structure.
+This guide will help you set up and run the local network scanner service step-by-step, with a focus on Windows systems.
 
-## Quick Setup Using the Setup Script
+## Quick Summary
 
-We've created a setup script to help you get started quickly. This script will:
+1. The scanner service runs on `http://localhost:3001`
+2. You need to start the scanner service BEFORE launching the main application
+3. The scanner requires Node.js and optionally Python for advanced features
 
-1. Create the necessary directory structure
-2. Copy required files
-3. Install dependencies
-4. Check for Python availability
+## Step 1: Setup Your Environment
 
-Run the script with:
+### Windows Requirements
+- Node.js 16+ (Download from [nodejs.org](https://nodejs.org/))
+- Python 3.8+ (Optional, for enhanced scanning - [Download Python](https://www.python.org/downloads/windows/))
+- Make sure to check "Add Python to PATH" during installation!
 
+### Create Scanner Directory Structure
 ```bash
-node setup-scanner.js
+# Open Command Prompt and navigate to project directory
+cd network-management-app
+
+# Create local-scanner directory if needed
+mkdir local-scanner
+mkdir local-scanner\python
 ```
 
-## Windows-Specific Setup
-
-If you're on Windows and encountering issues with Python packages:
+## Step 2: Install Dependencies
 
 ```bash
-# Install Python for Windows if not already installed (from https://www.python.org/downloads/)
-
-# Install Windows-specific packages
-pip install pynetinfo
-pip install getmac
-pip install colorama
-
-# If you encounter permission issues, try running as administrator:
-# Right-click Command Prompt > Run as administrator
-
-# If you're still having issues with pynetinfo, you can use basic scanner mode
-# by starting the scanner without Python dependencies
-```
-
-The scanner will automatically fall back to basic functionality if Python packages aren't available.
-
-## Manual Setup Steps
-
-If you prefer to set up manually, follow these steps:
-
-### 1. Create Required Directories
-
-```bash
-# Create local-scanner directory if it doesn't exist
-mkdir -p local-scanner/python
-```
-
-### 2. Set Up Required Files
-
-```bash
-# Copy Python requirements (if they exist)
-cp requirements/python_requirements.txt local-scanner/python/requirements.txt
-
-# Navigate to local-scanner directory
+# Navigate to the scanner directory
 cd local-scanner
-```
 
-### 3. Install Dependencies
-
-```bash
 # Install Node.js dependencies
 npm install
 ```
 
-### 4. Start the Scanner Service
+### Installing Python Dependencies on Windows
+```bash
+# Make sure Python is in your PATH
+python --version
+
+# Install required packages
+pip install pynetinfo
+pip install getmac
+pip install colorama
+
+# If you have issues with pynetinfo, try:
+pip install --no-cache-dir pynetinfo
+```
+
+## Step 3: Start the Scanner Service
 
 ```bash
-# Start the network scanner
+# From the local-scanner directory
 npm start
+```
+
+You should see output like:
+```
+Network Scanner running on port 3001
+Python integration available
+Using Python for enhanced network scanning capabilities
+```
+
+## Step 4: Verify Scanner is Working
+
+Open your browser and navigate to:
+```
+http://localhost:3001/status
+```
+
+You should see a JSON response showing the scanner is running:
+```json
+{
+  "status": "running", 
+  "pythonAvailable": true, 
+  "version": "1.1.0"
+}
 ```
 
 ## Troubleshooting
 
-If you encounter "Cannot find path" errors:
-- Make sure you're running commands from the project root directory
-- Verify the local-scanner directory exists
+### "Network scanner not available" Error
 
-If the scanner starts but isn't detecting devices:
-- Check if Python is installed: `python --version` or `python3 --version`
-- On Windows, install Python dependencies: `pip install pynetinfo getmac colorama`
-- On Linux/macOS: `pip install -r local-scanner/python/requirements.txt`
+If the application shows "Network scanner not available":
 
-### Windows-Specific Issues
+1. Make sure you're running the scanner service on port 3001
+2. Check that it's running BEFORE launching the main application
+3. Verify there are no firewall issues blocking local connections
 
-If you see errors related to pynetinfo or other Python packages on Windows:
-1. The scanner will fall back to basic functionality automatically
-2. You'll still see network information, but with limited device detection
-3. Make sure you're using Python 3.8+ (`python --version` to check)
+### Python Package Issues on Windows
 
-## What's Next?
+If you see Python-related errors:
 
-After starting the network scanner service:
-1. Open another terminal
-2. Run the frontend application with `npm run dev`
-3. Access the application in your browser at http://localhost:8080
+1. Verify Python is installed and in your PATH:
+   ```bash
+   python --version
+   ```
+
+2. If you have issues with pynetinfo:
+   ```bash
+   # Try reinstalling
+   pip uninstall pynetinfo
+   pip install --no-cache-dir pynetinfo
+   ```
+
+3. If still experiencing issues, the scanner will automatically fall back to basic functionality, but with limited device detection
+
+### Port Conflict Issues
+
+If port 3001 is already in use:
+
+1. Change the port in local-scanner/index.ts:
+   ```typescript
+   const PORT = process.env.PORT || 3002; // Change to a different port
+   ```
+
+2. Update your .env file to point to the new port:
+   ```
+   VITE_SCANNER_URL=http://localhost:3002
+   ```
+
+## Running the Full Application
+
+Once your scanner is running:
+
+1. Keep the scanner terminal open
+2. Open a new terminal window
+3. From the project root, run the main application:
+   ```bash
+   npm run dev
+   ```
+4. Open your browser to http://localhost:8080
+
+## Need More Help?
+
+If you continue having issues, check the full [DEPLOYMENT.md](./DEPLOYMENT.md) documentation or open an issue on our GitHub repository.
