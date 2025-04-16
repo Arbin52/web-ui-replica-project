@@ -43,7 +43,7 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
             </AlertDescription>
           </Alert>
         ) : !hasScanner ? (
-          <Alert variant="warning" className="mt-2 border-amber-200 bg-amber-50">
+          <Alert variant="default" className="mt-2 border-amber-200 bg-amber-50">
             <AlertCircle className="h-4 w-4 text-amber-600" />
             <AlertTitle className="text-amber-800 font-medium">Local Network Scanner Not Running</AlertTitle>
             <AlertDescription className="text-amber-700">
