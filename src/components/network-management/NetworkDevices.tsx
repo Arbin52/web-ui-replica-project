@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { ConnectedDevices } from '../overview/ConnectedDevices';
 import { NetworkStatus } from '@/hooks/network/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Info, AlertCircle, ExternalLink } from 'lucide-react';
+import { Info, AlertCircle, ExternalLink, Terminal } from 'lucide-react';
 import { useRealDevices } from '@/hooks/useRealDevices';
 import { Button } from '@/components/ui/button';
 
@@ -51,10 +51,20 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
               <ol className="list-decimal pl-5 space-y-1">
                 <li>Open a terminal window</li>
                 <li>Navigate to the <code className="bg-amber-100 px-1 rounded">local-scanner</code> directory</li>
-                <li>Run <code className="bg-amber-100 px-1 rounded">npm start</code></li>
+                <li>Run <code className="bg-amber-100 px-1 rounded">node setup-scanner.js</code> to set up dependencies</li>
+                <li>Run <code className="bg-amber-100 px-1 rounded">npm start</code> to start the scanner</li>
                 <li>Keep that terminal window open</li>
+                <li>In a new terminal window, run <code className="bg-amber-100 px-1 rounded">npm run dev</code> in the project root</li>
               </ol>
               <div className="flex gap-2 mt-3">
+                <Button
+                  variant="outline" 
+                  size="sm"
+                  className="border-amber-300 hover:bg-amber-100 text-amber-900 flex items-center gap-1"
+                >
+                  <Terminal className="h-3.5 w-3.5" />
+                  <a href="http://localhost:3001/status" target="_blank" rel="noopener noreferrer" className="no-underline">Check Scanner Status</a>
+                </Button>
                 <Button
                   variant="outline" 
                   size="sm"
