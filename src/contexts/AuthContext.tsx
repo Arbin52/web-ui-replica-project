@@ -24,6 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -43,6 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("Initial session check:", session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -53,26 +55,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log("Signing up user:", email);
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             full_name: fullName,
           },
+          emailRedirectTo: window.location.origin + '/auth'
         }
       });
 
       if (error) throw error;
       
-      toast({
-        title: "Account created",
-        description: "Please check your email for verification.",
-      });
+      if (data.user && !data.session) {
+        toast({
+          title: "Email confirmation required",
+          description: "Please check your email to confirm your account before signing in.",
+        });
+      } else {
+        toast({
+          title: "Account created",
+          description: "Your account has been created successfully.",
+        });
+      }
     } catch (error: any) {
+      console.error("Sign up error:", error.message);
+      let errorMessage = error.message;
+      
+      // Provide more user-friendly error messages
+      if (error.message.includes("already registered")) {
+        errorMessage = "This email is already registered. Please sign in instead.";
+      }
+      
       toast({
         title: "Error",
-        description: error.message || "Failed to sign up",
+        description: errorMessage || "Failed to sign up",
         variant: "destructive",
       });
       throw error;
@@ -81,27 +100,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log("Signing in user:", email);
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Sign in error:", error.message);
+        
+        // Handle specific error cases
+        if (error.message.includes("Email not confirmed")) {
+          toast({
+            title: "Email not confirmed",
+            description: "Please check your email to confirm your account before signing in.",
+            variant: "destructive",
+          });
+        } else if (error.message.includes("Invalid login credentials")) {
+          toast({
+            title: "Invalid credentials",
+            description: "The email or password you entered is incorrect.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: error.message || "Failed to sign in",
+            variant: "destructive",
+          });
+        }
+        
+        throw error;
+      }
+
+      // If we got here, sign-in was successful
+      console.log("Sign in successful:", data.user?.email);
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to sign in",
-        variant: "destructive",
-      });
       throw error;
     }
   };
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      await supabase.auth.signOut();
     } catch (error: any) {
+      console.error("Sign out error:", error.message);
       toast({
         title: "Error",
         description: error.message || "Failed to sign out",
