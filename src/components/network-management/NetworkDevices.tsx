@@ -7,6 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Info, AlertCircle, ExternalLink, Terminal } from 'lucide-react';
 import { useRealDevices } from '@/hooks/useRealDevices';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface NetworkDevicesProps {
   networkStatus: NetworkStatus | null;
@@ -22,7 +23,25 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
     window.location.hostname !== 'localhost' && 
     window.location.hostname !== '127.0.0.1';
 
-  const { hasScanner } = useRealDevices();
+  const { hasScanner, checkScannerAvailability } = useRealDevices();
+  
+  // Function to handle scanner status check
+  const handleCheckScannerStatus = () => {
+    window.open('http://localhost:3001/status', '_blank');
+  };
+  
+  // Function to handle opening setup guide
+  const handleOpenSetupGuide = () => {
+    window.open('/local-scanner-quick-start.md', '_blank');
+  };
+  
+  // Function to refresh scanner status
+  const handleRefreshScannerStatus = () => {
+    toast.info('Checking scanner status...');
+    checkScannerAvailability().then(() => {
+      toast.success('Scanner check completed');
+    });
+  };
 
   return (
     <Card>
@@ -56,22 +75,31 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
                 <li>Keep that terminal window open</li>
                 <li>In a new terminal window, run <code className="bg-amber-100 px-1 rounded">npm run dev</code> in the project root</li>
               </ol>
-              <div className="flex gap-2 mt-3">
+              <div className="flex flex-wrap gap-2 mt-3">
                 <Button
                   variant="outline" 
                   size="sm"
                   className="border-amber-300 hover:bg-amber-100 text-amber-900 flex items-center gap-1"
+                  onClick={handleCheckScannerStatus}
                 >
                   <Terminal className="h-3.5 w-3.5" />
-                  <a href="http://localhost:3001/status" target="_blank" rel="noopener noreferrer" className="no-underline">Check Scanner Status</a>
+                  <span>Check Scanner Status</span>
                 </Button>
                 <Button
                   variant="outline" 
                   size="sm"
                   className="border-amber-300 hover:bg-amber-100 text-amber-900"
-                  onClick={() => window.open('/local-scanner-quick-start.md', '_blank')}
+                  onClick={handleOpenSetupGuide}
                 >
                   Setup Guide <ExternalLink className="ml-1 h-3 w-3" />
+                </Button>
+                <Button
+                  variant="outline" 
+                  size="sm"
+                  className="border-amber-300 hover:bg-amber-100 text-amber-900"
+                  onClick={handleRefreshScannerStatus}
+                >
+                  Refresh Scanner Status
                 </Button>
               </div>
             </AlertDescription>
