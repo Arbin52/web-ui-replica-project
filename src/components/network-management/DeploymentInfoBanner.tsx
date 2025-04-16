@@ -12,7 +12,7 @@ export const DeploymentInfoBanner: React.FC<DeploymentInfoBannerProps> = ({ isDe
   if (!isDeployed) return null;
   
   return (
-    <Alert variant="warning" className="mb-6 border-amber-200 bg-amber-50 text-amber-800">
+    <Alert className="mb-6 border-amber-200 bg-amber-50 text-amber-800">
       <AlertCircle className="h-5 w-5 text-amber-800" />
       <AlertTitle className="text-amber-800 font-medium">Limited Functionality in Deployed Mode</AlertTitle>
       <AlertDescription className="mt-2">
