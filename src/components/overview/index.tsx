@@ -1,14 +1,17 @@
-import React, { useMemo, useCallback } from 'react';
+
+import React, { useMemo, useCallback, Suspense, lazy } from 'react';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { NetworkStatusCards } from './NetworkStatusCards';
 import { DataUsageCards } from './DataUsageCards';
 import { NetworkStatusFooter } from './NetworkStatus';
 import { ErrorState } from './ErrorState';
 import { PageHeader } from './PageHeader';
-import { FeatureCards } from './FeatureCards';
 import { NetworkTabSection } from './NetworkTabSection';
 import NetworkStatusMonitor from './NetworkStatusMonitor';
 import './index.css';
+
+// Lazy load feature cards to improve initial render speed
+const FeatureCards = lazy(() => import('./FeatureCards'));
 
 const Overview: React.FC = () => {
   const { 
@@ -30,11 +33,11 @@ const Overview: React.FC = () => {
     }
   }, [networkStatus?.gatewayIp, openGatewayInterface]);
 
-  // Memoize the refresh handler with debouncing
+  // Optimize the refresh handler with debouncing
   const handleRefresh = useCallback(() => {
     // Use requestIdleCallback if available, otherwise use setTimeout
     if (window.requestIdleCallback) {
-      window.requestIdleCallback(() => refreshNetworkStatus());
+      window.requestIdleCallback(() => refreshNetworkStatus(), { timeout: 2000 });
     } else {
       setTimeout(() => refreshNetworkStatus(), 0);
     }
@@ -78,10 +81,6 @@ const Overview: React.FC = () => {
     <DataUsageCards networkStatus={networkStatus} isLoading={isLoading} />
   ), [networkStatus, isLoading]);
 
-  const featureCardsSection = useMemo(() => (
-    <FeatureCards networkStatus={networkStatus} isLoading={isLoading} />
-  ), [networkStatus, isLoading]);
-
   const tabsSection = useMemo(() => (
     <NetworkTabSection 
       networkStatus={networkStatus} 
@@ -100,7 +99,12 @@ const Overview: React.FC = () => {
       {statusCardsSection}
       {monitorSection}
       {dataUsageSection}
-      {featureCardsSection}
+      
+      {/* Wrap FeatureCards in Suspense to prevent render blocking */}
+      <Suspense fallback={<div className="h-48 bg-gray-50 rounded animate-pulse"></div>}>
+        <FeatureCards networkStatus={networkStatus} isLoading={isLoading} />
+      </Suspense>
+      
       {tabsSection}
       {footerSection}
     </div>

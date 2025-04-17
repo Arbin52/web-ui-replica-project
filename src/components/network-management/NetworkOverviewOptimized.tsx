@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, memo, useMemo } from 'react';
+import React, { useState, useEffect, useRef, memo, useMemo, useCallback } from 'react';
 import { Signal, Database, Shield, Wifi, Router } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { NetworkStatusCards } from '../overview/NetworkStatusCards';
@@ -9,6 +9,7 @@ import { UpdateFrequencyControl } from './UpdateFrequencyControl';
 import { NetworkStatus } from '@/hooks/network/types';
 import { Card, CardContent } from '@/components/ui/card';
 import MockRouterAdmin from './MockRouterAdmin';
+import { throttle } from '@/utils/performance';
 
 interface NetworkOverviewProps {
   networkStatus: NetworkStatus | null;
@@ -59,14 +60,26 @@ const NetworkOverviewOptimized: React.FC<NetworkOverviewProps> = ({
   // Use simple state without animations to improve performance
   const [isMockRouterOpen, setIsMockRouterOpen] = useState(false);
   
-  // Simplified the rendering by removing animations
-  const displayDownload = networkStatus?.connectionSpeed.download || 0;
-  const displayUpload = networkStatus?.connectionSpeed.upload || 0;
+  // Static display values to prevent continuous updates
+  const displayDownload = useMemo(() => {
+    if (!networkStatus?.connectionSpeed.download) return 0;
+    return parseFloat(networkStatus.connectionSpeed.download.toFixed(1));
+  }, [networkStatus?.connectionSpeed.download]);
   
-  // Memoize the gateway click handler
-  const handleGatewayClickLocal = useMemo(() => () => {
+  const displayUpload = useMemo(() => {
+    if (!networkStatus?.connectionSpeed.upload) return 0;
+    return parseFloat(networkStatus.connectionSpeed.upload.toFixed(1));
+  }, [networkStatus?.connectionSpeed.upload]);
+  
+  // Throttle gateway click to prevent double clicks
+  const handleGatewayClickLocal = useCallback(throttle(() => {
     setIsMockRouterOpen(true);
-  }, []);
+  }, 500), []);
+
+  // Throttled refresh handler to prevent spam clicks
+  const throttledRefresh = useCallback(throttle(() => {
+    handleRefresh();
+  }, 1000), [handleRefresh]);
 
   // Use memoization for the UI sections to prevent unnecessary re-renders
   const statusCardSection = useMemo(() => (
@@ -81,14 +94,14 @@ const NetworkOverviewOptimized: React.FC<NetworkOverviewProps> = ({
       />
       <StatusCard 
         title="Download"
-        value={`${displayDownload.toFixed(1)} Mbps`}
+        value={`${displayDownload} Mbps`}
         icon={<Database size={18} />}
         description="Current download speed"
         isLoading={isLoading}
       />
       <StatusCard 
         title="Upload"
-        value={`${displayUpload.toFixed(1)} Mbps`}
+        value={`${displayUpload} Mbps`}
         icon={<Database size={18} />}
         description="Current upload speed"
         isLoading={isLoading}
@@ -101,7 +114,29 @@ const NetworkOverviewOptimized: React.FC<NetworkOverviewProps> = ({
         isLoading={isLoading}
       />
     </div>
-  ), [networkStatus?.availableNetworks, networkStatus?.networkName, displayDownload, displayUpload, isLoading]);
+  ), [displayDownload, displayUpload, networkStatus?.availableNetworks, networkStatus?.networkName, isLoading]);
+
+  // Optimize content based on visibility
+  const [isTabsVisible, setIsTabsVisible] = useState(false);
+  const tabsRef = useRef<HTMLDivElement>(null);
+  
+  // Use IntersectionObserver to only render visible content
+  useEffect(() => {
+    if (!tabsRef.current) return;
+    
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsTabsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+    
+    observer.observe(tabsRef.current);
+    
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -135,20 +170,22 @@ const NetworkOverviewOptimized: React.FC<NetworkOverviewProps> = ({
         </CardContent>
       </Card>
 
-      {/* Only render tabs when data is available */}
-      {networkStatus && (
-        <NetworkDeviceTabs 
-          networkStatus={networkStatus} 
-          isLoading={isLoading} 
-        />
-      )}
+      {/* Only render tabs when necessary */}
+      <div ref={tabsRef}>
+        {isTabsVisible && networkStatus && (
+          <NetworkDeviceTabs 
+            networkStatus={networkStatus} 
+            isLoading={isLoading} 
+          />
+        )}
+      </div>
       
       <UpdateFrequencyControl 
         updateInterval={updateInterval} 
         setRefreshRate={setRefreshRate} 
       />
       
-      {/* Simplified rendering of status cards */}
+      {/* Only render status cards when data is available */}
       {networkStatus && (
         <NetworkStatusCards 
           networkStatus={networkStatus} 
@@ -159,7 +196,7 @@ const NetworkOverviewOptimized: React.FC<NetworkOverviewProps> = ({
       
       <Button 
         variant="outline" 
-        onClick={handleRefresh}
+        onClick={throttledRefresh}
         className="w-full mt-2 hover:bg-primary/5"
         disabled={isRefreshing}
       >
@@ -189,4 +226,4 @@ const NetworkOverviewOptimized: React.FC<NetworkOverviewProps> = ({
   );
 };
 
-export default NetworkOverviewOptimized;
+export default memo(NetworkOverviewOptimized);

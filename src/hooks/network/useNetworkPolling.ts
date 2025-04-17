@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, MutableRefObject } from 'react';
 
 export const useNetworkPolling = (
@@ -8,23 +9,42 @@ export const useNetworkPolling = (
 ) => {
   // Keep track of last fetch time
   const lastFetchTime = useRef<number>(0);
+  const isInitialized = useRef<boolean>(false);
+  
+  // Track visibility state
+  const isVisible = useRef<boolean>(document.visibilityState === 'visible');
   
   useEffect(() => {
-    // Clean up any existing intervals immediately
+    // Set up visibility change detection
+    const handleVisibilityChange = () => {
+      isVisible.current = document.visibilityState === 'visible';
+      
+      // If becoming visible and should be updating, trigger fetch
+      if (isVisible.current && isLiveUpdating && Date.now() - lastFetchTime.current > 5000) {
+        fetchNetworkStatus().catch(err => console.error('Fetch error on visibility change:', err));
+        lastFetchTime.current = Date.now();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Immediately clean up any existing intervals
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
     
-    // If live updates are disabled, do nothing
+    // If live updates are disabled, do nothing more
     if (!isLiveUpdating) {
-      return;
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
     }
 
-    // Create a simple fetch function with minimum overhead
-    const simpleFetch = async () => {
+    // Create a throttled fetch function to prevent excessive updates
+    const throttledFetch = async () => {
       // Skip if document is hidden to save resources
-      if (document.visibilityState !== 'visible') {
+      if (!isVisible.current) {
         return;
       }
       
@@ -43,18 +63,27 @@ export const useNetworkPolling = (
       }
     };
 
-    // Initial fetch with delay to prevent initial load spike
-    const initialTimeout = setTimeout(() => {
-      simpleFetch();
-    }, 1000);
+    // Delayed initial fetch to prevent initial load spike
+    if (!isInitialized.current) {
+      const initialTimeout = setTimeout(() => {
+        throttledFetch();
+        isInitialized.current = true;
+      }, 1500);
+      
+      // Clean up initial timeout if component unmounts before it runs
+      return () => {
+        clearTimeout(initialTimeout);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
+    }
     
     // Use fixed interval of at least 15 seconds
     const actualInterval = Math.max(15000, updateInterval);
-    intervalRef.current = setInterval(simpleFetch, actualInterval);
+    intervalRef.current = setInterval(throttledFetch, actualInterval);
     
     // Clean up function
     return () => {
-      clearTimeout(initialTimeout);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
