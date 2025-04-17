@@ -1,9 +1,10 @@
 
 const express = require('express');
 const cors = require('cors');
-const { execSync } = require('child_process');
+const { execSync, exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 const app = express();
 const PORT = 3001;
@@ -11,78 +12,151 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
-// Check if Python is available and install basic requirements if needed
-const checkPythonSetup = () => {
-  try {
-    // First check if Python is available
-    let pythonCommand = 'python';
-    try {
-      execSync('python3 --version', { stdio: 'pipe' });
-      pythonCommand = 'python3';
-    } catch (err) {
-      try {
-        execSync('python --version', { stdio: 'pipe' });
-        pythonCommand = 'python';
-      } catch (e) {
-        console.log('Python is not available. Will use basic functionality only.');
-        return false;
+// Simplified utility to get the local IP addresses
+const getLocalIpAddresses = () => {
+  const interfaces = os.networkInterfaces();
+  const addresses = [];
+  
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      // Skip internal and non-IPv4 addresses
+      if (!iface.internal && iface.family === 'IPv4') {
+        addresses.push({
+          name,
+          address: iface.address,
+          netmask: iface.netmask,
+          mac: iface.mac
+        });
       }
     }
-
-    // Try to install just the basic, non-problematic packages
-    console.log('Installing basic Python packages...');
-    try {
-      execSync(`${pythonCommand} -m pip install getmac colorama requests`, {
-        stdio: 'pipe',
-        timeout: 30000 // 30 second timeout
-      });
-      console.log('Basic Python packages installed successfully');
-    } catch (err) {
-      console.log('Note: Could not install all Python packages. This is normal and non-critical.');
-    }
-    
-    return true;
-  } catch (err) {
-    console.log('Error checking Python setup:', err.message);
-    return false;
   }
+  
+  return addresses;
 };
 
-// Get network devices using system commands
+// Get simplified network devices using the operating system's tools
 const getNetworkDevices = () => {
   try {
-    // Get devices from ARP table
-    const output = execSync('arp -a', { encoding: 'utf8' });
+    // Get our local IP addresses first
+    const localAddresses = getLocalIpAddresses();
     const devices = [];
     
-    output.split('\n').forEach((line, index) => {
-      if (line.includes('(') || line.match(/[\d.]+/)) {
-        const ipMatch = line.match(/([\d.]+)/);
-        const macMatch = line.match(/([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})/);
-        
-        if (ipMatch) {
-          devices.push({
-            id: `dev-${index}`,
-            ip: ipMatch[0],
-            mac: macMatch ? macMatch[0] : 'unknown',
-            name: `Device ${index + 1}`,
-            status: 'Online',
-            type: 'Unknown'
-          });
-        }
+    // Add local device
+    if (localAddresses.length > 0) {
+      devices.push({
+        id: 'local',
+        ip: localAddresses[0].address,
+        mac: localAddresses[0].mac || 'unknown',
+        name: 'This Computer',
+        status: 'Online',
+        type: 'Computer'
+      });
+    }
+    
+    // Try to get the router/gateway IP
+    let gateway = '192.168.1.1'; // Default fallback
+    try {
+      // Different commands for different OS
+      let gatewayCommand;
+      if (process.platform === 'win32') {
+        gatewayCommand = 'ipconfig | findstr /i "Default Gateway"';
+      } else if (process.platform === 'darwin') { // macOS
+        gatewayCommand = 'route -n get default | grep gateway';
+      } else { // Linux
+        gatewayCommand = 'ip route | grep default';
       }
+      
+      const result = execSync(gatewayCommand, { encoding: 'utf8' });
+      const match = result.match(/(\d+\.\d+\.\d+\.\d+)/);
+      if (match && match[1]) {
+        gateway = match[1];
+      }
+    } catch (err) {
+      console.log('Could not determine gateway, using default:', gateway);
+    }
+    
+    // Add router
+    devices.push({
+      id: 'router',
+      ip: gateway,
+      mac: 'unknown',
+      name: 'Router',
+      status: 'Online',
+      type: 'Router'
     });
+    
+    // Try to get other devices from ARP table
+    try {
+      let arpCommand = 'arp -a';
+      const arpOutput = execSync(arpCommand, { encoding: 'utf8' });
+      
+      // Process each line of the ARP output
+      arpOutput.split('\n').forEach((line, index) => {
+        if (line.includes('(') || line.match(/[\d.]+/)) {
+          const ipMatch = line.match(/([\d.]+)/);
+          const macMatch = line.match(/([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})/);
+          
+          if (ipMatch && ipMatch[0] !== gateway && 
+              !devices.some(d => d.ip === ipMatch[0])) {
+            devices.push({
+              id: `dev-${index}`,
+              ip: ipMatch[0],
+              mac: macMatch ? macMatch[0] : 'unknown',
+              name: `Device ${index + 1}`,
+              status: 'Online',
+              type: guessDeviceType(ipMatch[0], macMatch ? macMatch[0] : '')
+            });
+          }
+        }
+      });
+    } catch (err) {
+      console.log('Error getting ARP table:', err.message);
+    }
     
     return devices;
   } catch (error) {
     console.error('Error scanning network:', error);
     
-    // Return sample data if scan fails
+    // Return minimal data if scan fails
     return [
       { id: 'router', ip: '192.168.1.1', mac: '00:11:22:33:44:55', name: 'Router', status: 'Online', type: 'Router' },
       { id: 'local', ip: '192.168.1.100', mac: '11:22:33:44:55:66', name: 'This Computer', status: 'Online', type: 'Computer' }
     ];
   }
+};
+
+// Guess device type based on IP/MAC address patterns
+const guessDeviceType = (ip, mac) => {
+  // This is a simplistic approach - real device detection would be more sophisticated
+  const lastOctet = parseInt(ip.split('.').pop());
+  
+  if (lastOctet === 1 || lastOctet === 254) return 'Router';
+  
+  // Check for known MAC address prefixes (first 6 characters)
+  const macPrefix = mac.substring(0, 8).toUpperCase();
+  
+  // Some very basic examples - this would be more extensive in a real implementation
+  const macPrefixes = {
+    '00:0C:29': 'Virtual Machine',
+    '00:50:56': 'Virtual Machine',
+    '00:1A:11': 'Google Device',
+    '00:17:88': 'Philips Hue',
+    'B8:27:EB': 'Raspberry Pi',
+    'DC:A6:32': 'Raspberry Pi',
+    '74:DA:38': 'Smart TV',
+    '00:25:00': 'Apple Device' 
+  };
+  
+  for (const [prefix, type] of Object.entries(macPrefixes)) {
+    if (macPrefix.startsWith(prefix)) return type;
+  }
+  
+  // Fallback based on IP range
+  if (lastOctet < 20) return 'Network Device';
+  if (lastOctet >= 100 && lastOctet <= 150) return 'Computer';
+  if (lastOctet >= 151 && lastOctet <= 200) return 'Mobile Device';
+  
+  return 'Unknown Device';
 };
 
 // Scanner settings
@@ -92,15 +166,14 @@ let scannerSettings = {
   excludedIpRanges: []
 };
 
-// Determine if Python is available
-const isPythonAvailable = checkPythonSetup();
-
 // Routes
 app.get('/status', (req, res) => {
   res.json({ 
     status: 'running', 
-    version: '1.0.0',
-    pythonAvailable: isPythonAvailable
+    version: '2.0.0',
+    pythonAvailable: false,
+    nodeOnly: true,
+    platform: process.platform
   });
 });
 
@@ -122,28 +195,35 @@ app.get('/device/:ip', (req, res) => {
 
 // Scanner status endpoint
 app.get('/scanner-status', (req, res) => {
-  // Check for Python modules without failing if they don't exist
-  const checkModule = (moduleName) => {
-    if (!isPythonAvailable) return false;
-    try {
-      execSync(`${process.platform === 'win32' ? 'python' : 'python3'} -c "import ${moduleName}"`, { stdio: 'ignore' });
-      return true;
-    } catch (e) {
-      return false;
+  const netInterfaces = os.networkInterfaces();
+  let defaultInterface = '';
+  let defaultGateway = '192.168.1.1';
+  
+  // Try to find the default interface and gateway
+  for (const [name, interfaces] of Object.entries(netInterfaces)) {
+    for (const iface of interfaces) {
+      if (!iface.internal && iface.family === 'IPv4') {
+        defaultInterface = name;
+        break;
+      }
     }
-  };
+    if (defaultInterface) break;
+  }
 
   res.json({
-    pythonAvailable: isPythonAvailable,
+    pythonAvailable: false,
+    nodeOnly: true,
     modules: {
-      scapy: checkModule('scapy'),
-      nmap: checkModule('nmap'),
-      netifaces: checkModule('netifaces'),
-      psutil: checkModule('psutil')
+      scapy: false,
+      nmap: false,
+      netifaces: false,
+      psutil: false
     },
     os: process.platform,
-    defaultGateway: '192.168.1.1',
-    networkRange: '192.168.1.0/24'
+    defaultGateway,
+    defaultInterface,
+    networkRange: '192.168.1.0/24',
+    localAddresses: getLocalIpAddresses()
   });
 });
 
@@ -175,12 +255,12 @@ app.listen(PORT, () => {
   console.log(`🔍 Check status: http://localhost:${PORT}/status`);
   console.log(`\n💡 Keep this window open while using the app\n`);
   
-  if (isPythonAvailable) {
-    console.log(`✅ Python detected - basic scanning available`);
-    console.log(`⚠️  Note: Extended Python features may require manual installation of packages`);
-    console.log(`   To manually install: pip install scapy netifaces python-nmap`);
-  } else {
-    console.log(`⚠️  Python not detected - basic scanning only`);
-    console.log(`   To enable enhanced scanning, install Python`);
-  }
+  console.log(`✅ Node.js only scanner active (no Python dependencies)`);
+  
+  // Show network interfaces for debugging
+  console.log('\nDetected network interfaces:');
+  const interfaces = getLocalIpAddresses();
+  interfaces.forEach(iface => {
+    console.log(`  • ${iface.name}: ${iface.address} (${iface.mac || 'unknown MAC'})`);
+  });
 });

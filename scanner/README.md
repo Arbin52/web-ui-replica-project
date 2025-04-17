@@ -1,7 +1,7 @@
 
-# Network Scanner
+# Network Scanner (Node.js Edition)
 
-This is a simple network scanner service that detects devices on your local network.
+This is a simplified network scanner service that detects devices on your local network using only Node.js (no Python dependencies).
 
 ## Quick Setup
 
@@ -22,7 +22,7 @@ This is a simple network scanner service that detects devices on your local netw
 ## What Does This Do?
 
 This scanner runs as a local service that allows the main application to:
-- Detect devices on your network
+- Detect devices on your network using Node.js tools
 - View connection details
 - Monitor network status
 
@@ -31,28 +31,22 @@ This scanner runs as a local service that allows the main application to:
 - Node.js 14+
 - npm
 
+## How It Works
+
+This Node.js-only scanner:
+1. Detects local network interfaces
+2. Identifies the router/gateway
+3. Uses the ARP table to discover other devices
+4. Makes educated guesses about device types based on IP/MAC patterns
+
 ## Troubleshooting
 
-### Python Package Installation Issues
+### Module Not Found Errors
 
-If you see errors related to Python packages like `pynetinfo`:
+If you see errors related to missing Node.js modules:
 
-1. This is normal and non-critical. The scanner will work with basic functionality.
-2. For enhanced features, you can manually install Python packages:
+```
+npm install express cors
+```
 
-   ```
-   # Windows
-   pip install getmac colorama requests
-   
-   # Mac/Linux
-   pip3 install getmac colorama requests
-   ```
-
-3. Advanced packages (optional):
-   ```
-   # Try these if you need more features
-   pip install scapy
-   pip install python-nmap
-   ```
-
-The scanner will work even without these optional packages!
+The scanner will work without any Python installation!
