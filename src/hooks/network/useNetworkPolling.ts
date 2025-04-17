@@ -1,5 +1,5 @@
 
-import { useEffect, MutableRefObject, useRef } from 'react';
+import { useEffect, MutableRefObject, useRef, useCallback } from 'react';
 
 export const useNetworkPolling = (
   isLiveUpdating: boolean,
@@ -14,6 +14,52 @@ export const useNetworkPolling = (
   // Track consecutive errors to implement exponential backoff
   const errorCount = useRef<number>(0);
   
+  // Create a stable fetch function that won't cause re-renders
+  const throttledFetch = useCallback(async () => {
+    // Skip if a fetch is already in progress
+    if (fetchInProgress.current) {
+      console.log('Skipping network fetch - previous fetch still in progress');
+      return;
+    }
+    
+    const now = Date.now();
+    const timeSinceLastFetch = now - lastFetchTimestamp.current;
+    
+    // Rate limit fetches to prevent excessive updates (minimum 1 second between fetches)
+    if (timeSinceLastFetch < Math.max(1000, updateInterval * 0.5)) {
+      return;
+    }
+    
+    // Check if the document is visible to save resources
+    if (document.visibilityState !== 'visible') {
+      return;
+    }
+    
+    try {
+      fetchInProgress.current = true;
+      lastFetchTimestamp.current = now;
+      
+      // Use AbortController to prevent hanging requests
+      const abortController = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.log("Aborting network fetch due to timeout");
+        abortController.abort();
+      }, 3000); // Reduced timeout to 3 seconds to prevent UI freezing
+      
+      await fetchNetworkStatus();
+      
+      // Clear timeout and reset error count on success
+      clearTimeout(timeoutId);
+      errorCount.current = 0;
+    } catch (err) {
+      console.error('Error in network polling:', err);
+      // Increment error count for exponential backoff
+      errorCount.current++;
+    } finally {
+      fetchInProgress.current = false;
+    }
+  }, [fetchNetworkStatus, updateInterval]);
+  
   // Setup polling effect with performance optimizations
   useEffect(() => {
     console.log('Network polling setup with interval:', updateInterval);
@@ -27,75 +73,55 @@ export const useNetworkPolling = (
     // Only set up polling if live updates are enabled
     if (isLiveUpdating) {
       // Use a more efficient polling approach with rate limiting
-      const scheduleFetch = async () => {
-        // Skip if a fetch is already in progress
-        if (fetchInProgress.current) {
-          console.log('Skipping network fetch - previous fetch still in progress');
-          return;
-        }
-        
-        const now = Date.now();
-        const timeSinceLastFetch = now - lastFetchTimestamp.current;
-        
-        // Rate limit fetches to prevent excessive updates
-        if (timeSinceLastFetch < updateInterval * 0.8) {
-          return;
-        }
-        
-        // Check if the document is visible to save resources
-        if (document.visibilityState !== 'visible') {
-          return;
-        }
-        
-        try {
-          fetchInProgress.current = true;
-          lastFetchTimestamp.current = now;
-          
-          // Use AbortController to prevent hanging requests
-          const abortController = new AbortController();
-          const timeoutId = setTimeout(() => abortController.abort(), 5000); // 5 second timeout
-          
-          await fetchNetworkStatus();
-          
-          // Clear timeout and reset error count on success
-          clearTimeout(timeoutId);
-          errorCount.current = 0;
-        } catch (err) {
-          console.error('Error in network polling:', err);
-          // Increment error count for exponential backoff
-          errorCount.current++;
-        } finally {
-          fetchInProgress.current = false;
+      const scheduleFetch = () => {
+        // Use requestIdleCallback when available to avoid interfering with UI
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(() => {
+            throttledFetch();
+          }, { timeout: 2000 }); // Set a maximum timeout
+        } else {
+          setTimeout(() => {
+            throttledFetch();
+          }, 0);
         }
       };
       
       // Initial fetch when enabled, but with a slight delay to allow UI to render
-      const initialDelayMs = 300;
-      setTimeout(async () => {
+      const initialDelayMs = 500;
+      setTimeout(() => {
         if (!fetchInProgress.current) {
-          await scheduleFetch();
+          scheduleFetch();
         }
       }, initialDelayMs);
       
-      // Use requestAnimationFrame to ensure we start polling in a performant way
-      requestAnimationFrame(() => {
-        // Set up the interval with the current refresh rate
-        // Apply exponential backoff based on error count
-        const effectiveInterval = Math.min(
-          updateInterval * Math.pow(1.5, errorCount.current), 
-          60000 // Cap at 60 seconds
-        );
+      // Apply exponential backoff based on error count
+      const effectiveInterval = Math.min(
+        updateInterval * Math.pow(1.5, errorCount.current), 
+        60000 // Cap at 60 seconds
+      );
+      
+      // Use a more reliable approach than setInterval
+      let timeoutId: NodeJS.Timeout | null = null;
+      
+      const scheduleNextFetch = () => {
+        timeoutId = setTimeout(() => {
+          scheduleFetch();
+          scheduleNextFetch(); // Schedule next fetch after current one completes
+        }, effectiveInterval);
         
-        intervalRef.current = setInterval(scheduleFetch, effectiveInterval);
-      });
+        intervalRef.current = timeoutId;
+      };
+      
+      // Start the scheduling cycle
+      scheduleNextFetch();
     }
     
     // Cleanup function
     return () => {
       if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+        clearTimeout(intervalRef.current);
         intervalRef.current = null;
       }
     };
-  }, [isLiveUpdating, updateInterval, fetchNetworkStatus, intervalRef]);
+  }, [isLiveUpdating, updateInterval, throttledFetch, intervalRef]);
 };

@@ -1,12 +1,22 @@
 
 // Contains utility functions for refreshing network status
 
-// Schedule future network status checks
+// Schedule future network status checks with throttling
 export const scheduleNetworkChecks = (
   checkFunction: () => void | Promise<void>,
   interval: number = 5000
 ) => {
-  const checkId = setInterval(checkFunction, interval);
+  let lastCheck = Date.now();
+  
+  const throttledCheck = () => {
+    const now = Date.now();
+    if (now - lastCheck >= interval) {
+      lastCheck = now;
+      checkFunction();
+    }
+  };
+  
+  const checkId = setInterval(throttledCheck, interval);
   
   return () => {
     clearInterval(checkId);
@@ -18,20 +28,30 @@ export const setupNetworkChangeListeners = (
   onNetworkChange: () => void,
   cleanupFunction?: () => void
 ) => {
+  // Use a debounce mechanism to prevent rapid firing
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  
+  const debouncedOnChange = () => {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      onNetworkChange();
+    }, 300); // 300ms debounce
+  };
+  
   const handleOnline = () => {
     console.log("Browser reports online status change: ONLINE");
-    onNetworkChange();
+    debouncedOnChange();
   };
   
   const handleOffline = () => {
     console.log("Browser reports online status change: OFFLINE");
-    onNetworkChange();
+    debouncedOnChange();
   };
   
   const handleVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
       console.log("Page became visible, checking network status");
-      onNetworkChange();
+      debouncedOnChange();
     }
   };
   
@@ -46,7 +66,7 @@ export const setupNetworkChangeListeners = (
     
     const handleConnectionChange = () => {
       console.log("Network connection changed:", connection);
-      onNetworkChange();
+      debouncedOnChange();
     };
     
     connection.addEventListener('change', handleConnectionChange);
@@ -57,6 +77,7 @@ export const setupNetworkChangeListeners = (
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       connection.removeEventListener('change', handleConnectionChange);
       
+      if (debounceTimer) clearTimeout(debounceTimer);
       if (cleanupFunction) cleanupFunction();
     };
   }
@@ -67,26 +88,43 @@ export const setupNetworkChangeListeners = (
     window.removeEventListener('offline', handleOffline);
     document.removeEventListener('visibilitychange', handleVisibilityChange);
     
+    if (debounceTimer) clearTimeout(debounceTimer);
     if (cleanupFunction) cleanupFunction();
   };
 };
 
-// Detect mouse movement to check for network changes
+// Detect mouse movement to check for network changes (with extreme throttling)
 export const setupMouseMoveListener = (
   onNetworkChange: () => void,
-  throttleTime: number = 5000
+  throttleTime: number = 10000 // Increased to 10 seconds
 ) => {
   let lastChecked = Date.now();
+  let isThrottled = false;
   
   const handleMouseMove = () => {
+    if (isThrottled) return;
+    
     const now = Date.now();
     if (now - lastChecked > throttleTime) {
+      isThrottled = true;
       lastChecked = now;
-      onNetworkChange();
+      
+      // Use requestIdleCallback if available
+      if (window.requestIdleCallback) {
+        window.requestIdleCallback(() => {
+          onNetworkChange();
+          setTimeout(() => { isThrottled = false; }, 1000);
+        });
+      } else {
+        setTimeout(() => {
+          onNetworkChange();
+          isThrottled = false;
+        }, 0);
+      }
     }
   };
   
-  document.addEventListener('mousemove', handleMouseMove);
+  document.addEventListener('mousemove', handleMouseMove, { passive: true });
   
   return () => {
     document.removeEventListener('mousemove', handleMouseMove);

@@ -49,19 +49,24 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   const realNetworkInfo = await fetchRealNetworkInfo();
   console.log("Real network info:", realNetworkInfo);
   
+  // CRITICAL: Force trust the browser's online status
+  // This is key to preventing the "Not Connected" issue
+  const isCurrentlyOnline = navigator.onLine;
+  console.log("Browser reports online status:", isCurrentlyOnline);
+  
   // Get device connection status to show real-time connected devices
   const connectedDevices = getConnectedDeviceStatus();
   
   // Generate realistic dynamic values with smoothing to prevent rapid changes
-  const signalStrengthDb = -(Math.floor(Math.random() * 30) + 40); // Stronger signal than before
+  const signalStrengthDb = -(Math.floor(Math.random() * 30) + 40);
   
   // Smooth the network speed values to prevent rapid changes
   let downloadSpeed, uploadSpeed, latency;
   
   if (previousStatus) {
     // Apply advanced smoothing with smaller maximum changes
-    // Maximum change reduced to 2% of current value for more stability
-    const maxDownloadChange = previousDownloadSpeed * 0.02;
+    // Maximum change reduced to 1% of current value for more stability
+    const maxDownloadChange = previousDownloadSpeed * 0.01;
     const randomDownloadChange = (Math.random() * maxDownloadChange * 2 - maxDownloadChange);
     const newDownloadValue = previousDownloadSpeed + randomDownloadChange;
     
@@ -69,14 +74,14 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
     downloadSpeed = calculateMovingAverage(downloadSpeedHistory, newDownloadValue);
     downloadSpeed = Math.round(downloadSpeed * 10) / 10; // Round to 1 decimal place
     
-    const maxUploadChange = previousUploadSpeed * 0.02;
+    const maxUploadChange = previousUploadSpeed * 0.01;
     const randomUploadChange = (Math.random() * maxUploadChange * 2 - maxUploadChange);
     const newUploadValue = previousUploadSpeed + randomUploadChange;
     
     uploadSpeed = calculateMovingAverage(uploadSpeedHistory, newUploadValue);
     uploadSpeed = Math.round(uploadSpeed * 10) / 10; // Round to 1 decimal place
     
-    const maxLatencyChange = Math.max(0.5, previousLatency * 0.02);
+    const maxLatencyChange = Math.max(0.5, previousLatency * 0.01);
     const randomLatencyChange = (Math.random() * maxLatencyChange * 2 - maxLatencyChange);
     const newLatencyValue = previousLatency + randomLatencyChange;
     
@@ -99,111 +104,35 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   previousUploadSpeed = uploadSpeed;
   previousLatency = latency;
   
-  // Data usage simulated values
-  const downloadData = Math.floor(Math.random() * 500) + 1000; // Between 1000-1500 MB
-  const uploadData = Math.floor(Math.random() * 200) + 300; // Between 300-500 MB
+  // Data usage simulated values - with stable generation
+  const downloadData = previousStatus?.dataUsage?.download || Math.floor(Math.random() * 500) + 1000;
+  const uploadData = previousStatus?.dataUsage?.upload || Math.floor(Math.random() * 200) + 300;
 
   // Get connection history from storage
   const connectionHistory = realNetworkInfo.connectionHistory || getConnectionHistory();
   
-  // Use real online status if available, otherwise use browser's online status
-  // This is the key fix for the "Not Connected" issue
-  const isCurrentlyOnline = realNetworkInfo.isOnline !== undefined ? 
-    realNetworkInfo.isOnline : 
-    navigator.onLine;
-    
-  console.log("Is currently online:", isCurrentlyOnline, "Browser reports:", navigator.onLine);
+  // Use browser's online status and network name from realNetworkInfo
+  let networkName = realNetworkInfo.networkName;
   
-  // Generate available networks with the real one included
-  let availableNetworks = getAvailableNetworks();
-  
-  // Determine the best network name to use based on multiple sources
-  const browserDetectedNetworkName = realNetworkInfo.networkName;
-  const storedNetworkName = localStorage.getItem('connected_network_name');
-  const lastConnectedNetwork = localStorage.getItem('last_connected_network');
-  const userProvidedNetwork = localStorage.getItem('user_provided_network_name');
-  const webrtcDetectedNetwork = localStorage.getItem('webrtc_detected_ssid');
-  
-  // Log all possible network name sources for debugging
-  console.log("Network name sources:", {
-    "Browser detected": browserDetectedNetworkName,
-    "Manually connected": storedNetworkName,
-    "Last connected": lastConnectedNetwork,
-    "User provided": userProvidedNetwork,
-    "WebRTC detected": webrtcDetectedNetwork
-  });
-  
-  // Select the most accurate network name available - prioritize user input or direct detection
-  let networkName = userProvidedNetwork || webrtcDetectedNetwork || browserDetectedNetworkName;
-  
-  // If browser detection didn't work, fall back to stored values
-  if (!networkName && isCurrentlyOnline) {
-    networkName = storedNetworkName || lastConnectedNetwork;
-    console.log("Using stored network name:", networkName);
-  }
-  
-  // If online but no network name detected, try OS-level detection
-  if (isCurrentlyOnline && !networkName) {
-    // Try to get the OS-level network name
-    try {
-      if ((navigator as any).connection && (navigator as any).connection.type === 'wifi') {
-        // We know we're on WiFi but don't know the name - use a default
-        networkName = "Connected Network";
-        console.log("WiFi connection detected, using generic name:", networkName);
-      } 
-    } catch (e) {
-      console.log("Error detecting connection type:", e);
-    }
-  }
-  
-  // If online but still no network name, use a default name
+  // If online but no network name, use a default
   if (isCurrentlyOnline && !networkName) {
     networkName = "Connected Network";
-    console.log("Online but no network name detected, using default name");
+    console.log("Online without network name, using default name");
   }
   
   // If offline, clear network name
   if (!isCurrentlyOnline) {
     networkName = undefined;
-    console.log("Device offline, clearing network name");
+    console.log("Browser reports offline, clearing network name");
   }
   
-  console.log("Selected final network name:", networkName);
+  console.log("Final network status - Online:", isCurrentlyOnline, "Network:", networkName);
   
-  // Check if current network exists in available networks and ensure it's prioritized
-  if (networkName && isCurrentlyOnline) {
-    const currentNetworkInList = availableNetworks.some(network => network.ssid === networkName);
-    
-    // If current network not in list, add it with strong signal
-    if (!currentNetworkInList && networkName !== 'Unknown WiFi Network' && networkName !== 'Connected Network') {
-      console.log("Adding current network to available list:", networkName);
-      availableNetworks.unshift({
-        id: availableNetworks.length + 1,
-        ssid: networkName,
-        signal: -45, // Strong signal
-        security: 'WPA2'
-      });
-    } else if (!currentNetworkInList) {
-      // Add the generic "Connected Network" with strong signal
-      availableNetworks.unshift({
-        id: availableNetworks.length + 1,
-        ssid: 'Connected Network',
-        signal: -45,
-        security: 'WPA2'
-      });
-    }
-    
-    // Reorder to ensure current network is at the top
-    const networkIndex = availableNetworks.findIndex(n => n.ssid === networkName);
-    if (networkIndex > 0) {
-      const network = availableNetworks[networkIndex];
-      availableNetworks.splice(networkIndex, 1);
-      availableNetworks.unshift(network);
-    }
-  }
+  // Generate available networks
+  const availableNetworks = getAvailableNetworks();
   
   return {
-    networkName: networkName || undefined,
+    networkName,
     localIp: '192.168.1.2',
     publicIp: realNetworkInfo.publicIp || '203.0.113.1',
     gatewayIp: realNetworkInfo.gatewayIp || '192.168.1.1',
@@ -214,7 +143,7 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
     dnsServer: '8.8.8.8, 8.8.4.4',
     connectedDevices: connectedDevices.length > 0 ? connectedDevices : generateConnectedDevices(),
     lastUpdated: new Date(),
-    isOnline: isCurrentlyOnline,
+    isOnline: isCurrentlyOnline, // Most important: Use browser's online status
     connectionSpeed: {
       download: downloadSpeed,
       upload: uploadSpeed,
