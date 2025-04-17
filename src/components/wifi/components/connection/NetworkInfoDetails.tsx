@@ -22,27 +22,12 @@ export const NetworkInfoDetails: React.FC<NetworkInfoDetailsProps> = ({
 }) => {
   const [isMockRouterOpen, setIsMockRouterOpen] = useState(false);
   
-  // Function to handle gateway IP click
+  // Function to handle gateway IP click - always show mock router
   const handleGatewayClick = () => {
     if (gatewayIp) {
-      try {
-        // Check if this is a simulated environment by checking if gateway IP is the common one
-        const isSimulated = gatewayIp === '192.168.1.1' || window.location.hostname === 'localhost';
-        
-        if (isSimulated) {
-          // Show mock router interface
-          setIsMockRouterOpen(true);
-          toast.info('Opening router admin interface');
-        } else {
-          // Open gateway IP in new tab
-          const gatewayUrl = `http://${gatewayIp}`;
-          window.open(gatewayUrl, '_blank');
-          toast.info('Opening router admin interface');
-        }
-      } catch (error) {
-        toast.error('Failed to open router interface');
-        console.error('Error opening gateway URL:', error);
-      }
+      // Always show mock router interface in this environment
+      setIsMockRouterOpen(true);
+      toast.info('Opening router admin interface');
     }
   };
 
@@ -95,7 +80,7 @@ export const NetworkInfoDetails: React.FC<NetworkInfoDetailsProps> = ({
         open={isMockRouterOpen}
         onClose={() => setIsMockRouterOpen(false)}
         gatewayIp={gatewayIp}
-        isRealNetwork={false}
+        isRealNetwork={false} // Always use mock router
       />
     </>
   );

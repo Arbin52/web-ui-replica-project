@@ -20,18 +20,14 @@ const Overview: React.FC = () => {
     isLiveUpdating,
     toggleLiveUpdates,
     updateInterval,
-    setRefreshRate 
+    setRefreshRate,
+    openGatewayInterface 
   } = useNetworkStatus();
 
-  // Fixed gateway IP handler to open in new tab with proper URL formatting
+  // Always use the modal gateway handler
   const handleGatewayClick = () => {
     if (networkStatus?.gatewayIp) {
-      let url = networkStatus.gatewayIp;
-      // Make sure URL has proper protocol prefix
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        url = 'http://' + url;
-      }
-      window.open(url, '_blank', 'noopener,noreferrer');
+      openGatewayInterface();
     }
   };
 

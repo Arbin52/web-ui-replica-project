@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, Signal, Database, Shield, Wifi, Router } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -40,17 +39,10 @@ export const NetworkOverview: React.FC<NetworkOverviewProps> = ({
   const downloadAnimFrameRef = useRef<number | null>(null);
   const uploadAnimFrameRef = useRef<number | null>(null);
   
-  // Modified gateway click handler to show mock dialog
+  // Always show mock router in this environment
   const handleGatewayClickLocal = () => {
-    const isRealNetwork = networkStatus?.publicIp !== '203.0.113.1';
-    
-    if (isRealNetwork) {
-      // Use the original handler for real networks
-      handleGatewayClick();
-    } else {
-      // Show mock router interface
-      setIsMockRouterOpen(true);
-    }
+    // Show mock router interface
+    setIsMockRouterOpen(true);
   };
   
   // Effect to smoothly transition download speed using requestAnimationFrame
@@ -236,7 +228,7 @@ export const NetworkOverview: React.FC<NetworkOverviewProps> = ({
         open={isMockRouterOpen}
         onClose={() => setIsMockRouterOpen(false)}
         gatewayIp={networkStatus?.gatewayIp || '192.168.1.1'}
-        isRealNetwork={networkStatus?.publicIp !== '203.0.113.1'}
+        isRealNetwork={false} // Always use mock router
       />
     </div>
   );

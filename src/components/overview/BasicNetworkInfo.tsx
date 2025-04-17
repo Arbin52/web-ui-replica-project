@@ -19,17 +19,10 @@ export const BasicNetworkInfo: React.FC<BasicNetworkInfoProps> = ({
 }) => {
   const [isMockRouterOpen, setIsMockRouterOpen] = useState(false);
   
-  // Modified gateway click handler to show mock dialog
+  // Always use mock router in this environment
   const handleGatewayClickLocal = () => {
-    const isRealNetwork = networkStatus?.publicIp !== '203.0.113.1';
-    
-    if (isRealNetwork) {
-      // Use the original handler for real networks
-      handleGatewayClick();
-    } else {
-      // Show mock router interface
-      setIsMockRouterOpen(true);
-    }
+    // Show mock router interface
+    setIsMockRouterOpen(true);
   };
   
   if (isLoading) {
@@ -131,7 +124,7 @@ export const BasicNetworkInfo: React.FC<BasicNetworkInfoProps> = ({
         open={isMockRouterOpen}
         onClose={() => setIsMockRouterOpen(false)}
         gatewayIp={networkStatus?.gatewayIp || '192.168.1.1'}
-        isRealNetwork={networkStatus?.publicIp !== '203.0.113.1'}
+        isRealNetwork={false} // Always use mock router
       />
     </>
   );

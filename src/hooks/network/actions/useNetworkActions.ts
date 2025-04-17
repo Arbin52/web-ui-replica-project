@@ -1,4 +1,3 @@
-
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { NetworkStatus } from '../types';
@@ -140,23 +139,16 @@ export const useNetworkActions = ({
   // Track if router admin dialog is open
   const [isRouterAdminOpen, setIsRouterAdminOpen] = useState(false);
   
-  // Function to open gateway interface in new tab
+  // Function to open gateway interface - ALWAYS use mock router in Lovable environment
   const openGatewayInterface = useCallback(() => {
     if (!networkStatus?.gatewayIp) {
       toast.error('Gateway IP not available');
       return;
     }
     
-    const isRealNetwork = networkStatus.publicIp !== '203.0.113.1';
-    
-    if (isRealNetwork) {
-      // This is likely a real network, so open the actual gateway in a new tab
-      window.open(`http://${networkStatus.gatewayIp}`, '_blank');
-      toast.info('Opening router admin interface in new tab');
-    } else {
-      // Show mock router interface
-      setIsRouterAdminOpen(true);
-    }
+    // Always use mock router in this environment to prevent the error
+    setIsRouterAdminOpen(true);
+    toast.info('Opening router admin interface');
   }, [networkStatus]);
 
   return {
