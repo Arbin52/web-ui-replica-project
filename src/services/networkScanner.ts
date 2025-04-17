@@ -47,47 +47,10 @@ export const isScannerAvailable = async (): Promise<{
     const data = await response.json();
     return { 
       available: true,
-      pythonAvailable: data.pythonAvailable,
       version: data.version
     };
   } catch {
     return { available: false };
-  }
-};
-
-// Get scanner detailed status (Python modules, etc.)
-export const getScannerStatus = async (): Promise<any> => {
-  try {
-    const response = await fetch(`${LOCAL_SCANNER_URL}/scanner-status`);
-    
-    if (!response.ok) {
-      throw new Error('Failed to get scanner status');
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error getting scanner status:', error);
-    throw error;
-  }
-};
-
-// Scan the network for devices
-export const scanNetwork = async (): Promise<boolean> => {
-  try {
-    const response = await fetch(`${LOCAL_SCANNER_URL}/scan`, {
-      method: 'POST',
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to initiate network scan');
-    }
-    
-    toast.success('Network scan initiated');
-    return true;
-  } catch (error) {
-    console.error('Error scanning network:', error);
-    toast.error('Failed to initiate network scan');
-    return false;
   }
 };
 
@@ -107,30 +70,20 @@ export const getDeviceDetails = async (ipAddress: string): Promise<ConnectedDevi
   }
 };
 
-// Configure scanner settings
-export const configureScannerSettings = async (settings: {
-  scanInterval?: number;
-  scanDepth?: 'quick' | 'thorough';
-  excludedIpRanges?: string[];
-}): Promise<boolean> => {
+// Scan the network for devices
+export const scanNetwork = async (): Promise<boolean> => {
   try {
-    const response = await fetch(`${LOCAL_SCANNER_URL}/configure`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(settings)
-    });
+    const response = await fetch(`${LOCAL_SCANNER_URL}/devices`);
     
     if (!response.ok) {
-      throw new Error('Failed to update scanner settings');
+      throw new Error('Failed to scan network');
     }
     
-    toast.success('Scanner settings updated');
+    toast.success('Network scan completed');
     return true;
   } catch (error) {
-    console.error('Error configuring scanner:', error);
-    toast.error('Failed to configure scanner');
+    console.error('Error scanning network:', error);
+    toast.error('Failed to scan network');
     return false;
   }
 };

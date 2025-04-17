@@ -30,9 +30,9 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
     window.open('http://localhost:3001/status', '_blank');
   };
   
-  // Function to handle opening setup guide
+  // Function to open setup guide
   const handleOpenSetupGuide = () => {
-    window.open('/local-scanner-quick-start.md', '_blank');
+    window.open('/SETUP.md', '_blank');
   };
   
   // Function to refresh scanner status
@@ -41,12 +41,6 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
     checkScannerAvailability().then(() => {
       toast.success('Scanner check completed');
     });
-  };
-  
-  // Function to handle quick start of scanner
-  const handleQuickStartScanner = () => {
-    toast.info('Opening quick start guide...');
-    window.open('/QUICKSTART.md', '_blank');
   };
 
   return (
@@ -63,8 +57,7 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
             <AlertTitle>Scanner Unavailable in Deployed Mode</AlertTitle>
             <AlertDescription>
               Network scanning is only available when running this app locally. 
-              Please run the app on your local machine with the scanner service 
-              active on http://localhost:3001 for full functionality.
+              Please run the app on your local machine for full functionality.
             </AlertDescription>
           </Alert>
         ) : !hasScanner ? (
@@ -75,10 +68,9 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
               <p className="mb-2">Simple steps to start the scanner:</p>
               <ol className="list-decimal pl-5 space-y-1">
                 <li>Open a terminal window</li>
-                <li>Run <code className="bg-amber-100 px-1 rounded">cd local-scanner</code></li>
-                <li>Run <code className="bg-amber-100 px-1 rounded">node setup-scanner.js</code></li>
+                <li>Run <code className="bg-amber-100 px-1 rounded">cd scanner</code></li>
+                <li>Run <code className="bg-amber-100 px-1 rounded">node setup.js</code></li>
                 <li>Run <code className="bg-amber-100 px-1 rounded">npm start</code></li>
-                <li>Keep that terminal window open</li>
               </ol>
               <div className="flex flex-wrap gap-2 mt-3">
                 <Button
@@ -94,18 +86,10 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
                   variant="default" 
                   size="sm"
                   className="bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1"
-                  onClick={handleQuickStartScanner}
-                >
-                  <PlayCircle className="h-3.5 w-3.5" />
-                  <span>Quick Start Guide</span>
-                </Button>
-                <Button
-                  variant="outline" 
-                  size="sm"
-                  className="border-amber-300 hover:bg-amber-100 text-amber-900"
                   onClick={handleOpenSetupGuide}
                 >
-                  <span>Detailed Setup</span> <ExternalLink className="ml-1 h-3 w-3" />
+                  <PlayCircle className="h-3.5 w-3.5" />
+                  <span>Setup Guide</span>
                 </Button>
                 <Button
                   variant="outline" 
