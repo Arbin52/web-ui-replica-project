@@ -149,8 +149,8 @@ export const fetchRealNetworkInfo = async (): Promise<{
           networkName = userProvidedName;
           console.log("Using user-provided network name:", networkName);
         } else {
-          // Last resort - use generic name
-          networkName = "Unknown Network";
+          // Last resort - use generic name if online
+          networkName = "Connected Network";
           console.log("Online but no network name detected, using generic name:", networkName);
         }
       }
@@ -162,8 +162,12 @@ export const fetchRealNetworkInfo = async (): Promise<{
       console.log("Device is offline, clearing network name");
     }
     
+    // Force online status if browser thinks we're online
+    // This helps prevent the "Not Connected" issue when the browser does report online
+    const forceOnline = navigator.onLine;
+    
     // Store the network name for other parts of the app to use if it's not a generic name
-    if (networkName && isOnline && networkName !== 'Unknown Network' && networkName !== 'Connected Network') {
+    if (networkName && forceOnline && networkName !== 'Unknown Network' && networkName !== 'Connected Network') {
       localStorage.setItem('current_browser_network', networkName);
       console.log("Stored detected network name:", networkName);
     }
@@ -192,8 +196,8 @@ export const fetchRealNetworkInfo = async (): Promise<{
     
     // Return the collected network information
     return {
-      networkName,
-      isOnline,
+      networkName: networkName || undefined,
+      isOnline: forceOnline, // Use the browser's online status to ensure consistency
       publicIp,
       networkType,
       gatewayIp,
@@ -202,8 +206,10 @@ export const fetchRealNetworkInfo = async (): Promise<{
     };
   } catch (err) {
     console.error("Error fetching real network info:", err);
+    // Default to browser's online status if there's an error
     return {
       isOnline: navigator.onLine,
+      networkName: navigator.onLine ? "Connected Network" : undefined, 
       connectionHistory: getConnectionHistory(),
       lastUpdated: new Date()
     };

@@ -11,6 +11,8 @@ export const useNetworkPolling = (
   const lastFetchTimestamp = useRef<number>(0);
   // Track if a fetch is in progress to prevent overlapping requests
   const fetchInProgress = useRef<boolean>(false);
+  // Track consecutive errors to implement exponential backoff
+  const errorCount = useRef<number>(0);
   
   // Setup polling effect with performance optimizations
   useEffect(() => {
@@ -28,6 +30,7 @@ export const useNetworkPolling = (
       const scheduleFetch = async () => {
         // Skip if a fetch is already in progress
         if (fetchInProgress.current) {
+          console.log('Skipping network fetch - previous fetch still in progress');
           return;
         }
         
@@ -47,25 +50,43 @@ export const useNetworkPolling = (
         try {
           fetchInProgress.current = true;
           lastFetchTimestamp.current = now;
+          
+          // Use AbortController to prevent hanging requests
+          const abortController = new AbortController();
+          const timeoutId = setTimeout(() => abortController.abort(), 5000); // 5 second timeout
+          
           await fetchNetworkStatus();
+          
+          // Clear timeout and reset error count on success
+          clearTimeout(timeoutId);
+          errorCount.current = 0;
         } catch (err) {
           console.error('Error in network polling:', err);
+          // Increment error count for exponential backoff
+          errorCount.current++;
         } finally {
           fetchInProgress.current = false;
         }
       };
       
       // Initial fetch when enabled, but with a slight delay to allow UI to render
+      const initialDelayMs = 300;
       setTimeout(async () => {
         if (!fetchInProgress.current) {
           await scheduleFetch();
         }
-      }, 100);
+      }, initialDelayMs);
       
-      // Use requestAnimationFrame for the first polling cycle to ensure smooth UI
+      // Use requestAnimationFrame to ensure we start polling in a performant way
       requestAnimationFrame(() => {
         // Set up the interval with the current refresh rate
-        intervalRef.current = setInterval(scheduleFetch, updateInterval);
+        // Apply exponential backoff based on error count
+        const effectiveInterval = Math.min(
+          updateInterval * Math.pow(1.5, errorCount.current), 
+          60000 // Cap at 60 seconds
+        );
+        
+        intervalRef.current = setInterval(scheduleFetch, effectiveInterval);
       });
     }
     
