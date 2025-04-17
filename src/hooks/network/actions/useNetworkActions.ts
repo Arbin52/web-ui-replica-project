@@ -1,12 +1,8 @@
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
+import { refreshNetworkStatusData } from '../refreshUtils';
 import { NetworkStatus } from '../types';
-import { 
-  connectToNetwork as connectToNetworkUtil, 
-  disconnectFromNetwork as disconnectFromNetworkUtil,
-  getCurrentNetworkName
-} from '../networkConnectionUtils';
 
 interface NetworkActionsProps {
   fetchNetworkStatus: () => Promise<void>;
@@ -33,121 +29,146 @@ export const useNetworkActions = ({
   updateInterval,
   setUpdateInterval
 }: NetworkActionsProps) => {
-  
-  const connectToNetwork = async (ssid: string, password: string) => {
-    try {
-      setConnectionError(null);
-      
-      const result = await connectToNetworkUtil(ssid, password);
-      
-      if (!result.success) {
-        setConnectionError(result.error || null);
-        return false;
-      }
-      
-      await fetchNetworkStatus();
-      return true;
-    } catch (err) {
-      console.error('Error in connectToNetwork:', err);
-      return false;
-    }
-  };
-
-  const disconnectFromNetwork = async () => {
-    try {
-      if (!networkStatus?.networkName) {
-        toast.error('Not connected to any network');
-        return false;
-      }
-      
-      const success = await disconnectFromNetworkUtil(networkStatus.networkName);
-      
-      if (success) {
-        await fetchNetworkStatus();
-      }
-      
-      return success;
-    } catch (err) {
-      console.error('Error in disconnectFromNetwork:', err);
-      return false;
-    }
-  };
-
-  const openGatewayInterface = () => {
-    if (networkStatus?.gatewayIp) {
-      try {
-        const gatewayUrl = `http://${networkStatus.gatewayIp}`;
-        window.open(gatewayUrl, '_blank');
-        toast.info('Opening router admin interface');
-      } catch (error) {
-        toast.error('Failed to open router interface');
-        console.error('Error opening gateway URL:', error);
-      }
-    } else {
-      toast.error('Gateway IP not available');
-    }
-  };
-
-  const refreshNetworkStatus = useCallback(async (): Promise<void> => {
+  // Function to refresh network status
+  const refreshNetworkStatus = useCallback(async () => {
+    if (isLoading) return;
+    
     setIsLoading(true);
-    console.log("Manual refresh requested");
-    return fetchNetworkStatus();
-  }, [fetchNetworkStatus, setIsLoading]);
+    try {
+      await fetchNetworkStatus();
+    } catch (error) {
+      console.error('Error refreshing network status:', error);
+      setConnectionError('Failed to refresh network status. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fetchNetworkStatus, isLoading, setIsLoading, setConnectionError]);
 
-  const toggleLiveUpdates = () => {
-    // Here's the fix: using a direct boolean value instead of a function
-    const newIsLiveUpdating = !isLiveUpdating;
-    setIsLiveUpdating(newIsLiveUpdating);
+  // Function to connect to a network
+  const connectToNetwork = useCallback(async (ssid: string, password?: string) => {
+    console.log(`Connecting to network: ${ssid} with password: ${password ? '********' : 'none'}`);
+    toast.info(`Connecting to ${ssid}...`);
     
-    // Clear any existing interval
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    try {
+      // Simulate connection delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Store the network name as the last connected network
+      localStorage.setItem('last_connected_network', ssid);
+      localStorage.setItem('connected_network_name', ssid);
+      
+      // Refresh the network status to show the connection
+      await fetchNetworkStatus();
+      
+      toast.success(`Connected to ${ssid}`, {
+        description: "Your device is now connected to the network"
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error connecting to network:', error);
+      toast.error(`Failed to connect to ${ssid}`, {
+        description: "Please check your password and try again"
+      });
+      return false;
+    }
+  }, [fetchNetworkStatus]);
+
+  // Function to disconnect from a network
+  const disconnectFromNetwork = useCallback(async () => {
+    if (!networkStatus?.networkName) {
+      toast.error('Not connected to any network');
+      return false;
     }
     
-    // Only set up a new interval if we're turning on live updates
-    if (newIsLiveUpdating) {
-      toast.info('Live updates resumed');
-      intervalRef.current = setInterval(() => {
-        console.log("Auto-update interval triggered");
-        fetchNetworkStatus();
-      }, updateInterval);
-    } else {
+    const networkName = networkStatus.networkName;
+    toast.info(`Disconnecting from ${networkName}...`);
+    
+    try {
+      // Simulate disconnect delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Clear the connected network name
+      localStorage.removeItem('connected_network_name');
+      
+      // Refresh the network status to show disconnected
+      await fetchNetworkStatus();
+      
+      toast.success(`Disconnected from ${networkName}`);
+      return true;
+    } catch (error) {
+      console.error('Error disconnecting from network:', error);
+      toast.error(`Failed to disconnect from ${networkName}`);
+      return false;
+    }
+  }, [networkStatus, fetchNetworkStatus]);
+
+  // Function to immediately check current network
+  const checkCurrentNetworkImmediately = useCallback(async () => {
+    await refreshNetworkStatusData(fetchNetworkStatus);
+  }, [fetchNetworkStatus]);
+
+  // Function to toggle live updates
+  const toggleLiveUpdates = useCallback(() => {
+    if (isLiveUpdating) {
+      // Stop auto-updates
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
       toast.info('Live updates paused');
+    } else {
+      // Start auto-updates and do immediate refresh
+      refreshNetworkStatus();
+      toast.success(`Live updates activated (every ${updateInterval / 1000}s)`);
     }
-  };
-
-  const setRefreshRate = (ms: number) => {
-    console.log(`Setting refresh rate to ${ms}ms (${ms/1000} seconds)`);
-    setUpdateInterval(ms);
     
-    // Update the interval if live updates are currently enabled
+    setIsLiveUpdating(!isLiveUpdating);
+  }, [isLiveUpdating, setIsLiveUpdating, intervalRef, refreshNetworkStatus, updateInterval]);
+
+  // Function to set refresh rate
+  const setRefreshRate = useCallback((interval: number) => {
+    setUpdateInterval(interval);
+    
+    // If auto-updating is on, restart with new interval
     if (isLiveUpdating && intervalRef.current) {
       clearInterval(intervalRef.current);
-      intervalRef.current = setInterval(() => {
-        console.log("Auto-update interval triggered with new rate");
-        fetchNetworkStatus();
-      }, ms);
+      intervalRef.current = setInterval(fetchNetworkStatus, interval);
+      toast.success(`Update frequency changed to ${interval / 1000}s`);
+    }
+  }, [setUpdateInterval, isLiveUpdating, intervalRef, fetchNetworkStatus]);
+  
+  // Track if router admin dialog is open
+  const [isRouterAdminOpen, setIsRouterAdminOpen] = useState(false);
+  
+  // Function to open gateway interface in new tab
+  const openGatewayInterface = useCallback(() => {
+    if (!networkStatus?.gatewayIp) {
+      toast.error('Gateway IP not available');
+      return;
     }
     
-    // Only show toast for significant changes (over 1 minute difference)
-    if (Math.abs(ms - updateInterval) > 60000) {
-      toast.info(`Update interval set to ${ms >= 60000 ? (ms/60000) + ' minute' + (ms === 60000 ? '' : 's') : (ms/1000) + ' seconds'}`);
+    const isRealNetwork = networkStatus.publicIp !== '203.0.113.1';
+    
+    if (isRealNetwork) {
+      // This is likely a real network, so open the actual gateway in a new tab
+      window.open(`http://${networkStatus.gatewayIp}`, '_blank');
+      toast.info('Opening router admin interface in new tab');
+    } else {
+      // Show mock router interface
+      setIsRouterAdminOpen(true);
     }
-  };
-
-  const checkCurrentNetworkImmediately = useCallback(async (): Promise<void> => {
-    console.log("Immediate network check requested");
-    return fetchNetworkStatus();
-  }, [fetchNetworkStatus]);
+  }, [networkStatus]);
 
   return {
     connectToNetwork,
     disconnectFromNetwork,
-    openGatewayInterface,
     refreshNetworkStatus,
+    openGatewayInterface,
+    checkCurrentNetworkImmediately,
     toggleLiveUpdates,
     setRefreshRate,
-    checkCurrentNetworkImmediately
+    isRouterAdminOpen,
+    setIsRouterAdminOpen
   };
 };

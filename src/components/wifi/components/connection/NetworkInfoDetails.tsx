@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { toast } from 'sonner';
+import MockRouterAdmin from '@/components/network-management/MockRouterAdmin';
 
 interface NetworkInfoDetailsProps {
   localIp: string;
@@ -19,14 +20,25 @@ export const NetworkInfoDetails: React.FC<NetworkInfoDetailsProps> = ({
   networkType,
   macAddress
 }) => {
+  const [isMockRouterOpen, setIsMockRouterOpen] = useState(false);
+  
   // Function to handle gateway IP click
   const handleGatewayClick = () => {
     if (gatewayIp) {
       try {
-        // Open gateway IP in new tab
-        const gatewayUrl = `http://${gatewayIp}`;
-        window.open(gatewayUrl, '_blank');
-        toast.info('Opening router admin interface');
+        // Check if this is a simulated environment by checking if gateway IP is the common one
+        const isSimulated = gatewayIp === '192.168.1.1' || window.location.hostname === 'localhost';
+        
+        if (isSimulated) {
+          // Show mock router interface
+          setIsMockRouterOpen(true);
+          toast.info('Opening router admin interface');
+        } else {
+          // Open gateway IP in new tab
+          const gatewayUrl = `http://${gatewayIp}`;
+          window.open(gatewayUrl, '_blank');
+          toast.info('Opening router admin interface');
+        }
       } catch (error) {
         toast.error('Failed to open router interface');
         console.error('Error opening gateway URL:', error);
@@ -77,6 +89,14 @@ export const NetworkInfoDetails: React.FC<NetworkInfoDetailsProps> = ({
         <div className="info-label">MAC Address:</div>
         <div className="info-value">{macAddress}</div>
       </div>
+      
+      {/* Mock Router Admin Dialog */}
+      <MockRouterAdmin
+        open={isMockRouterOpen}
+        onClose={() => setIsMockRouterOpen(false)}
+        gatewayIp={gatewayIp}
+        isRealNetwork={false}
+      />
     </>
   );
 };

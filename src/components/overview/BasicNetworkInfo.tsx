@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
 import { NetworkStatus } from '@/hooks/network/types';
+import MockRouterAdmin from '../network-management/MockRouterAdmin';
 
 interface BasicNetworkInfoProps {
   networkStatus: NetworkStatus | null;
@@ -16,6 +17,21 @@ export const BasicNetworkInfo: React.FC<BasicNetworkInfoProps> = ({
   isLoading, 
   handleGatewayClick 
 }) => {
+  const [isMockRouterOpen, setIsMockRouterOpen] = useState(false);
+  
+  // Modified gateway click handler to show mock dialog
+  const handleGatewayClickLocal = () => {
+    const isRealNetwork = networkStatus?.publicIp !== '203.0.113.1';
+    
+    if (isRealNetwork) {
+      // Use the original handler for real networks
+      handleGatewayClick();
+    } else {
+      // Show mock router interface
+      setIsMockRouterOpen(true);
+    }
+  };
+  
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -53,7 +69,7 @@ export const BasicNetworkInfo: React.FC<BasicNetworkInfoProps> = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
-                  onClick={handleGatewayClick} 
+                  onClick={handleGatewayClickLocal} 
                   className="flex items-center gap-1 text-primary hover:underline"
                 >
                   {networkStatus?.gatewayIp}
@@ -109,6 +125,14 @@ export const BasicNetworkInfo: React.FC<BasicNetworkInfoProps> = ({
           )}
         </div>
       </div>
+      
+      {/* Mock Router Admin Dialog */}
+      <MockRouterAdmin
+        open={isMockRouterOpen}
+        onClose={() => setIsMockRouterOpen(false)}
+        gatewayIp={networkStatus?.gatewayIp || '192.168.1.1'}
+        isRealNetwork={networkStatus?.publicIp !== '203.0.113.1'}
+      />
     </>
   );
 };

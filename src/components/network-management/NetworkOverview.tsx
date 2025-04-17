@@ -8,6 +8,7 @@ import { DashboardCard } from '../ui/dashboard-card';
 import { UpdateFrequencyControl } from './UpdateFrequencyControl';
 import { NetworkStatus } from '@/hooks/network/types';
 import { Card, CardContent } from '@/components/ui/card';
+import MockRouterAdmin from './MockRouterAdmin';
 
 interface NetworkOverviewProps {
   networkStatus: NetworkStatus | null;
@@ -32,9 +33,25 @@ export const NetworkOverview: React.FC<NetworkOverviewProps> = ({
   const [displayDownload, setDisplayDownload] = useState<number>(0);
   const [displayUpload, setDisplayUpload] = useState<number>(0);
   
+  // State for mock router admin dialog
+  const [isMockRouterOpen, setIsMockRouterOpen] = useState(false);
+  
   // Animation frame refs for smoother animation
   const downloadAnimFrameRef = useRef<number | null>(null);
   const uploadAnimFrameRef = useRef<number | null>(null);
+  
+  // Modified gateway click handler to show mock dialog
+  const handleGatewayClickLocal = () => {
+    const isRealNetwork = networkStatus?.publicIp !== '203.0.113.1';
+    
+    if (isRealNetwork) {
+      // Use the original handler for real networks
+      handleGatewayClick();
+    } else {
+      // Show mock router interface
+      setIsMockRouterOpen(true);
+    }
+  };
   
   // Effect to smoothly transition download speed using requestAnimationFrame
   useEffect(() => {
@@ -135,7 +152,7 @@ export const NetworkOverview: React.FC<NetworkOverviewProps> = ({
             </div>
             <div className="flex gap-2">
               {networkStatus?.isOnline && (
-                <Button variant="outline" className="gap-1" onClick={handleGatewayClick}>
+                <Button variant="outline" className="gap-1" onClick={handleGatewayClickLocal}>
                   <Router size={16} />
                   <span>Gateway: {networkStatus?.gatewayIp}</span>
                 </Button>
@@ -196,7 +213,7 @@ export const NetworkOverview: React.FC<NetworkOverviewProps> = ({
       <NetworkStatusCards 
         networkStatus={networkStatus} 
         isLoading={isLoading}
-        handleGatewayClick={handleGatewayClick} 
+        handleGatewayClick={handleGatewayClickLocal} 
       />
       
       {/* Manual Refresh Button */}
@@ -213,6 +230,14 @@ export const NetworkOverview: React.FC<NetworkOverviewProps> = ({
         )}
         Refresh Network Data
       </Button>
+      
+      {/* Mock Router Admin Dialog */}
+      <MockRouterAdmin
+        open={isMockRouterOpen}
+        onClose={() => setIsMockRouterOpen(false)}
+        gatewayIp={networkStatus?.gatewayIp || '192.168.1.1'}
+        isRealNetwork={networkStatus?.publicIp !== '203.0.113.1'}
+      />
     </div>
   );
 };
