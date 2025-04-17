@@ -56,131 +56,28 @@ const NetworkOverviewOptimized: React.FC<NetworkOverviewProps> = ({
   updateInterval,
   setRefreshRate
 }) => {
-  // State for smooth display values with refs to prevent re-renders
-  const [displayDownload, setDisplayDownload] = useState<number>(0);
-  const [displayUpload, setDisplayUpload] = useState<number>(0);
+  // Use simple state without animations to improve performance
   const [isMockRouterOpen, setIsMockRouterOpen] = useState(false);
   
-  // Use refs for animation frames to improve performance
-  const downloadAnimFrameRef = useRef<number | null>(null);
-  const uploadAnimFrameRef = useRef<number | null>(null);
-  const previousNetworkStatus = useRef<NetworkStatus | null>(null);
+  // Simplified the rendering by removing animations
+  const displayDownload = networkStatus?.connectionSpeed.download || 0;
+  const displayUpload = networkStatus?.connectionSpeed.upload || 0;
   
   // Memoize the gateway click handler
   const handleGatewayClickLocal = useMemo(() => () => {
     setIsMockRouterOpen(true);
   }, []);
 
-  // Throttle animation updates to reduce CPU usage
-  const lastAnimationUpdate = useRef<number>(0);
-  const animationThrottleMs = 50; // Only update animations every 50ms
-  
-  // Only update animations when networkStatus actually changes
-  useEffect(() => {
-    if (!networkStatus) return;
-    
-    const now = performance.now();
-    if (now - lastAnimationUpdate.current < animationThrottleMs) {
-      return; // Skip this update if we've updated recently
-    }
-    
-    // Skip if the values haven't changed
-    if (previousNetworkStatus.current?.connectionSpeed.download === networkStatus.connectionSpeed.download) {
-      return;
-    }
-    
-    previousNetworkStatus.current = networkStatus;
-    lastAnimationUpdate.current = now;
-    
-    const targetDownload = networkStatus.connectionSpeed.download;
-    
-    if (downloadAnimFrameRef.current) {
-      cancelAnimationFrame(downloadAnimFrameRef.current);
-    }
-    
-    // More efficient animation using fewer steps
-    const updateDownload = () => {
-      setDisplayDownload(prev => {
-        const diff = targetDownload - prev;
-        // Use a larger step size for faster transitions with fewer frames
-        const step = diff * 0.05;
-        
-        if (Math.abs(diff) < 0.5) return targetDownload;
-        const newValue = prev + step;
-        
-        if (Math.abs(targetDownload - newValue) > 0.5) {
-          downloadAnimFrameRef.current = requestAnimationFrame(updateDownload);
-        }
-        
-        return newValue;
-      });
-    };
-    
-    downloadAnimFrameRef.current = requestAnimationFrame(updateDownload);
-    
-    return () => {
-      if (downloadAnimFrameRef.current) {
-        cancelAnimationFrame(downloadAnimFrameRef.current);
-      }
-    };
-  }, [networkStatus?.connectionSpeed.download]);
-  
-  // Optimize upload speed animation (similar pattern as download)
-  useEffect(() => {
-    if (!networkStatus) return;
-    
-    const now = performance.now();
-    if (now - lastAnimationUpdate.current < animationThrottleMs) {
-      return; // Skip this update if we've updated recently
-    }
-    
-    // Skip if the values haven't changed
-    if (previousNetworkStatus.current?.connectionSpeed.upload === networkStatus.connectionSpeed.upload) {
-      return;
-    }
-    
-    const targetUpload = networkStatus.connectionSpeed.upload;
-    
-    if (uploadAnimFrameRef.current) {
-      cancelAnimationFrame(uploadAnimFrameRef.current);
-    }
-    
-    const updateUpload = () => {
-      setDisplayUpload(prev => {
-        const diff = targetUpload - prev;
-        // Use a larger step size for more efficient animation
-        const step = diff * 0.05;
-        
-        if (Math.abs(diff) < 0.5) return targetUpload;
-        const newValue = prev + step;
-        
-        if (Math.abs(targetUpload - newValue) > 0.5) {
-          uploadAnimFrameRef.current = requestAnimationFrame(updateUpload);
-        }
-        
-        return newValue;
-      });
-    };
-    
-    uploadAnimFrameRef.current = requestAnimationFrame(updateUpload);
-    
-    return () => {
-      if (uploadAnimFrameRef.current) {
-        cancelAnimationFrame(uploadAnimFrameRef.current);
-      }
-    };
-  }, [networkStatus?.connectionSpeed.upload]);
-
   // Use memoization for the UI sections to prevent unnecessary re-renders
   const statusCardSection = useMemo(() => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
       <StatusCard 
         title="Network Status"
-        value={networkStatus?.isOnline ? "Online" : "Offline"}
+        value={navigator.onLine ? "Online" : "Offline"}
         icon={<Signal size={18} />}
         description="Current connection status"
         isLoading={isLoading}
-        className={`animate-fade-in ${networkStatus?.isOnline ? "border-l-4 border-l-green-500" : "border-l-4 border-l-red-500"}`}
+        className={`${navigator.onLine ? "border-l-4 border-l-green-500" : "border-l-4 border-l-red-500"}`}
       />
       <StatusCard 
         title="Download"
@@ -188,7 +85,6 @@ const NetworkOverviewOptimized: React.FC<NetworkOverviewProps> = ({
         icon={<Database size={18} />}
         description="Current download speed"
         isLoading={isLoading}
-        className="animate-fade-in"
       />
       <StatusCard 
         title="Upload"
@@ -196,7 +92,6 @@ const NetworkOverviewOptimized: React.FC<NetworkOverviewProps> = ({
         icon={<Database size={18} />}
         description="Current upload speed"
         isLoading={isLoading}
-        className="animate-fade-in"
       />
       <StatusCard 
         title="Security"
@@ -204,10 +99,9 @@ const NetworkOverviewOptimized: React.FC<NetworkOverviewProps> = ({
         icon={<Shield size={18} />}
         description="Security protocol"
         isLoading={isLoading}
-        className="animate-fade-in"
       />
     </div>
-  ), [networkStatus?.isOnline, displayDownload, displayUpload, networkStatus?.availableNetworks, networkStatus?.networkName, isLoading]);
+  ), [networkStatus?.availableNetworks, networkStatus?.networkName, displayDownload, displayUpload, isLoading]);
 
   return (
     <div className="space-y-6">
@@ -215,24 +109,24 @@ const NetworkOverviewOptimized: React.FC<NetworkOverviewProps> = ({
         <CardContent className="p-6">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-3">
-              <div className={`p-3 rounded-full ${networkStatus?.isOnline ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+              <div className={`p-3 rounded-full ${navigator.onLine ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                 <Wifi size={24} />
               </div>
               <div>
                 <h2 className="text-2xl font-semibold">
-                  {networkStatus?.networkName || "Not Connected"}
+                  {navigator.onLine ? (networkStatus?.networkName || "Connected Network") : "Not Connected"}
                 </h2>
                 <p className="text-muted-foreground">
-                  {networkStatus?.isOnline ? 
+                  {navigator.onLine ? 
                     `Connected via ${networkStatus?.networkType || 'WiFi'}` : 
                     "No active connection"}
                 </p>
               </div>
             </div>
-            {networkStatus?.isOnline && (
+            {navigator.onLine && (
               <Button variant="outline" className="gap-1" onClick={handleGatewayClickLocal}>
                 <Router size={16} />
-                <span>Gateway: {networkStatus?.gatewayIp}</span>
+                <span>Gateway: {networkStatus?.gatewayIp || '192.168.1.1'}</span>
               </Button>
             )}
           </div>
@@ -241,14 +135,12 @@ const NetworkOverviewOptimized: React.FC<NetworkOverviewProps> = ({
         </CardContent>
       </Card>
 
-      {/* Only render tabs when data is available - use lazy loading */}
-      {!isLoading && networkStatus && (
-        <React.Suspense fallback={<div className="h-48 flex items-center justify-center">Loading device data...</div>}>
-          <NetworkDeviceTabs 
-            networkStatus={networkStatus} 
-            isLoading={isLoading} 
-          />
-        </React.Suspense>
+      {/* Only render tabs when data is available */}
+      {networkStatus && (
+        <NetworkDeviceTabs 
+          networkStatus={networkStatus} 
+          isLoading={isLoading} 
+        />
       )}
       
       <UpdateFrequencyControl 
@@ -256,15 +148,13 @@ const NetworkOverviewOptimized: React.FC<NetworkOverviewProps> = ({
         setRefreshRate={setRefreshRate} 
       />
       
-      {/* Conditionally render status cards to improve performance - use lazy loading */}
-      {!isLoading && networkStatus && (
-        <React.Suspense fallback={<div className="h-24 flex items-center justify-center">Loading network data...</div>}>
-          <NetworkStatusCards 
-            networkStatus={networkStatus} 
-            isLoading={isLoading}
-            handleGatewayClick={handleGatewayClickLocal} 
-          />
-        </React.Suspense>
+      {/* Simplified rendering of status cards */}
+      {networkStatus && (
+        <NetworkStatusCards 
+          networkStatus={networkStatus} 
+          isLoading={isLoading}
+          handleGatewayClick={handleGatewayClickLocal} 
+        />
       )}
       
       <Button 

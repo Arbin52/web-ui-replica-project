@@ -6,7 +6,6 @@ import { getConnectionHistory } from './networkHistoryUtils';
 import { NetworkStatus } from './types';
 
 // Store previous values with global variables for smoother transitions
-// These values will persist between function calls
 let previousDownloadSpeed = 0;
 let previousUploadSpeed = 0;
 let previousLatency = 0;
@@ -18,7 +17,6 @@ let uploadSpeedHistory: number[] = [];
 let latencyHistory: number[] = [];
 
 // Function to calculate moving average with decay factor
-// Newer values have more weight than older values
 const calculateMovingAverage = (history: number[], newValue: number, maxHistoryLength: number = 5) => {
   // Add the new value to history
   history.push(newValue);
@@ -43,7 +41,7 @@ const calculateMovingAverage = (history: number[], newValue: number, maxHistoryL
 };
 
 export const generateNetworkStatus = async (previousStatus: NetworkStatus | null): Promise<NetworkStatus> => {
-  console.log("Generating network status, previous status:", previousStatus?.networkName);
+  console.log("Generating network status");
   
   // Try to get real network information
   const realNetworkInfo = await fetchRealNetworkInfo();
@@ -53,24 +51,16 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   const isCurrentlyOnline = navigator.onLine;
   console.log("Browser reports online status:", isCurrentlyOnline);
   
-  // Get device connection status - IMPORTANT: This needs to return devices
+  // ALWAYS get devices regardless of online status
+  // This ensures we always have devices to show in the UI
   const connectedDevices = getConnectedDeviceStatus();
   console.log("Connected devices:", connectedDevices.length);
-  
-  // Fallback if there are no connected devices for some reason
-  const devicesToUse = connectedDevices.length > 0 
-    ? connectedDevices 
-    : generateConnectedDevices();
-  
-  // Generate realistic dynamic values with smoothing to prevent rapid changes
-  const signalStrengthDb = -(Math.floor(Math.random() * 30) + 40);
   
   // Smooth the network speed values to prevent rapid changes
   let downloadSpeed, uploadSpeed, latency;
   
   if (previousStatus) {
     // Apply advanced smoothing with smaller maximum changes
-    // Maximum change reduced to 1% of current value for more stability
     const maxDownloadChange = previousDownloadSpeed * 0.01;
     const randomDownloadChange = (Math.random() * maxDownloadChange * 2 - maxDownloadChange);
     const newDownloadValue = previousDownloadSpeed + randomDownloadChange;
@@ -119,22 +109,11 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   // Use browser's online status and network name from realNetworkInfo
   let networkName = realNetworkInfo.networkName;
   
-  // If online but no network name, use a default
-  if (isCurrentlyOnline && !networkName) {
-    networkName = "Connected Network";
-    console.log("Online without network name, using default name");
-  }
-  
-  // If offline, clear network name
-  if (!isCurrentlyOnline) {
-    networkName = undefined;
-    console.log("Browser reports offline, clearing network name");
-  }
-  
-  console.log("Final network status - Online:", isCurrentlyOnline, "Network:", networkName, "Devices:", devicesToUse.length);
-  
   // Generate available networks
   const availableNetworks = getAvailableNetworks();
+  
+  // Generate realistic signal strength
+  const signalStrengthDb = -(Math.floor(Math.random() * 30) + 40);
   
   return {
     networkName,
@@ -146,7 +125,7 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
     networkType: realNetworkInfo.networkType || '802.11ac (5GHz)',
     macAddress: '00:1B:44:11:3A:B7',
     dnsServer: '8.8.8.8, 8.8.4.4',
-    connectedDevices: devicesToUse,
+    connectedDevices: connectedDevices,
     lastUpdated: new Date(),
     isOnline: isCurrentlyOnline, // Most important: Use browser's online status
     connectionSpeed: {

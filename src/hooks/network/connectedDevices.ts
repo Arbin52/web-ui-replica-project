@@ -17,7 +17,11 @@ const getStoredDevices = (): ConnectedDevice[] => {
     try {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        // Ensure lastSeen is properly converted to Date objects
+        return parsed.map(device => ({
+          ...device,
+          lastSeen: device.lastSeen ? new Date(device.lastSeen) : new Date()
+        }));
       }
     } catch (e) {
       console.error('Error parsing stored devices:', e);
@@ -56,6 +60,29 @@ export const generateConnectedDevices = (count: number = 5) => {
   saveStoredDevices(baseDevices);
   
   return baseDevices;
+};
+
+// Get the status of connected devices - CRUCIAL function that must never return empty
+export const getConnectedDeviceStatus = () => {
+  const devices = getStoredDevices();
+  
+  // If we don't have any stored devices or somehow they're empty, ensure we generate new ones
+  if (!devices || devices.length === 0) {
+    console.log("No devices found, generating new ones");
+    return generateConnectedDevices();
+  }
+  
+  // Always ensure all devices have a valid lastSeen date
+  const updatedDevices = devices.map(device => ({
+    ...device,
+    lastSeen: device.lastSeen || new Date(),
+    status: 'Online' as const // Ensure devices are shown as online
+  }));
+  
+  // Save the updated devices
+  saveStoredDevices(updatedDevices);
+  
+  return updatedDevices;
 };
 
 // Function to simulate a new device connecting
@@ -110,16 +137,6 @@ export const disconnectDevice = () => {
   }
   
   return devices.length;
-};
-
-// Get the status of connected devices
-export const getConnectedDeviceStatus = () => {
-  const devices = getStoredDevices();
-  // If we don't have any stored devices, generate some
-  if (devices.length === 0) {
-    return generateConnectedDevices();
-  }
-  return devices;
 };
 
 // Update the status of a specific device
