@@ -1,7 +1,6 @@
 
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
-import { refreshNetworkStatusData } from '../refreshUtils';
 import { NetworkStatus } from '../types';
 
 interface NetworkActionsProps {
@@ -105,7 +104,7 @@ export const useNetworkActions = ({
 
   // Function to immediately check current network
   const checkCurrentNetworkImmediately = useCallback(async () => {
-    await refreshNetworkStatusData(fetchNetworkStatus);
+    await fetchNetworkStatus();
   }, [fetchNetworkStatus]);
 
   // Function to toggle live updates
