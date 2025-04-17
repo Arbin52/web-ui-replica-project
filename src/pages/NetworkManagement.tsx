@@ -1,22 +1,42 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, Suspense, lazy } from 'react';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
-import AddNetworkDialog from '../components/AddNetworkDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNetworks } from '@/hooks/useNetworks';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { toast } from 'sonner';
+import { debounce } from '@/utils/performance';
 
-// Import our optimized components
+// Import our header component (not lazy loaded since it's small and always visible)
 import { NetworkHeader } from '@/components/network-management/NetworkHeader';
-import NetworkOverviewOptimized from '@/components/network-management/NetworkOverviewOptimized';
-import { NetworkStatistics } from '@/components/network-management/NetworkStatistics';
-import { NetworkDevices } from '@/components/network-management/NetworkDevices';
-import { SavedNetworks } from '@/components/network-management/SavedNetworks';
+
+// Lazy load larger components to improve initial page load
+const AddNetworkDialog = lazy(() => import('../components/AddNetworkDialog'));
+const NetworkOverviewOptimized = lazy(() => 
+  import('@/components/network-management/NetworkOverviewOptimized'));
+const NetworkStatistics = lazy(() => 
+  import('@/components/network-management/NetworkStatistics').then(module => ({ default: module.NetworkStatistics })));
+const NetworkDevices = lazy(() => 
+  import('@/components/network-management/NetworkDevices').then(module => ({ default: module.NetworkDevices })));
+const SavedNetworks = lazy(() => 
+  import('@/components/network-management/SavedNetworks').then(module => ({ default: module.SavedNetworks })));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="w-full p-4 bg-gray-50 rounded-md animate-pulse">
+    <div className="h-8 bg-gray-200 rounded mb-4 w-1/3"></div>
+    <div className="space-y-2">
+      <div className="h-4 bg-gray-200 rounded w-full"></div>
+      <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+      <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+    </div>
+  </div>
+);
 
 const NetworkManagement = () => {
   const [activeTab, setActiveTab] = useState('networks');
+  const [tabValue, setTabValue] = useState('overview');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { networks, loading, fetchNetworks } = useNetworks();
   const { 
@@ -37,17 +57,123 @@ const NetworkManagement = () => {
     openGatewayInterface();
   }, [openGatewayInterface]);
   
-  // Optimize the refresh handler
-  const handleRefresh = useCallback(() => {
-    setIsRefreshing(true);
-    toast.info('Refreshing network status...');
-    
-    refreshNetworkStatus();
-    
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 1000);
-  }, [refreshNetworkStatus]);
+  // Debounced refresh handler to prevent multiple rapid refreshes
+  const debouncedRefresh = useCallback(
+    debounce(() => {
+      if (!isRefreshing) {
+        setIsRefreshing(true);
+        toast.info('Refreshing network status...');
+        
+        refreshNetworkStatus()
+          .finally(() => {
+            // Use setTimeout to ensure a minimum visual feedback time
+            setTimeout(() => {
+              setIsRefreshing(false);
+            }, 500);
+          });
+      }
+    }, 500),
+    [refreshNetworkStatus, isRefreshing]
+  );
+  
+  // Handle opening the add network dialog with debounce to prevent double-clicks
+  const handleOpenAddDialog = useCallback(
+    debounce(() => {
+      setIsAddDialogOpen(true);
+    }, 300),
+    []
+  );
+  
+  // Use memo to prevent tab content re-rendering unless necessary
+  const tabContent = useMemo(() => (
+    <Tabs 
+      value={tabValue} 
+      onValueChange={setTabValue}
+      className="space-y-4"
+    >
+      <TabsList>
+        <TabsTrigger value="overview">Overview</TabsTrigger>
+        <TabsTrigger value="statistics">Network Statistics</TabsTrigger>
+        <TabsTrigger value="devices">Connected Devices</TabsTrigger>
+        <TabsTrigger value="saved">Saved Networks</TabsTrigger>
+      </TabsList>
+      
+      <TabsContent value="overview" className="space-y-4">
+        <Suspense fallback={<LoadingFallback />}>
+          <NetworkOverviewOptimized 
+            networkStatus={networkStatus}
+            isLoading={isLoading}
+            isRefreshing={isRefreshing}
+            handleRefresh={debouncedRefresh}
+            handleGatewayClick={handleGatewayClick}
+            updateInterval={updateInterval}
+            setRefreshRate={setRefreshRate}
+          />
+        </Suspense>
+      </TabsContent>
+      
+      <TabsContent value="statistics">
+        <Suspense fallback={<LoadingFallback />}>
+          <NetworkStatistics 
+            networkStatus={networkStatus}
+            isLoading={isLoading}
+          />
+        </Suspense>
+      </TabsContent>
+      
+      <TabsContent value="devices">
+        <Suspense fallback={<LoadingFallback />}>
+          <NetworkDevices 
+            networkStatus={networkStatus} 
+            isLoading={isLoading} 
+          />
+        </Suspense>
+      </TabsContent>
+      
+      <TabsContent value="saved">
+        <Suspense fallback={<LoadingFallback />}>
+          <SavedNetworks 
+            networks={networks}
+            loading={loading}
+            fetchNetworks={fetchNetworks}
+            openAddNetworkDialog={handleOpenAddDialog}
+          />
+        </Suspense>
+      </TabsContent>
+    </Tabs>
+  ), [
+    tabValue,
+    networkStatus,
+    isLoading,
+    isRefreshing,
+    networks,
+    loading,
+    debouncedRefresh,
+    handleGatewayClick,
+    updateInterval,
+    setRefreshRate,
+    fetchNetworks,
+    handleOpenAddDialog
+  ]);
+
+  // Memoize the header to prevent re-renders
+  const networkHeader = useMemo(() => (
+    <NetworkHeader 
+      isLiveUpdating={isLiveUpdating}
+      toggleLiveUpdates={toggleLiveUpdates}
+      updateInterval={updateInterval}
+      handleRefresh={debouncedRefresh}
+      isRefreshing={isRefreshing}
+      openAddNetworkDialog={handleOpenAddDialog}
+    />
+  ), [
+    isLiveUpdating,
+    toggleLiveUpdates,
+    updateInterval,
+    debouncedRefresh,
+    isRefreshing,
+    handleOpenAddDialog
+  ]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -58,66 +184,22 @@ const NetworkManagement = () => {
         </div>
         <div className="flex-grow overflow-y-auto">
           <div className="max-w-screen-xl mx-auto p-4 md:p-6 animate-fade-in">
-            <NetworkHeader 
-              isLiveUpdating={isLiveUpdating}
-              toggleLiveUpdates={toggleLiveUpdates}
-              updateInterval={updateInterval}
-              handleRefresh={handleRefresh}
-              isRefreshing={isRefreshing}
-              openAddNetworkDialog={() => setIsAddDialogOpen(true)}
-            />
-            
-            <Tabs defaultValue="overview" className="space-y-4">
-              <TabsList>
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="statistics">Network Statistics</TabsTrigger>
-                <TabsTrigger value="devices">Connected Devices</TabsTrigger>
-                <TabsTrigger value="saved">Saved Networks</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="overview" className="space-y-4">
-                <NetworkOverviewOptimized 
-                  networkStatus={networkStatus}
-                  isLoading={isLoading}
-                  isRefreshing={isRefreshing}
-                  handleRefresh={handleRefresh}
-                  handleGatewayClick={handleGatewayClick}
-                  updateInterval={updateInterval}
-                  setRefreshRate={setRefreshRate}
-                />
-              </TabsContent>
-              
-              <TabsContent value="statistics">
-                <NetworkStatistics 
-                  networkStatus={networkStatus}
-                  isLoading={isLoading}
-                />
-              </TabsContent>
-              
-              <TabsContent value="devices">
-                <NetworkDevices 
-                  networkStatus={networkStatus} 
-                  isLoading={isLoading} 
-                />
-              </TabsContent>
-              
-              <TabsContent value="saved">
-                <SavedNetworks 
-                  networks={networks}
-                  loading={loading}
-                  fetchNetworks={fetchNetworks}
-                  openAddNetworkDialog={() => setIsAddDialogOpen(true)}
-                />
-              </TabsContent>
-            </Tabs>
+            {networkHeader}
+            {tabContent}
           </div>
         </div>
       </div>
-      <AddNetworkDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        onNetworkAdded={fetchNetworks}
-      />
+      
+      {/* Load dialog only when needed */}
+      {isAddDialogOpen && (
+        <Suspense fallback={null}>
+          <AddNetworkDialog
+            open={isAddDialogOpen}
+            onOpenChange={setIsAddDialogOpen}
+            onNetworkAdded={fetchNetworks}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };

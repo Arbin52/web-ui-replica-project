@@ -1,11 +1,12 @@
 
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Activity, Signal, Map, FileBarChart, Wifi, Network } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { NetworkStatus } from '@/hooks/network/types';
+import { createViewportObserver, scheduleIdleTask } from '@/utils/performance';
 
 interface FeatureCardsProps {
   networkStatus: NetworkStatus | null;
@@ -20,7 +21,7 @@ const SpeedTestCard = memo(({ downloadSpeed, uploadSpeed, navigate }: {
 }) => (
   <Card 
     className="hover:shadow-md transition-shadow" 
-    onClick={() => navigate('/speed')}
+    onClick={() => scheduleIdleTask(() => navigate('/speed'))}
   >
     <CardHeader className="pb-2">
       <CardTitle className="text-base flex items-center gap-2">
@@ -51,7 +52,7 @@ const PingStatusCard = memo(({ latency, navigate }: {
 }) => (
   <Card 
     className="hover:shadow-md transition-shadow" 
-    onClick={() => navigate('/ping')}
+    onClick={() => scheduleIdleTask(() => navigate('/ping'))}
   >
     <CardHeader className="pb-2">
       <CardTitle className="text-base flex items-center gap-2">
@@ -79,7 +80,7 @@ const PingStatusCard = memo(({ latency, navigate }: {
 const TracerouteCard = memo(({ navigate }: { navigate: (path: string) => void }) => (
   <Card 
     className="hover:shadow-md transition-shadow" 
-    onClick={() => navigate('/traceroute')}
+    onClick={() => scheduleIdleTask(() => navigate('/traceroute'))}
   >
     <CardHeader className="pb-2">
       <CardTitle className="text-base flex items-center gap-2">
@@ -113,7 +114,7 @@ const WifiManagementCard = memo(({ networkName, signalStrength, navigate }: {
 }) => (
   <Card 
     className="hover:shadow-md transition-shadow" 
-    onClick={() => navigate('/wifi')}
+    onClick={() => scheduleIdleTask(() => navigate('/wifi'))}
   >
     <CardHeader className="pb-2">
       <CardTitle className="text-base flex items-center gap-2">
@@ -146,10 +147,44 @@ const WifiManagementCard = memo(({ networkName, signalStrength, navigate }: {
 
 export const FeatureCards: React.FC<FeatureCardsProps> = ({ networkStatus, isLoading }) => {
   const navigate = useNavigate();
-
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [visibleCards, setVisibleCards] = useState<{ [key: string]: boolean }>({});
+  
+  // Intersection observer setup
+  useEffect(() => {
+    if (!containerRef.current) return;
+    
+    const cards = containerRef.current.querySelectorAll('.feature-card');
+    
+    // Create intersection observer
+    const observer = createViewportObserver((entries) => {
+      entries.forEach((entry) => {
+        const id = entry.target.getAttribute('data-id');
+        if (id) {
+          setVisibleCards((prev) => ({
+            ...prev,
+            [id]: entry.isIntersecting,
+          }));
+        }
+      });
+    });
+    
+    // Observe all cards
+    cards.forEach((card) => {
+      observer.observe(card);
+    });
+    
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+  
   // Memoize navigation function to prevent recreating on each render
   const navigateTo = useCallback((path: string) => {
-    navigate(path);
+    // Use setTimeout to break the current call stack, preventing UI freezes
+    setTimeout(() => {
+      navigate(path);
+    }, 10);
   }, [navigate]);
 
   // Skip rendering if loading or no data to prevent UI jumping
@@ -172,83 +207,122 @@ export const FeatureCards: React.FC<FeatureCardsProps> = ({ networkStatus, isLoa
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+    <div 
+      ref={containerRef}
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6"
+    >
       {/* Speed Test Mini Card */}
-      <SpeedTestCard 
-        downloadSpeed={networkStatus?.connectionSpeed.download}
-        uploadSpeed={networkStatus?.connectionSpeed.upload}
-        navigate={navigateTo}
-      />
+      <div 
+        className="feature-card"
+        data-id="speed"
+      >
+        <SpeedTestCard 
+          downloadSpeed={networkStatus?.connectionSpeed.download}
+          uploadSpeed={networkStatus?.connectionSpeed.upload}
+          navigate={navigateTo}
+        />
+      </div>
       
       {/* Ping Mini Card */}
-      <PingStatusCard
-        latency={networkStatus?.connectionSpeed.latency}
-        navigate={navigateTo}
-      />
+      <div 
+        className="feature-card"
+        data-id="ping"
+      >
+        <PingStatusCard
+          latency={networkStatus?.connectionSpeed.latency}
+          navigate={navigateTo}
+        />
+      </div>
       
       {/* Traceroute Mini Card */}
-      <TracerouteCard navigate={navigateTo} />
+      <div
+        className="feature-card"
+        data-id="traceroute"
+      >
+        <TracerouteCard navigate={navigateTo} />
+      </div>
       
       {/* WiFi Analysis Mini Card */}
-      <WifiManagementCard
-        networkName={networkStatus?.networkName}
-        signalStrength={networkStatus?.signalStrength}
-        navigate={navigateTo}
-      />
+      <div 
+        className="feature-card"
+        data-id="wifi"
+      >
+        <WifiManagementCard
+          networkName={networkStatus?.networkName}
+          signalStrength={networkStatus?.signalStrength}
+          navigate={navigateTo}
+        />
+      </div>
       
       {/* Reports Mini Card */}
-      <Card className="hover:shadow-md transition-shadow" onClick={() => navigateTo('/reports')}>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <FileBarChart size={18} className="text-amber-500" />
-            Network Reports
-          </CardTitle>
-          <CardDescription>Usage analytics</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-12 flex items-end mb-2">
-            {[...Array(7)].map((_, i) => (
-              <div key={i} className="flex-1 mx-0.5">
-                <div 
-                  className="bg-amber-500 ml-auto" 
-                  style={{ 
-                    height: `${Math.floor(30 + (i * 5) + (Math.random() * 30))}%`, 
-                    width: '100%' 
-                  }}
-                ></div>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-center text-muted-foreground">Last 7 days network usage</p>
-          <Button variant="outline" size="sm" className="w-full mt-2">View Reports</Button>
-        </CardContent>
-      </Card>
+      <div 
+        className="feature-card"
+        data-id="reports"
+      >
+        <Card 
+          className="hover:shadow-md transition-shadow" 
+          onClick={() => scheduleIdleTask(() => navigateTo('/reports'))}
+        >
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileBarChart size={18} className="text-amber-500" />
+              Network Reports
+            </CardTitle>
+            <CardDescription>Usage analytics</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-12 flex items-end mb-2">
+              {[...Array(7)].map((_, i) => (
+                <div key={i} className="flex-1 mx-0.5">
+                  <div 
+                    className="bg-amber-500 ml-auto" 
+                    style={{ 
+                      height: `${Math.floor(30 + (i * 5) + (Math.random() * 30))}%`, 
+                      width: '100%' 
+                    }}
+                  ></div>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-center text-muted-foreground">Last 7 days network usage</p>
+            <Button variant="outline" size="sm" className="w-full mt-2">View Reports</Button>
+          </CardContent>
+        </Card>
+      </div>
       
       {/* Network Management Mini Card */}
-      <Card className="hover:shadow-md transition-shadow" onClick={() => navigateTo('/networks')}>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Network size={18} className="text-indigo-500" />
-            Network Management
-          </CardTitle>
-          <CardDescription>Devices & settings</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-between mb-2">
-            <div className="text-sm">
-              <p className="text-muted-foreground">Connected devices</p>
-              <p className="font-semibold">{networkStatus?.connectedDevices?.length || 0}</p>
+      <div 
+        className="feature-card"
+        data-id="networks"
+      >
+        <Card 
+          className="hover:shadow-md transition-shadow" 
+          onClick={() => scheduleIdleTask(() => navigateTo('/networks'))}
+        >
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Network size={18} className="text-indigo-500" />
+              Network Management
+            </CardTitle>
+            <CardDescription>Devices & settings</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between mb-2">
+              <div className="text-sm">
+                <p className="text-muted-foreground">Connected devices</p>
+                <p className="font-semibold">{networkStatus?.connectedDevices?.length || 0}</p>
+              </div>
+              <div className="text-sm">
+                <p className="text-muted-foreground">Network status</p>
+                <p className={`font-semibold ${networkStatus?.isOnline ? 'text-green-500' : 'text-red-500'}`}>
+                  {networkStatus?.isOnline ? 'Online' : 'Offline'}
+                </p>
+              </div>
             </div>
-            <div className="text-sm">
-              <p className="text-muted-foreground">Network status</p>
-              <p className={`font-semibold ${networkStatus?.isOnline ? 'text-green-500' : 'text-red-500'}`}>
-                {networkStatus?.isOnline ? 'Online' : 'Offline'}
-              </p>
-            </div>
-          </div>
-          <Button variant="outline" size="sm" className="w-full">Manage Network</Button>
-        </CardContent>
-      </Card>
+            <Button variant="outline" size="sm" className="w-full">Manage Network</Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

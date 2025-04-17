@@ -1,5 +1,6 @@
 
 import { useEffect, useRef, MutableRefObject } from 'react';
+import { scheduleIdleTask } from '@/utils/performance';
 
 export const useNetworkPolling = (
   isLiveUpdating: boolean,
@@ -10,28 +11,45 @@ export const useNetworkPolling = (
   // Keep track of last fetch time
   const lastFetchTime = useRef<number>(0);
   const isInitialized = useRef<boolean>(false);
+  const isPollingActive = useRef<boolean>(false);
   
   // Track visibility state
   const isVisible = useRef<boolean>(document.visibilityState === 'visible');
   
+  // Clear any existing interval when component unmounts
   useEffect(() => {
-    // Set up visibility change detection
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, []);
+  
+  useEffect(() => {
+    // Set up visibility change detection with minimal overhead
     const handleVisibilityChange = () => {
+      const wasVisible = isVisible.current;
       isVisible.current = document.visibilityState === 'visible';
       
-      // If becoming visible and should be updating, trigger fetch
-      if (isVisible.current && isLiveUpdating && Date.now() - lastFetchTime.current > 5000) {
-        fetchNetworkStatus().catch(err => console.error('Fetch error on visibility change:', err));
-        lastFetchTime.current = Date.now();
+      // Only trigger fetch if becoming visible and should be updating
+      if (!wasVisible && isVisible.current && isLiveUpdating && Date.now() - lastFetchTime.current > 5000) {
+        scheduleIdleTask(() => {
+          if (document.visibilityState === 'visible') {
+            fetchNetworkStatus().catch(err => console.error('Visibility fetch error:', err));
+            lastFetchTime.current = Date.now();
+          }
+        });
       }
     };
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    // Immediately clean up any existing intervals
+    // Clean up any existing intervals when deps change
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
+      isPollingActive.current = false;
     }
     
     // If live updates are disabled, do nothing more
@@ -41,20 +59,20 @@ export const useNetworkPolling = (
       };
     }
 
-    // Create a throttled fetch function to prevent excessive updates
-    const throttledFetch = async () => {
-      // Skip if document is hidden to save resources
-      if (!isVisible.current) {
+    // Create an optimized fetch function
+    const optimizedFetch = async () => {
+      // Only fetch if document is visible and polling is active
+      if (!isVisible.current || !isPollingActive.current) {
         return;
       }
       
-      // Enforce minimum interval between fetches (15 seconds)
+      // Enforce minimum interval between fetches (20 seconds)
       const now = Date.now();
-      if (now - lastFetchTime.current < 15000) {
+      if (now - lastFetchTime.current < 20000) {
         return;
       }
       
-      // Update last fetch time and execute fetch
+      // Update last fetch time and execute fetch in idle time
       lastFetchTime.current = now;
       try {
         await fetchNetworkStatus();
@@ -66,9 +84,13 @@ export const useNetworkPolling = (
     // Delayed initial fetch to prevent initial load spike
     if (!isInitialized.current) {
       const initialTimeout = setTimeout(() => {
-        throttledFetch();
-        isInitialized.current = true;
-      }, 1500);
+        scheduleIdleTask(() => {
+          if (document.visibilityState === 'visible') {
+            optimizedFetch();
+            isInitialized.current = true;
+          }
+        });
+      }, 2000);
       
       // Clean up initial timeout if component unmounts before it runs
       return () => {
@@ -77,9 +99,14 @@ export const useNetworkPolling = (
       };
     }
     
-    // Use fixed interval of at least 15 seconds
-    const actualInterval = Math.max(15000, updateInterval);
-    intervalRef.current = setInterval(throttledFetch, actualInterval);
+    // Use fixed interval of at least 20 seconds
+    const actualInterval = Math.max(20000, updateInterval);
+    isPollingActive.current = true;
+    intervalRef.current = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        scheduleIdleTask(optimizedFetch);
+      }
+    }, actualInterval);
     
     // Clean up function
     return () => {
@@ -88,6 +115,7 @@ export const useNetworkPolling = (
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      isPollingActive.current = false;
     };
   }, [isLiveUpdating, updateInterval, fetchNetworkStatus, intervalRef]);
 };

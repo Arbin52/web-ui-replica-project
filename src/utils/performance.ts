@@ -19,19 +19,32 @@ export const debounce = <F extends (...args: any[]) => any>(
   };
 };
 
-// Throttle function to limit the number of calls in a time period
+// Throttle function with leading edge execution option
 export const throttle = <F extends (...args: any[]) => any>(
   func: F,
-  limit: number
+  limit: number,
+  options: { leading?: boolean } = { leading: true }
 ): ((...args: Parameters<F>) => void) => {
   let inThrottle = false;
+  let lastArgs: Parameters<F> | null = null;
   
   return (...args: Parameters<F>): void => {
+    // Store the latest args
+    lastArgs = args;
+    
     if (!inThrottle) {
-      func(...args);
+      if (options.leading !== false) {
+        func(...args);
+      }
+      
       inThrottle = true;
       setTimeout(() => {
         inThrottle = false;
+        // Call with most recent args if they exist
+        if (lastArgs && !options.leading) {
+          func(...lastArgs);
+          lastArgs = null;
+        }
       }, limit);
     }
   };
@@ -59,6 +72,24 @@ export const isInViewport = (element: HTMLElement): boolean => {
     rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
     rect.right <= (window.innerWidth || document.documentElement.clientWidth)
   );
+};
+
+// Setup IntersectionObserver to track elements in viewport
+export const createViewportObserver = (
+  callback: (entries: IntersectionObserverEntry[]) => void,
+  options = { rootMargin: '100px', threshold: 0.1 }
+): IntersectionObserver => {
+  if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+    // Return a no-op observer if not supported
+    return {
+      observe: () => {},
+      unobserve: () => {},
+      disconnect: () => {},
+      takeRecords: () => []
+    } as IntersectionObserver;
+  }
+  
+  return new IntersectionObserver(callback, options);
 };
 
 // Detect if the browser is lagging
@@ -89,4 +120,23 @@ export const detectBrowserLag = (callback: (isLagging: boolean) => void): () => 
   animFrameId = requestAnimationFrame(checkFrame);
   
   return () => cancelAnimationFrame(animFrameId);
+};
+
+// Optimize memory usage by cleaning up event listeners
+export const cleanupEventListeners = (
+  element: HTMLElement | Window | Document,
+  events: Array<{ type: string; listener: EventListenerOrEventListenerObject }>
+): void => {
+  events.forEach(({ type, listener }) => {
+    element.removeEventListener(type, listener);
+  });
+};
+
+// Optimize React component rendering by skipping unnecessary renders
+export const shouldComponentUpdate = (
+  prevProps: Record<string, any>,
+  nextProps: Record<string, any>,
+  propKeys: string[]
+): boolean => {
+  return propKeys.some(key => prevProps[key] !== nextProps[key]);
 };

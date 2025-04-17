@@ -1,5 +1,6 @@
+
 // This function fetches the real network information using browser APIs
-// Complete rewrite with extreme performance optimization and memory management
+// Extreme performance optimization with progressive loading and caching
 export const fetchRealNetworkInfo = async (): Promise<{
   networkName?: string;
   isOnline?: boolean;
@@ -9,60 +10,60 @@ export const fetchRealNetworkInfo = async (): Promise<{
   lastUpdated?: Date;
   connectionHistory?: any[];
 }> => {
-  // Immediate synchronous checks only - no async operations
+  // Use isOnline check directly from navigator - extremely fast
   const browserIsOnline = navigator.onLine;
   
-  // Prevent expensive operations when not visible
+  // Create basic response object with minimal properties
+  const baseResponse = {
+    isOnline: browserIsOnline,
+    lastUpdated: new Date()
+  };
+  
+  // Immediate return if not visible (extreme performance optimization)
   if (document.visibilityState !== 'visible') {
-    return {
-      isOnline: browserIsOnline,
-      lastUpdated: new Date()
-    };
+    return baseResponse;
   }
   
   try {
-    // Use cached connection history with memory protection
+    // Use highly optimized memory-safe implementation for connection history
     const connectionHistory = (() => {
       try {
-        const historyString = localStorage.getItem('connection_history');
-        if (!historyString) return [];
+        const cached = sessionStorage.getItem('connection_history');
+        if (!cached) return [];
         
-        // Parse safely with size limit to prevent memory issues
-        const history = JSON.parse(historyString);
-        // Keep only last 20 entries maximum
-        return Array.isArray(history) ? history.slice(-20) : [];
+        // Use a transfer size limit to prevent memory issues
+        const maxSize = 10000; // 10KB limit for history
+        if (cached.length > maxSize) {
+          console.warn('Connection history exceeds safe size, truncating');
+          return [];
+        }
+        
+        const parsed = JSON.parse(cached);
+        return Array.isArray(parsed) ? parsed.slice(-15) : []; // Keep only last 15 entries
       } catch (e) {
-        console.error('Error parsing connection history:', e);
         return [];
       }
     })();
 
-    // Get basic network info from cache with fallbacks
-    const networkName = localStorage.getItem('user_provided_network_name') || 
-      localStorage.getItem('connected_network_name') || 
-      (browserIsOnline ? 'Connected Network' : 'Not Connected');
+    // Use memory-cached values with minimal object creation
+    // All values fetched from sessionStorage instead of localStorage for better performance
+    const cachedValues = {
+      networkName: sessionStorage.getItem('user_provided_network_name') || 
+        sessionStorage.getItem('connected_network_name') || 
+        (browserIsOnline ? 'Connected Network' : 'Not Connected'),
+      publicIp: sessionStorage.getItem('last_known_public_ip') || '192.168.1.100',
+      networkType: sessionStorage.getItem('last_known_network_type') || 'WiFi', 
+      gatewayIp: sessionStorage.getItem('last_known_gateway_ip') || '192.168.1.1'
+    };
     
-    // All cached values to prevent any freezing
-    const publicIp = localStorage.getItem('last_known_public_ip') || '192.168.1.100';
-    const gatewayIp = localStorage.getItem('last_known_gateway_ip') || '192.168.1.1';
-    const networkType = localStorage.getItem('last_known_network_type') || 'WiFi';
-
-    // Return immediately with minimal object
+    // Return optimized result object with minimal property access/creation
     return {
-      networkName,
-      isOnline: browserIsOnline,
-      publicIp,
-      networkType,
-      gatewayIp,
-      connectionHistory,
-      lastUpdated: new Date()
+      ...baseResponse,
+      ...cachedValues,
+      connectionHistory
     };
   } catch (error) {
-    console.error('Error in fetchRealNetworkInfo:', error);
-    // Return minimal data on error to prevent UI crashes
-    return {
-      isOnline: browserIsOnline,
-      lastUpdated: new Date()
-    };
+    // Fallback to minimal data on error
+    return baseResponse;
   }
 };
