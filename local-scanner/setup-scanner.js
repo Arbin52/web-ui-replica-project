@@ -6,200 +6,77 @@ const { execSync } = require('child_process');
 // Colors for console output
 const colors = {
   reset: "\x1b[0m",
-  bright: "\x1b[1m",
   green: "\x1b[32m",
   yellow: "\x1b[33m",
   red: "\x1b[31m",
-  cyan: "\x1b[36m"
+  cyan: "\x1b[36m",
+  bold: "\x1b[1m"
 };
 
-console.log(`${colors.bright}${colors.cyan}Network Scanner Setup Script${colors.reset}\n`);
+console.log(`\n${colors.bold}${colors.cyan}=== SIMPLE NETWORK SCANNER SETUP ===${colors.reset}\n`);
 
-// Create directory structure if it doesn't exist
-const createDirectories = () => {
-  console.log(`${colors.yellow}Creating directory structure...${colors.reset}`);
-  
-  // Ensure local-scanner directory exists
-  if (!fs.existsSync('local-scanner')) {
-    fs.mkdirSync('local-scanner', { recursive: true });
-    console.log(`Created local-scanner directory`);
+try {
+  // Step 1: Create directory structure
+  console.log(`${colors.yellow}[1/4] Setting up directories...${colors.reset}`);
+  if (!fs.existsSync('python')) {
+    fs.mkdirSync('python', { recursive: true });
   }
-  
-  // Ensure python directory exists inside local-scanner
-  if (!fs.existsSync(path.join('local-scanner', 'python'))) {
-    fs.mkdirSync(path.join('local-scanner', 'python'), { recursive: true });
-    console.log(`Created local-scanner/python directory`);
-  }
+  console.log(`${colors.green}✓ Directories ready${colors.reset}`);
 
-  console.log(`${colors.green}Directory structure created successfully${colors.reset}\n`);
-};
-
-// Copy the local-scanner package.json file to the correct location
-const copyPackageJson = () => {
-  console.log(`${colors.yellow}Checking package.json...${colors.reset}`);
+  // Step 2: Create or update package.json
+  console.log(`\n${colors.yellow}[2/4] Setting up package.json...${colors.reset}`);
+  const packageJsonPath = path.join(__dirname, 'package.json');
   
-  const localScannerPackageJsonPath = path.join('local-scanner', 'package.json');
+  const packageJson = {
+    "name": "network-scanner-service",
+    "version": "1.0.0",
+    "description": "Local network scanner service",
+    "main": "index.ts",
+    "scripts": {
+      "start": "ts-node index.ts",
+      "dev": "ts-node-dev --respawn index.ts"
+    },
+    "dependencies": {
+      "cors": "^2.8.5",
+      "express": "^4.18.2",
+      "ts-node": "^10.9.1"
+    },
+    "devDependencies": {
+      "@types/cors": "^2.8.13",
+      "@types/express": "^4.17.17",
+      "@types/node": "^20.3.1",
+      "ts-node-dev": "^2.0.0",
+      "typescript": "^5.1.3"
+    }
+  };
   
-  if (!fs.existsSync(localScannerPackageJsonPath)) {
-    console.log(`Creating package.json in local-scanner directory`);
-    
-    // Basic package.json with required dependencies
-    const packageJsonContent = {
-      "name": "network-scanner-service",
-      "version": "1.0.0",
-      "description": "Local network scanner service",
-      "main": "index.ts",
-      "scripts": {
-        "start": "ts-node index.ts",
-        "dev": "ts-node-dev --respawn index.ts",
-        "build": "tsc",
-        "test": "echo \"No tests configured\""
-      },
-      "dependencies": {
-        "cors": "^2.8.5",
-        "express": "^4.18.2"
-      },
-      "devDependencies": {
-        "@types/cors": "^2.8.13",
-        "@types/express": "^4.17.17",
-        "@types/node": "^20.3.1",
-        "ts-node": "^10.9.1",
-        "ts-node-dev": "^2.0.0",
-        "typescript": "^5.1.3"
-      }
-    };
-    
-    fs.writeFileSync(
-      localScannerPackageJsonPath,
-      JSON.stringify(packageJsonContent, null, 2)
-    );
-    
-    console.log(`${colors.green}Created package.json in local-scanner directory${colors.reset}`);
-  } else {
-    console.log(`${colors.green}package.json already exists in local-scanner directory${colors.reset}`);
-  }
-};
+  fs.writeFileSync(
+    packageJsonPath,
+    JSON.stringify(packageJson, null, 2)
+  );
+  console.log(`${colors.green}✓ package.json created${colors.reset}`);
 
-// Install dependencies
-const installDependencies = () => {
-  console.log(`${colors.yellow}Installing dependencies...${colors.reset}`);
+  // Step 3: Install dependencies
+  console.log(`\n${colors.yellow}[3/4] Installing dependencies...${colors.reset}`);
+  console.log(`This may take a minute. Please wait...`);
   
   try {
-    // Change directory to local-scanner
-    if (fs.existsSync('local-scanner')) {
-      process.chdir('local-scanner');
-      console.log(`Changed directory to local-scanner`);
-      
-      // Install npm dependencies
-      console.log(`Installing npm dependencies...`);
-      execSync('npm install', { stdio: 'inherit' });
-      
-      console.log(`${colors.green}Node.js dependencies installed successfully${colors.reset}`);
-      
-      // Check if Python is available
-      const isPythonAvailable = checkPythonAvailability();
-      
-      if (isPythonAvailable) {
-        console.log(`${colors.yellow}Installing Python dependencies...${colors.reset}`);
-        
-        // Different commands for Windows vs Unix
-        if (process.platform === 'win32') {
-          try {
-            execSync('pip install pynetinfo getmac colorama', { stdio: 'inherit' });
-            console.log(`${colors.green}Python dependencies installed successfully${colors.reset}`);
-          } catch (e) {
-            console.log(`${colors.yellow}Warning: Could not install Python dependencies.${colors.reset}`);
-            console.log(`The scanner will still work with limited functionality.`);
-          }
-        } else {
-          try {
-            if (fs.existsSync(path.join('python', 'requirements.txt'))) {
-              execSync('pip install -r python/requirements.txt', { stdio: 'inherit' });
-            } else {
-              execSync('pip install netifaces getmac scapy', { stdio: 'inherit' });
-            }
-            console.log(`${colors.green}Python dependencies installed successfully${colors.reset}`);
-          } catch (e) {
-            console.log(`${colors.yellow}Warning: Could not install Python dependencies.${colors.reset}`);
-            console.log(`The scanner will still work with limited functionality.`);
-          }
-        }
-      }
-      
-      // Go back to root directory
-      process.chdir('..');
-    } else {
-      console.error(`${colors.red}Error: local-scanner directory does not exist${colors.reset}`);
-    }
+    execSync('npm install', { stdio: 'inherit' });
+    console.log(`${colors.green}✓ Dependencies installed${colors.reset}`);
   } catch (error) {
     console.error(`${colors.red}Error installing dependencies: ${error.message}${colors.reset}`);
-    
-    // Go back to root directory
-    try {
-      process.chdir('..');
-    } catch (e) {
-      // Already in root, ignore
-    }
+    console.log(`\nTry running manually: npm install ts-node express cors`);
   }
-};
 
-// Check if Python is available
-const checkPythonAvailability = () => {
-  console.log(`${colors.yellow}Checking Python availability...${colors.reset}`);
+  // Step 4: Create basic index.ts file if it doesn't exist
+  console.log(`\n${colors.yellow}[4/4] Setting up scanner files...${colors.reset}`);
+  const indexPath = path.join(__dirname, 'index.ts');
   
-  try {
-    if (process.platform === 'win32') {
-      // For Windows, try both python and py commands
-      try {
-        execSync('python --version', { stdio: 'pipe' });
-        console.log(`${colors.green}Python found via 'python' command${colors.reset}`);
-        return true;
-      } catch (e) {
-        try {
-          execSync('py --version', { stdio: 'pipe' });
-          console.log(`${colors.green}Python found via 'py' command${colors.reset}`);
-          return true;
-        } catch (e) {
-          console.log(`${colors.yellow}Python not found. Scanner will use basic functionality.${colors.reset}`);
-          return false;
-        }
-      }
-    } else {
-      // For Unix, try python3 first, then python
-      try {
-        execSync('python3 --version', { stdio: 'pipe' });
-        console.log(`${colors.green}Python found via 'python3' command${colors.reset}`);
-        return true;
-      } catch (e) {
-        try {
-          execSync('python --version', { stdio: 'pipe' });
-          console.log(`${colors.green}Python found via 'python' command${colors.reset}`);
-          return true;
-        } catch (e) {
-          console.log(`${colors.yellow}Python not found. Scanner will use basic functionality.${colors.reset}`);
-          return false;
-        }
-      }
-    }
-  } catch (e) {
-    console.log(`${colors.yellow}Error checking Python: ${e.message}${colors.reset}`);
-    return false;
-  }
-};
-
-// Create basic network scanner files if they don't exist
-const createScannerFiles = () => {
-  console.log(`${colors.yellow}Setting up scanner files...${colors.reset}`);
-  
-  // Create index.ts if it doesn't exist
-  const indexPath = path.join('local-scanner', 'index.ts');
   if (!fs.existsSync(indexPath)) {
-    // Simple index.ts with basic functionality
     const indexContent = `
 import express from 'express';
 import cors from 'cors';
 import { execSync } from 'child_process';
-import { spawn } from 'child_process';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -333,19 +210,31 @@ app.get('/device/:ip', (req, res) => {
   }
 });
 
+app.get('/scanner-status', (req, res) => {
+  res.json({
+    pythonAvailable: isPythonAvailable(),
+    os: process.platform,
+    version: '1.0.0'
+  });
+});
+
 app.listen(PORT, () => {
+  console.log(\`\\n==============================\`);
   console.log(\`Network Scanner running on port \${PORT}\`);
-  console.log(\`Python integration \${isPythonAvailable() ? 'available' : 'not available'}\`);
+  console.log(\`==============================\`);
+  console.log(\`Visit http://localhost:\${PORT}/status in your browser\`);
+  console.log(\`Python integration: \${isPythonAvailable() ? 'available ✓' : 'not available ✗'}\`);
+  console.log(\`\\nKeep this window open and open a new terminal to run the main app.\`);
 });
 `;
     fs.writeFileSync(indexPath, indexContent);
-    console.log(`${colors.green}Created basic index.ts file${colors.reset}`);
+    console.log(`${colors.green}✓ index.ts created${colors.reset}`);
   } else {
-    console.log(`index.ts already exists`);
+    console.log(`${colors.green}✓ index.ts already exists${colors.reset}`);
   }
-  
+
   // Create a basic tsconfig.json if needed
-  const tsconfigPath = path.join('local-scanner', 'tsconfig.json');
+  const tsconfigPath = path.join(__dirname, 'tsconfig.json');
   if (!fs.existsSync(tsconfigPath)) {
     const tsconfigContent = {
       "compilerOptions": {
@@ -358,34 +247,21 @@ app.listen(PORT, () => {
       "include": ["./*.ts"]
     };
     fs.writeFileSync(tsconfigPath, JSON.stringify(tsconfigContent, null, 2));
-    console.log(`${colors.green}Created tsconfig.json${colors.reset}`);
+    console.log(`${colors.green}✓ tsconfig.json created${colors.reset}`);
   }
-  
-  console.log(`${colors.green}Scanner files setup complete${colors.reset}`);
-};
 
-// Main function to run the setup
-const main = async () => {
-  try {
-    createDirectories();
-    copyPackageJson();
-    createScannerFiles();
-    installDependencies();
-    
-    console.log(`\n${colors.bright}${colors.green}Setup Complete!${colors.reset}`);
-    console.log(`\n${colors.bright}To start the network scanner:${colors.reset}`);
-    console.log(`1. cd local-scanner`);
-    console.log(`2. npm start`);
-    console.log(`\n${colors.bright}Then in another terminal:${colors.reset}`);
-    console.log(`npm run dev`);
-    
-    console.log(`\n${colors.green}If you see any "module not found" errors when starting the scanner:${colors.reset}`);
-    console.log(`1. cd local-scanner`);
-    console.log(`2. npm install ts-node express cors`);
-  } catch (error) {
-    console.error(`${colors.red}Setup failed: ${error.message}${colors.reset}`);
-  }
-};
+  // Success message with clear instructions
+  console.log(`\n${colors.bold}${colors.green}✓ SETUP COMPLETE!${colors.reset}`);
+  console.log(`\n${colors.bold}${colors.cyan}HOW TO START THE SCANNER:${colors.reset}`);
+  console.log(`${colors.bold}Just run:${colors.reset} npm start`);
+  console.log(`Then open a new terminal window and run: npm run dev\n`);
 
-// Run the setup
-main();
+  // Quick fix for common issues
+  console.log(`${colors.yellow}If you get "module not found" errors:${colors.reset}`);
+  console.log(`Run: npm install ts-node express cors\n`);
+
+} catch (error) {
+  console.error(`\n${colors.red}ERROR: ${error.message}${colors.reset}`);
+  console.log(`\nTry installing dependencies manually:`);
+  console.log(`npm install ts-node express cors`);
+}

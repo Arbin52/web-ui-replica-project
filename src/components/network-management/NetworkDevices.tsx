@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { ConnectedDevices } from '../overview/ConnectedDevices';
 import { NetworkStatus } from '@/hooks/network/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Info, AlertCircle, ExternalLink, Terminal } from 'lucide-react';
+import { Info, AlertCircle, ExternalLink, Terminal, PlayCircle } from 'lucide-react';
 import { useRealDevices } from '@/hooks/useRealDevices';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -42,6 +42,12 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
       toast.success('Scanner check completed');
     });
   };
+  
+  // Function to handle quick start of scanner
+  const handleQuickStartScanner = () => {
+    toast.info('Opening quick start guide...');
+    window.open('/QUICKSTART.md', '_blank');
+  };
 
   return (
     <Card>
@@ -66,14 +72,13 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
             <AlertCircle className="h-4 w-4 text-amber-600" />
             <AlertTitle className="text-amber-800 font-medium">Local Network Scanner Not Running</AlertTitle>
             <AlertDescription className="text-amber-700">
-              <p className="mb-2">Follow these steps to start the scanner service:</p>
+              <p className="mb-2">Simple steps to start the scanner:</p>
               <ol className="list-decimal pl-5 space-y-1">
                 <li>Open a terminal window</li>
-                <li>Navigate to the <code className="bg-amber-100 px-1 rounded">local-scanner</code> directory</li>
-                <li>Run <code className="bg-amber-100 px-1 rounded">node setup-scanner.js</code> to set up dependencies</li>
-                <li>Run <code className="bg-amber-100 px-1 rounded">npm start</code> to start the scanner</li>
+                <li>Run <code className="bg-amber-100 px-1 rounded">cd local-scanner</code></li>
+                <li>Run <code className="bg-amber-100 px-1 rounded">node setup-scanner.js</code></li>
+                <li>Run <code className="bg-amber-100 px-1 rounded">npm start</code></li>
                 <li>Keep that terminal window open</li>
-                <li>In a new terminal window, run <code className="bg-amber-100 px-1 rounded">npm run dev</code> in the project root</li>
               </ol>
               <div className="flex flex-wrap gap-2 mt-3">
                 <Button
@@ -86,12 +91,21 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
                   <span>Check Scanner Status</span>
                 </Button>
                 <Button
+                  variant="default" 
+                  size="sm"
+                  className="bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1"
+                  onClick={handleQuickStartScanner}
+                >
+                  <PlayCircle className="h-3.5 w-3.5" />
+                  <span>Quick Start Guide</span>
+                </Button>
+                <Button
                   variant="outline" 
                   size="sm"
                   className="border-amber-300 hover:bg-amber-100 text-amber-900"
                   onClick={handleOpenSetupGuide}
                 >
-                  Setup Guide <ExternalLink className="ml-1 h-3 w-3" />
+                  <span>Detailed Setup</span> <ExternalLink className="ml-1 h-3 w-3" />
                 </Button>
                 <Button
                   variant="outline" 

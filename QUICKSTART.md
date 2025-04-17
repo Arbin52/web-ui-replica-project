@@ -1,70 +1,35 @@
 
-# Network Management Application - Quick Start Guide
+# Network Management App - Quick Start Guide
 
-This is a simplified guide for quickly setting up the Network Management Application.
+## Setup and Run
 
-## Prerequisites
-- Node.js 16+
-- npm 8+
-- Python 3.8+
-- pip 20+
-
-## Quick Setup
-
-### 1. Clone and Install
+### Step 1: Install Dependencies
 ```bash
-# Clone repository
-git clone <REPOSITORY_URL>
-cd network-management-app
-
-# Install dependencies
 npm install
-
-# Install Python dependencies
-pip install -r requirements/python_requirements.txt
-
-# Install local scanner dependencies
-cd local-scanner
-npm install
-cd ..
 ```
 
-### 2. Run the Application
-
-#### Terminal 1: Start Network Scanner
+### Step 2: Start Network Scanner
 ```bash
+# In first terminal window
 cd local-scanner
+node setup-scanner.js
 npm start
 ```
 
-#### Terminal 2: Start Frontend
+### Step 3: Start Main Application
 ```bash
-# From project root
+# In second terminal window
 npm run dev
 ```
 
-### 3. Access the Application
-Open your browser and go to: http://localhost:8080
+### Step 4: Open Application
+- Open your browser to http://localhost:8080
 
-## Common Issues
+## Network Scanner Troubleshooting
 
-### Python Dependencies
-If you have issues with Python dependencies:
+If you have issues with the scanner:
+1. Make sure it's running on port 3001
+2. Check status at http://localhost:3001/status
+3. Run `npm install ts-node express cors` in local-scanner directory
 
-```bash
-# For Windows, use alternative package
-pip install pynetinfo
-
-# For Linux/macOS, install dev tools and rebuild
-sudo apt-get install python3-dev build-essential  # Linux
-xcode-select --install  # macOS
-pip install --no-cache-dir netifaces==0.10.9
-```
-
-### Scanner Connection
-If the frontend cannot connect to the scanner:
-1. Check that scanner is running (http://localhost:3001/status)
-2. Verify .env file has VITE_SCANNER_URL=http://localhost:3001
-3. Restart both services
-
-For more detailed instructions, see the full [INSTALLATION.md](./INSTALLATION.md) guide.
+For more details, see local-scanner-quick-start.md
