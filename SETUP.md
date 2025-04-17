@@ -30,6 +30,7 @@ The network scanner is required for device scanning functionality.
    ```
    node setup.js
    ```
+   (If that doesn't work, try `node setup-scanner.js` instead)
 4. Start the scanner:
    ```
    npm start
@@ -64,3 +65,12 @@ For advanced features, you can manually install:
 ```
 pip install getmac colorama requests
 ```
+
+### Setup script not found
+If you get an error that setup.js is not found, try:
+```
+cd scanner
+node setup-scanner.js
+```
+
+This alternative script provides the same setup functionality.

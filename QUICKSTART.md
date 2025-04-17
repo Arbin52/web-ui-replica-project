@@ -13,6 +13,8 @@ npm install
 # In first terminal window
 cd scanner
 node setup.js
+# If the above fails, try:
+# node setup-scanner.js
 npm start
 ```
 
