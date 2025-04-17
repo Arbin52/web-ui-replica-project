@@ -25,13 +25,8 @@ export const useNetworkPolling = (
     const now = Date.now();
     const timeSinceLastFetch = now - lastFetchTimestamp.current;
     
-    // Rate limit fetches to prevent excessive updates (minimum 1 second between fetches)
-    if (timeSinceLastFetch < Math.max(1000, updateInterval * 0.5)) {
-      return;
-    }
-    
-    // Check if the document is visible to save resources
-    if (document.visibilityState !== 'visible') {
+    // Increase minimum time between fetches to 2 seconds to reduce CPU usage
+    if (timeSinceLastFetch < Math.max(2000, updateInterval * 0.5)) {
       return;
     }
     
@@ -39,12 +34,12 @@ export const useNetworkPolling = (
       fetchInProgress.current = true;
       lastFetchTimestamp.current = now;
       
-      // Use AbortController to prevent hanging requests
+      // Use AbortController with a stricter timeout
       const abortController = new AbortController();
       const timeoutId = setTimeout(() => {
         console.log("Aborting network fetch due to timeout");
         abortController.abort();
-      }, 3000); // Reduced timeout to 3 seconds to prevent UI freezing
+      }, 2500); // Even shorter timeout to prevent UI freezing
       
       await fetchNetworkStatus();
       
@@ -60,10 +55,8 @@ export const useNetworkPolling = (
     }
   }, [fetchNetworkStatus, updateInterval]);
   
-  // Setup polling effect with performance optimizations
+  // Setup polling effect with optimized performance
   useEffect(() => {
-    console.log('Network polling setup with interval:', updateInterval);
-    
     // Clear any existing interval to prevent memory leaks
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -72,54 +65,33 @@ export const useNetworkPolling = (
     
     // Only set up polling if live updates are enabled
     if (isLiveUpdating) {
-      // Use a more efficient polling approach with rate limiting
-      const scheduleFetch = () => {
-        // Use requestIdleCallback when available to avoid interfering with UI
-        if ('requestIdleCallback' in window) {
-          requestIdleCallback(() => {
-            throttledFetch();
-          }, { timeout: 2000 }); // Set a maximum timeout
-        } else {
-          setTimeout(() => {
-            throttledFetch();
-          }, 0);
-        }
-      };
+      console.log('Setting up network polling with interval:', updateInterval);
       
-      // Initial fetch when enabled, but with a slight delay to allow UI to render
-      const initialDelayMs = 500;
+      // Initial fetch with a longer delay to allow UI to render first
+      const initialDelayMs = 1200;
       setTimeout(() => {
         if (!fetchInProgress.current) {
-          scheduleFetch();
+          throttledFetch();
         }
       }, initialDelayMs);
       
-      // Apply exponential backoff based on error count
-      const effectiveInterval = Math.min(
-        updateInterval * Math.pow(1.5, errorCount.current), 
-        60000 // Cap at 60 seconds
-      );
+      // Use a fixed interval that's at least 5 seconds to reduce CPU usage
+      const effectiveInterval = Math.max(5000, updateInterval);
       
-      // Use a more reliable approach than setInterval
-      let timeoutId: NodeJS.Timeout | null = null;
+      // Use setInterval with fixed timing to ensure more predictable behavior
+      const intervalId = setInterval(() => {
+        if (!document.hidden && !fetchInProgress.current) {
+          throttledFetch();
+        }
+      }, effectiveInterval);
       
-      const scheduleNextFetch = () => {
-        timeoutId = setTimeout(() => {
-          scheduleFetch();
-          scheduleNextFetch(); // Schedule next fetch after current one completes
-        }, effectiveInterval);
-        
-        intervalRef.current = timeoutId;
-      };
-      
-      // Start the scheduling cycle
-      scheduleNextFetch();
+      intervalRef.current = intervalId;
     }
     
     // Cleanup function
     return () => {
       if (intervalRef.current) {
-        clearTimeout(intervalRef.current);
+        clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
     };

@@ -45,17 +45,22 @@ const calculateMovingAverage = (history: number[], newValue: number, maxHistoryL
 export const generateNetworkStatus = async (previousStatus: NetworkStatus | null): Promise<NetworkStatus> => {
   console.log("Generating network status, previous status:", previousStatus?.networkName);
   
-  // Try to get real network information where possible
+  // Try to get real network information
   const realNetworkInfo = await fetchRealNetworkInfo();
   console.log("Real network info:", realNetworkInfo);
   
-  // CRITICAL: Force trust the browser's online status
-  // This is key to preventing the "Not Connected" issue
+  // CRITICAL: Always trust the browser's online status
   const isCurrentlyOnline = navigator.onLine;
   console.log("Browser reports online status:", isCurrentlyOnline);
   
-  // Get device connection status to show real-time connected devices
+  // Get device connection status - IMPORTANT: This needs to return devices
   const connectedDevices = getConnectedDeviceStatus();
+  console.log("Connected devices:", connectedDevices.length);
+  
+  // Fallback if there are no connected devices for some reason
+  const devicesToUse = connectedDevices.length > 0 
+    ? connectedDevices 
+    : generateConnectedDevices();
   
   // Generate realistic dynamic values with smoothing to prevent rapid changes
   const signalStrengthDb = -(Math.floor(Math.random() * 30) + 40);
@@ -126,7 +131,7 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
     console.log("Browser reports offline, clearing network name");
   }
   
-  console.log("Final network status - Online:", isCurrentlyOnline, "Network:", networkName);
+  console.log("Final network status - Online:", isCurrentlyOnline, "Network:", networkName, "Devices:", devicesToUse.length);
   
   // Generate available networks
   const availableNetworks = getAvailableNetworks();
@@ -141,7 +146,7 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
     networkType: realNetworkInfo.networkType || '802.11ac (5GHz)',
     macAddress: '00:1B:44:11:3A:B7',
     dnsServer: '8.8.8.8, 8.8.4.4',
-    connectedDevices: connectedDevices.length > 0 ? connectedDevices : generateConnectedDevices(),
+    connectedDevices: devicesToUse,
     lastUpdated: new Date(),
     isOnline: isCurrentlyOnline, // Most important: Use browser's online status
     connectionSpeed: {
