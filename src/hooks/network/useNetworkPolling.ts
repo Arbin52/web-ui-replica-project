@@ -1,21 +1,5 @@
 
 import { useEffect, MutableRefObject } from 'react';
-import { setupNetworkChangeListeners, setupMouseMoveListener } from './refreshUtils';
-
-const debounce = <F extends (...args: any[]) => any>(
-  func: F,
-  waitFor: number
-): ((...args: Parameters<F>) => void) => {
-  let timeout: ReturnType<typeof setTimeout> | null = null;
-  
-  return (...args: Parameters<F>): void => {
-    if (timeout !== null) {
-      clearTimeout(timeout);
-      timeout = null;
-    }
-    timeout = setTimeout(() => func(...args), waitFor);
-  };
-};
 
 export const useNetworkPolling = (
   isLiveUpdating: boolean,
@@ -23,42 +7,42 @@ export const useNetworkPolling = (
   fetchNetworkStatus: () => Promise<void>,
   intervalRef: MutableRefObject<NodeJS.Timeout | null>
 ) => {
-  const debouncedFetch = debounce(fetchNetworkStatus, 2000);
-  
+  // Setup polling effect with performance optimizations
   useEffect(() => {
-    fetchNetworkStatus();
+    console.log('Network polling setup with interval:', updateInterval);
     
+    // Clear any existing interval to prevent memory leaks
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
     
+    // Only set up polling if live updates are enabled
     if (isLiveUpdating) {
-      console.log(`Setting up polling with interval: ${updateInterval}ms`);
+      // Use requestAnimationFrame for smooth performance
+      const rafCallback = () => {
+        if (document.visibilityState !== 'visible') {
+          return; // Don't update when tab is not visible
+        }
+        
+        fetchNetworkStatus().catch(err => {
+          console.error('Error in network polling:', err);
+        });
+      };
       
-      // Ensure minimum interval of 1 minute, maximum of 5 minutes
-      const effectiveInterval = Math.max(60000, Math.min(updateInterval, 300000));
+      // Initial fetch when enabled
+      rafCallback();
       
-      intervalRef.current = setInterval(() => {
-        console.log(`Polling triggered at interval: ${effectiveInterval}ms`);
-        fetchNetworkStatus();
-      }, effectiveInterval);
+      // Set up the interval with the current refresh rate
+      intervalRef.current = setInterval(rafCallback, updateInterval);
     }
     
+    // Cleanup function
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
     };
-  }, [fetchNetworkStatus, isLiveUpdating, updateInterval, intervalRef]);
-
-  useEffect(() => {
-    return setupNetworkChangeListeners(debouncedFetch);
-  }, [debouncedFetch]);
-
-  useEffect(() => {
-    return setupMouseMoveListener(debouncedFetch, 15000); // 15 seconds
-  }, [debouncedFetch]);
+  }, [isLiveUpdating, updateInterval, fetchNetworkStatus]);
 };
-

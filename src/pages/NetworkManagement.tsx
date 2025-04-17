@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
 import AddNetworkDialog from '../components/AddNetworkDialog';
@@ -8,9 +8,9 @@ import { useNetworks } from '@/hooks/useNetworks';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { toast } from 'sonner';
 
-// Import our new components
+// Import our optimized components
 import { NetworkHeader } from '@/components/network-management/NetworkHeader';
-import { NetworkOverview } from '@/components/network-management/NetworkOverview';
+import NetworkOverviewOptimized from '@/components/network-management/NetworkOverviewOptimized';
 import { NetworkStatistics } from '@/components/network-management/NetworkStatistics';
 import { NetworkDevices } from '@/components/network-management/NetworkDevices';
 import { SavedNetworks } from '@/components/network-management/SavedNetworks';
@@ -32,13 +32,13 @@ const NetworkManagement = () => {
   
   const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // Handle gateway IP click
-  const handleGatewayClick = () => {
+  // Memoize handlers to prevent re-renders
+  const handleGatewayClick = useCallback(() => {
     openGatewayInterface();
-  };
+  }, [openGatewayInterface]);
   
-  // Handle manual refresh
-  const handleRefresh = () => {
+  // Optimize the refresh handler
+  const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
     toast.info('Refreshing network status...');
     
@@ -47,7 +47,7 @@ const NetworkManagement = () => {
     setTimeout(() => {
       setIsRefreshing(false);
     }, 1000);
-  };
+  }, [refreshNetworkStatus]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -76,7 +76,7 @@ const NetworkManagement = () => {
               </TabsList>
               
               <TabsContent value="overview" className="space-y-4">
-                <NetworkOverview 
+                <NetworkOverviewOptimized 
                   networkStatus={networkStatus}
                   isLoading={isLoading}
                   isRefreshing={isRefreshing}

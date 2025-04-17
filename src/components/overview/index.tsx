@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { NetworkStatusCards } from './NetworkStatusCards';
 import { DataUsageCards } from './DataUsageCards';
@@ -24,62 +24,81 @@ const Overview: React.FC = () => {
     openGatewayInterface 
   } = useNetworkStatus();
 
-  // Always use the modal gateway handler
-  const handleGatewayClick = () => {
+  // Memoize the gateway handler to prevent re-renders
+  const handleGatewayClick = useCallback(() => {
     if (networkStatus?.gatewayIp) {
       openGatewayInterface();
     }
-  };
+  }, [networkStatus?.gatewayIp, openGatewayInterface]);
 
-  const handleRefresh = () => {
+  // Memoize the refresh handler
+  const handleRefresh = useCallback(() => {
     refreshNetworkStatus();
-  };
+  }, [refreshNetworkStatus]);
 
+  // Use error boundary pattern
   if (error) {
     return <ErrorState error={error} handleRefresh={handleRefresh} />;
   }
 
-  return (
-    <div className="content-card animate-fade-in">
-      {/* Header section */}
-      <PageHeader 
+  // Memoize content sections to prevent unnecessary re-renders
+  const headerSection = useMemo(() => (
+    <PageHeader 
+      isLoading={isLoading}
+      isLiveUpdating={isLiveUpdating}
+      updateInterval={updateInterval}
+      toggleLiveUpdates={toggleLiveUpdates}
+      setRefreshRate={setRefreshRate}
+      handleRefresh={handleRefresh}
+    />
+  ), [isLoading, isLiveUpdating, updateInterval, toggleLiveUpdates, setRefreshRate, handleRefresh]);
+
+  const statusCardsSection = useMemo(() => (
+    <NetworkStatusCards networkStatus={networkStatus} isLoading={isLoading} />
+  ), [networkStatus, isLoading]);
+
+  const monitorSection = useMemo(() => (
+    <div className="mb-6">
+      <NetworkStatusMonitor 
+        networkStatus={networkStatus}
         isLoading={isLoading}
         isLiveUpdating={isLiveUpdating}
-        updateInterval={updateInterval}
         toggleLiveUpdates={toggleLiveUpdates}
-        setRefreshRate={setRefreshRate}
-        handleRefresh={handleRefresh}
+        refreshNetworkStatus={refreshNetworkStatus}
+        updateInterval={updateInterval}
       />
+    </div>
+  ), [networkStatus, isLoading, isLiveUpdating, toggleLiveUpdates, refreshNetworkStatus, updateInterval]);
 
-      {/* Network status cards */}
-      <NetworkStatusCards networkStatus={networkStatus} isLoading={isLoading} />
+  const dataUsageSection = useMemo(() => (
+    <DataUsageCards networkStatus={networkStatus} isLoading={isLoading} />
+  ), [networkStatus, isLoading]);
 
-      {/* Real-time Network Status Monitor */}
-      <div className="mb-6">
-        <NetworkStatusMonitor 
-          networkStatus={networkStatus}
-          isLoading={isLoading}
-          isLiveUpdating={isLiveUpdating}
-          toggleLiveUpdates={toggleLiveUpdates}
-          refreshNetworkStatus={refreshNetworkStatus}
-          updateInterval={updateInterval}
-        />
-      </div>
+  const featureCardsSection = useMemo(() => (
+    <FeatureCards networkStatus={networkStatus} isLoading={isLoading} />
+  ), [networkStatus, isLoading]);
 
-      {/* Data usage cards */}
-      <DataUsageCards networkStatus={networkStatus} isLoading={isLoading} />
-      
-      {/* Feature overview grid */}
-      <FeatureCards networkStatus={networkStatus} isLoading={isLoading} />
-      
-      {/* Network info and device tabs */}
-      <NetworkTabSection 
-        networkStatus={networkStatus} 
-        isLoading={isLoading}
-        handleGatewayClick={handleGatewayClick}
-      />
-      
-      <NetworkStatusFooter networkStatus={networkStatus} isLiveUpdating={isLiveUpdating} />
+  const tabsSection = useMemo(() => (
+    <NetworkTabSection 
+      networkStatus={networkStatus} 
+      isLoading={isLoading}
+      handleGatewayClick={handleGatewayClick}
+    />
+  ), [networkStatus, isLoading, handleGatewayClick]);
+
+  const footerSection = useMemo(() => (
+    <NetworkStatusFooter networkStatus={networkStatus} isLiveUpdating={isLiveUpdating} />
+  ), [networkStatus, isLiveUpdating]);
+
+  return (
+    <div className="content-card animate-fade-in">
+      {headerSection}
+      {statusCardsSection}
+      {monitorSection}
+      {dataUsageSection}
+      {featureCardsSection}
+      {tabsSection}
+      {footerSection}
     </div>
   );
 };
