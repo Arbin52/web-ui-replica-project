@@ -1,4 +1,3 @@
-
 import React, { useMemo, useCallback } from 'react';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { NetworkStatusCards } from './NetworkStatusCards';
@@ -31,9 +30,14 @@ const Overview: React.FC = () => {
     }
   }, [networkStatus?.gatewayIp, openGatewayInterface]);
 
-  // Memoize the refresh handler
+  // Memoize the refresh handler with debouncing
   const handleRefresh = useCallback(() => {
-    refreshNetworkStatus();
+    // Use requestIdleCallback if available, otherwise use setTimeout
+    if (window.requestIdleCallback) {
+      window.requestIdleCallback(() => refreshNetworkStatus());
+    } else {
+      setTimeout(() => refreshNetworkStatus(), 0);
+    }
   }, [refreshNetworkStatus]);
 
   // Use error boundary pattern
