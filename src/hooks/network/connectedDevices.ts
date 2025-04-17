@@ -10,6 +10,13 @@ export interface ConnectedDevice {
   lastSeen?: Date;
 }
 
+// Default devices that are always available
+const defaultDevices = [
+  { id: 1, name: 'Windows PC', ip: '192.168.1.2', mac: '00:1B:44:11:3A:B7', type: 'Wired' as const, status: 'Online' as const, lastSeen: new Date() },
+  { id: 2, name: 'MacBook Pro', ip: '192.168.1.3', mac: '00:1A:2B:3C:4D:5E', type: 'Wireless' as const, status: 'Online' as const, lastSeen: new Date() },
+  { id: 3, name: 'iPhone 13', ip: '192.168.1.4', mac: '00:1A:2B:3C:4D:5F', type: 'Wireless' as const, status: 'Online' as const, lastSeen: new Date() }
+];
+
 // Store connected devices in localStorage for persistence
 const getStoredDevices = (): ConnectedDevice[] => {
   const stored = localStorage.getItem('connected_devices');
@@ -27,17 +34,18 @@ const getStoredDevices = (): ConnectedDevice[] => {
       console.error('Error parsing stored devices:', e);
     }
   }
-  // Return empty array if no valid stored devices
-  return [];
+  
+  // Return default devices if no valid stored devices
+  return [...defaultDevices];
 };
 
 const saveStoredDevices = (devices: ConnectedDevice[]) => {
-  if (Array.isArray(devices) && devices.length > 0) {
+  if (Array.isArray(devices)) {
     localStorage.setItem('connected_devices', JSON.stringify(devices));
   }
 };
 
-export const generateConnectedDevices = (count: number = 5) => {
+export const generateConnectedDevices = (count: number = 3) => {
   // Check for existing stored devices first
   const storedDevices = getStoredDevices();
   if (storedDevices.length > 0) {
@@ -47,36 +55,31 @@ export const generateConnectedDevices = (count: number = 5) => {
   
   console.log("Generating new connected devices");
   
-  // Standard devices that are always connected
-  const baseDevices = [
-    { id: 1, name: 'Windows PC', ip: '192.168.1.2', mac: '00:1B:44:11:3A:B7', type: 'Wired' as const, status: 'Online' as const, lastSeen: new Date() },
-    { id: 2, name: 'MacBook Pro', ip: '192.168.1.3', mac: '00:1A:2B:3C:4D:5E', type: 'Wireless' as const, status: 'Online' as const, lastSeen: new Date() },
-    { id: 3, name: 'iPhone 13', ip: '192.168.1.4', mac: '00:1A:2B:3C:4D:5F', type: 'Wireless' as const, status: 'Online' as const, lastSeen: new Date() },
-    { id: 4, name: 'Samsung Smart TV', ip: '192.168.1.5', mac: '00:1A:2B:3C:4D:60', type: 'Wireless' as const, status: 'Online' as const, lastSeen: new Date() },
-    { id: 5, name: 'Google Nest', ip: '192.168.1.6', mac: '00:1A:2B:3C:4D:61', type: 'Wireless' as const, status: 'Online' as const, lastSeen: new Date() },
-  ];
+  // Always include default devices
+  const devices = [...defaultDevices];
   
   // Save to localStorage for persistence
-  saveStoredDevices(baseDevices);
+  saveStoredDevices(devices);
   
-  return baseDevices;
+  return devices;
 };
 
 // Get the status of connected devices - CRUCIAL function that must never return empty
-export const getConnectedDeviceStatus = () => {
-  const devices = getStoredDevices();
+export const getConnectedDeviceStatus = (): ConnectedDevice[] => {
+  // Always get stored devices or generate new ones
+  let devices = getStoredDevices();
   
-  // If we don't have any stored devices or somehow they're empty, ensure we generate new ones
+  // If somehow we still don't have devices, use defaults
   if (!devices || devices.length === 0) {
-    console.log("No devices found, generating new ones");
-    return generateConnectedDevices();
+    devices = [...defaultDevices];
+    saveStoredDevices(devices);
   }
   
   // Always ensure all devices have a valid lastSeen date
   const updatedDevices = devices.map(device => ({
     ...device,
     lastSeen: device.lastSeen || new Date(),
-    status: 'Online' as const // Ensure devices are shown as online
+    status: navigator.onLine ? 'Online' as const : 'Offline' as const // Use browser online status
   }));
   
   // Save the updated devices
@@ -123,12 +126,12 @@ export const connectNewDevice = () => {
 export const disconnectDevice = () => {
   const devices = getStoredDevices();
   
-  // We want to maintain at least 2 devices
-  if (devices.length <= 2) {
+  // We want to maintain at least 3 devices (the default ones)
+  if (devices.length <= 3) {
     return devices.length;
   }
   
-  // Find non-base device to disconnect (device with id > 5)
+  // Find non-default device to disconnect (device with id > 5)
   const optionalDeviceIndex = devices.findIndex(d => d.id > 5);
   
   if (optionalDeviceIndex > -1) {
