@@ -1,7 +1,6 @@
 
-import { getConnectionHistory } from './networkHistoryUtils';
-
 // This function fetches the real network information using browser APIs
+// Complete rewrite with performance optimization
 export const fetchRealNetworkInfo = async (): Promise<{
   networkName?: string;
   isOnline?: boolean;
@@ -11,60 +10,42 @@ export const fetchRealNetworkInfo = async (): Promise<{
   lastUpdated?: Date;
   connectionHistory?: any[];
 }> => {
-  try {
-    // CRITICAL: Always check browser's online status first
-    const browserIsOnline = navigator.onLine;
-    
-    // If browser reports offline, return immediately with correct status
-    if (!browserIsOnline) {
-      return {
-        isOnline: false,
-        networkName: undefined,
-        lastUpdated: new Date(),
-        connectionHistory: getConnectionHistory()
-      };
-    }
-    
-    // If we're here, the browser says we're online
-    
-    // Find the best network name with simplified logic
-    const userProvidedName = localStorage.getItem('user_provided_network_name');
-    const storedNetworkName = localStorage.getItem('connected_network_name');
-    const fallbackName = 'Connected Network';
-    
-    // Select the best network name with clear priority
-    const networkName = userProvidedName || storedNetworkName || fallbackName;
-    
-    // Store for future reference if we have a good name
-    if (networkName && networkName !== 'Unknown Network') {
-      localStorage.setItem('connected_network_name', networkName);
-    }
+  // CRITICAL: Always use browser's online status - this is extremely fast and reliable
+  const browserIsOnline = navigator.onLine;
+  
+  // Get connection history first - this is stored locally and doesn't require API calls
+  const connectionHistory = localStorage.getItem('connection_history') 
+    ? JSON.parse(localStorage.getItem('connection_history') || '[]')
+    : [];
 
-    // Detect network type - simplified for performance
-    let networkType = "WiFi";
-    
-    // Get connection history
-    const connectionHistory = getConnectionHistory();
-    
+  // If we're offline, return immediately with minimal processing
+  if (!browserIsOnline) {
     return {
-      networkName,
-      isOnline: true, // We're definitely online at this point
-      publicIp: localStorage.getItem('last_known_public_ip') || '192.168.1.100',
-      networkType,
-      gatewayIp: '192.168.1.1',
-      connectionHistory,
-      lastUpdated: new Date()
-    };
-  } catch (err) {
-    console.error("Error fetching real network info:", err);
-    
-    // Always use browser's online status as fallback
-    const browserIsOnline = navigator.onLine;
-    return {
-      isOnline: browserIsOnline,
-      networkName: browserIsOnline ? "Connected Network" : undefined,
-      connectionHistory: getConnectionHistory(),
-      lastUpdated: new Date()
+      isOnline: false,
+      networkName: undefined,
+      lastUpdated: new Date(),
+      connectionHistory
     };
   }
+  
+  // If we're online, return the basic data immediately
+  // Avoid complex operations that could freeze the UI
+  const userProvidedName = localStorage.getItem('user_provided_network_name');
+  const storedNetworkName = localStorage.getItem('connected_network_name');
+  const networkName = userProvidedName || storedNetworkName || 'Connected Network';
+  
+  // Use cached values for other properties to avoid freezing
+  const publicIp = localStorage.getItem('last_known_public_ip') || '192.168.1.100';
+  const gatewayIp = localStorage.getItem('last_known_gateway_ip') || '192.168.1.1';
+  const networkType = localStorage.getItem('last_known_network_type') || 'WiFi';
+
+  return {
+    networkName,
+    isOnline: true,
+    publicIp,
+    networkType,
+    gatewayIp,
+    connectionHistory,
+    lastUpdated: new Date()
+  };
 };

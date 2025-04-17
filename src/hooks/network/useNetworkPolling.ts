@@ -1,5 +1,5 @@
 
-import { useEffect, MutableRefObject, useRef } from 'react';
+import { useEffect, MutableRefObject } from 'react';
 
 export const useNetworkPolling = (
   isLiveUpdating: boolean,
@@ -7,107 +7,51 @@ export const useNetworkPolling = (
   fetchNetworkStatus: () => Promise<void>,
   intervalRef: MutableRefObject<NodeJS.Timeout | null>
 ) => {
-  // Last fetch timestamp to prevent excessive updates
-  const lastFetchTimestamp = useRef<number>(0);
-  // Is fetch in progress flag to prevent overlapping requests
-  const fetchInProgress = useRef<boolean>(false);
-  // Request abort controller
-  const abortControllerRef = useRef<AbortController | null>(null);
-  
   useEffect(() => {
-    // Clear any existing interval to prevent memory leaks
+    // Always clear any existing polling on component mount or deps change
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
     
-    // Function to safely fetch network status
+    // Only setup polling if live updates are enabled
+    if (!isLiveUpdating) {
+      return;
+    }
+
+    // Use a simple flag in local scope to prevent concurrent fetches
+    let isFetching = false;
+    
+    // Simplified fetch function with minimal overhead
     const safeFetch = async () => {
-      // Skip if a fetch is already in progress
-      if (fetchInProgress.current) {
-        console.log('Skipping network fetch - previous fetch still in progress');
-        return;
-      }
-      
-      const now = Date.now();
-      const timeSinceLastFetch = now - lastFetchTimestamp.current;
-      
-      // Enforce minimum time between fetches (5 seconds)
-      if (timeSinceLastFetch < 5000) {
+      // Skip if already fetching or document is hidden
+      if (isFetching || document.visibilityState !== 'visible') {
         return;
       }
       
       try {
-        // Cancel any existing requests
-        if (abortControllerRef.current) {
-          abortControllerRef.current.abort();
-        }
-        
-        // Create new abort controller with strict timeout
-        abortControllerRef.current = new AbortController();
-        fetchInProgress.current = true;
-        lastFetchTimestamp.current = now;
-        
-        // Set a strict timeout to prevent UI freezing
-        const timeoutId = setTimeout(() => {
-          if (abortControllerRef.current) {
-            console.log("Aborting slow network fetch");
-            abortControllerRef.current.abort();
-          }
-        }, 2000); // Very strict 2 second timeout
-        
-        // Use requestIdleCallback if available for better performance
-        if (window.requestIdleCallback) {
-          window.requestIdleCallback(() => {
-            fetchNetworkStatus().finally(() => {
-              clearTimeout(timeoutId);
-              fetchInProgress.current = false;
-              abortControllerRef.current = null;
-            });
-          }, { timeout: 2000 });
-        } else {
-          await fetchNetworkStatus();
-          clearTimeout(timeoutId);
-          fetchInProgress.current = false;
-          abortControllerRef.current = null;
-        }
+        isFetching = true;
+        await fetchNetworkStatus();
       } catch (err) {
-        console.error('Error in network polling:', err);
-        fetchInProgress.current = false;
-        abortControllerRef.current = null;
+        console.error('Error fetching network status:', err);
+      } finally {
+        isFetching = false;
       }
     };
+
+    // Execute initial fetch after a short delay to let the UI render
+    const initialTimeout = setTimeout(() => {
+      if (document.visibilityState === 'visible') {
+        safeFetch();
+      }
+    }, 1000);
     
-    // Only set up polling if live updates are enabled
-    if (isLiveUpdating) {
-      // Use a fixed minimum interval of 10 seconds to reduce load
-      const effectiveInterval = Math.max(10000, updateInterval);
-      
-      // Initial fetch with a delay to let UI render first
-      const initialTimeout = setTimeout(() => {
-        if (!fetchInProgress.current && document.visibilityState === 'visible') {
-          safeFetch();
-        }
-      }, 1000);
-      
-      const intervalId = setInterval(() => {
-        if (document.visibilityState === 'visible' && !fetchInProgress.current) {
-          safeFetch();
-        }
-      }, effectiveInterval);
-      
-      intervalRef.current = intervalId;
-      
-      return () => {
-        clearTimeout(initialTimeout);
-        clearInterval(intervalId);
-        if (abortControllerRef.current) {
-          abortControllerRef.current.abort();
-        }
-      };
-    }
+    // Use a much simpler interval mechanism with guaranteed minimum interval
+    const minInterval = Math.max(15000, updateInterval); // Minimum 15 seconds
+    intervalRef.current = setInterval(safeFetch, minInterval);
     
     return () => {
+      clearTimeout(initialTimeout);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;

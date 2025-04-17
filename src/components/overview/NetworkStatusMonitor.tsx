@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,49 +18,118 @@ interface NetworkStatusMonitorProps {
   updateInterval: number;
 }
 
-// Format time efficiently
+// Simple time formatter that's very efficient
 const formatTime = (date: Date) => {
-  return new Intl.DateTimeFormat('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: true
-  }).format(date);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 };
 
-// Format interval for display
-const formatInterval = (ms: number) => {
-  if (ms >= 60000) {
-    const minutes = ms / 60000;
-    return `${minutes}m`;
-  } else {
-    return `${ms/1000}s`;
-  }
-};
-
-export const NetworkStatusMonitor: React.FC<NetworkStatusMonitorProps> = React.memo(({
-  networkStatus,
-  isLoading,
-  isLiveUpdating,
-  toggleLiveUpdates,
-  refreshNetworkStatus,
-  updateInterval
+// Memoized content components to prevent re-renders
+const StatusContent = memo(({ 
+  networkStatus, 
+  navigate 
+}: { 
+  networkStatus: NetworkStatus; 
+  navigate: ReturnType<typeof useNavigate>;
 }) => {
-  const navigate = useNavigate();
-  
-  // Get connection history events (limit to 5 to improve performance)
+  const isOnline = navigator.onLine;
   const connectionEvents = networkStatus?.connectionHistory?.slice(0, 5) || [];
-  
-  // Get network stability info
   const stabilityInfo = getNetworkStabilityRating();
 
-  // Simplify the component to improve performance
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">Status</p>
+          <p className={`text-lg font-bold ${isOnline ? 'text-green-600' : 'text-red-600'}`}>
+            {isOnline ? 'Connected' : 'Disconnected'}
+          </p>
+        </div>
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
+          <p className="text-lg font-bold">{networkStatus?.lastUpdated ? formatTime(networkStatus.lastUpdated) : 'N/A'}</p>
+        </div>
+      </div>
+      
+      {stabilityInfo.score !== null && (
+        <div className="flex items-center justify-between px-2 py-1.5 bg-muted/50 rounded-md">
+          <span className="text-sm">Network Stability:</span>
+          <Badge 
+            variant="outline" 
+            className={`capitalize ${
+              stabilityInfo.rating === 'excellent' ? 'bg-green-100 text-green-800' : 
+              stabilityInfo.rating === 'good' ? 'bg-blue-100 text-blue-800' : 
+              stabilityInfo.rating === 'fair' ? 'bg-amber-100 text-amber-800' : 
+              'bg-red-100 text-red-800'
+            }`}
+          >
+            {stabilityInfo.rating}
+          </Badge>
+        </div>
+      )}
+      
+      {connectionEvents.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-medium">Recent Connections</h4>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="h-6 text-xs"
+              onClick={() => navigate('/wifi')}
+            >
+              <History size={12} className="mr-1" />
+              View All
+            </Button>
+          </div>
+          
+          <div className="max-h-32 overflow-y-auto border rounded-md">
+            {connectionEvents.map((event, idx) => (
+              <div key={idx} className="p-1.5 flex items-center justify-between border-b last:border-b-0 text-sm">
+                <div className="flex items-center gap-2">
+                  {event.status === 'connected' ? (
+                    <Wifi className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <WifiOff className="h-3 w-3 text-red-500" />
+                  )}
+                  <span className="capitalize">{event.status}</span>
+                </div>
+                <span className="text-xs text-gray-500">
+                  {typeof event.timestamp === 'string' 
+                    ? formatTime(new Date(event.timestamp)) 
+                    : formatTime(event.timestamp)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});
+
+// Highly optimized NetworkStatusMonitor component
+export const NetworkStatusMonitor: React.FC<NetworkStatusMonitorProps> = ({ 
+  networkStatus, 
+  isLoading, 
+  isLiveUpdating, 
+  toggleLiveUpdates, 
+  refreshNetworkStatus, 
+  updateInterval 
+}) => {
+  const navigate = useNavigate();
+  const isOnline = navigator.onLine;
+  
+  // Format interval for display
+  const formatInterval = (ms: number) => {
+    return ms >= 60000 ? `${ms / 60000}m` : `${ms/1000}s`;
+  };
+
   return (
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            {navigator.onLine ? (
+            {isOnline ? (
               <Wifi className="h-5 w-5 text-green-500" />
             ) : (
               <WifiOff className="h-5 w-5 text-red-500" />
@@ -85,75 +154,11 @@ export const NetworkStatusMonitor: React.FC<NetworkStatusMonitorProps> = React.m
             <Skeleton className="h-5 w-full" />
             <Skeleton className="h-5 w-3/4" />
           </div>
+        ) : networkStatus ? (
+          <StatusContent networkStatus={networkStatus} navigate={navigate} />
         ) : (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Status</p>
-                <p className={`text-lg font-bold ${navigator.onLine ? 'text-green-600' : 'text-red-600'}`}>
-                  {navigator.onLine ? 'Connected' : 'Disconnected'}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
-                <p className="text-lg font-bold">{networkStatus?.lastUpdated ? formatTime(networkStatus.lastUpdated) : 'N/A'}</p>
-              </div>
-            </div>
-            
-            {stabilityInfo.score !== null && (
-              <div className="flex items-center justify-between px-2 py-1.5 bg-muted/50 rounded-md">
-                <span className="text-sm">Network Stability:</span>
-                <Badge 
-                  variant="outline" 
-                  className={`capitalize ${
-                    stabilityInfo.rating === 'excellent' ? 'bg-green-100 text-green-800' : 
-                    stabilityInfo.rating === 'good' ? 'bg-blue-100 text-blue-800' : 
-                    stabilityInfo.rating === 'fair' ? 'bg-amber-100 text-amber-800' : 
-                    'bg-red-100 text-red-800'
-                  }`}
-                >
-                  {stabilityInfo.rating}
-                </Badge>
-              </div>
-            )}
-            
-            {/* Only show connection history if we have any */}
-            {connectionEvents.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-sm font-medium">Recent Connections</h4>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="h-6 text-xs"
-                    onClick={() => navigate('/wifi')}
-                  >
-                    <History size={12} className="mr-1" />
-                    View All
-                  </Button>
-                </div>
-                
-                <div className="max-h-32 overflow-y-auto border rounded-md">
-                  {connectionEvents.map((event, idx) => (
-                    <div key={idx} className="p-1.5 flex items-center justify-between border-b last:border-b-0 text-sm">
-                      <div className="flex items-center gap-2">
-                        {event.status === 'connected' ? (
-                          <Wifi className="h-3 w-3 text-green-500" />
-                        ) : (
-                          <WifiOff className="h-3 w-3 text-red-500" />
-                        )}
-                        <span className="capitalize">{event.status}</span>
-                      </div>
-                      <span className="text-xs text-gray-500">
-                        {typeof event.timestamp === 'string' 
-                          ? formatTime(new Date(event.timestamp)) 
-                          : formatTime(event.timestamp)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+          <div className="p-4 text-center text-sm text-muted-foreground">
+            No network data available
           </div>
         )}
       </CardContent>
@@ -177,6 +182,6 @@ export const NetworkStatusMonitor: React.FC<NetworkStatusMonitorProps> = React.m
       </CardFooter>
     </Card>
   );
-});
+};
 
 export default NetworkStatusMonitor;
