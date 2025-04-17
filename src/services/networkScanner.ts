@@ -47,6 +47,7 @@ export const isScannerAvailable = async (): Promise<{
     const data = await response.json();
     return { 
       available: true,
+      pythonAvailable: data.pythonAvailable || false,
       version: data.version
     };
   } catch {
@@ -84,6 +85,62 @@ export const scanNetwork = async (): Promise<boolean> => {
   } catch (error) {
     console.error('Error scanning network:', error);
     toast.error('Failed to scan network');
+    return false;
+  }
+};
+
+// Get detailed scanner status information
+export const getScannerStatus = async () => {
+  try {
+    const response = await fetch(`${LOCAL_SCANNER_URL}/scanner-status`, {
+      signal: AbortSignal.timeout(3000)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch scanner status');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching scanner status:', error);
+    return {
+      pythonAvailable: false,
+      modules: {
+        scapy: false,
+        nmap: false,
+        netifaces: false,
+        psutil: false
+      },
+      error: error.message
+    };
+  }
+};
+
+// Configure scanner settings
+export const configureScannerSettings = async (settings: {
+  scanInterval?: number;
+  scanDepth?: 'quick' | 'thorough';
+  excludedIpRanges?: string[];
+}): Promise<boolean> => {
+  try {
+    const response = await fetch(`${LOCAL_SCANNER_URL}/configure`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(settings),
+      signal: AbortSignal.timeout(3000)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to configure scanner settings');
+    }
+    
+    toast.success('Scanner settings updated');
+    return true;
+  } catch (error) {
+    console.error('Error configuring scanner:', error);
+    toast.error('Failed to update scanner settings');
     return false;
   }
 };
