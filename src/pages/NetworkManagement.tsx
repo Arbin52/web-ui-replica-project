@@ -1,26 +1,39 @@
 
-import React, { useState, useCallback, useMemo, Suspense, lazy } from 'react';
+import React, { useState, useCallback, useMemo, Suspense, lazy, useEffect } from 'react';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNetworks } from '@/hooks/useNetworks';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { toast } from 'sonner';
-import { debounce } from '@/utils/performance';
+import { debounce, preventRapidExecution, delayedNavigation } from '@/utils/performance';
 
 // Import our header component (not lazy loaded since it's small and always visible)
 import { NetworkHeader } from '@/components/network-management/NetworkHeader';
 
-// Lazy load larger components to improve initial page load
-const AddNetworkDialog = lazy(() => import('../components/AddNetworkDialog'));
+// Lazy load larger components to improve initial page load with increased timeouts
+const AddNetworkDialog = lazy(() => 
+  new Promise(resolve => setTimeout(() => 
+    import('../components/AddNetworkDialog').then(resolve), 300)));
+
 const NetworkOverviewOptimized = lazy(() => 
-  import('@/components/network-management/NetworkOverviewOptimized'));
+  new Promise(resolve => setTimeout(() => 
+    import('@/components/network-management/NetworkOverviewOptimized').then(resolve), 200)));
+
 const NetworkStatistics = lazy(() => 
-  import('@/components/network-management/NetworkStatistics').then(module => ({ default: module.NetworkStatistics })));
+  new Promise(resolve => setTimeout(() => 
+    import('@/components/network-management/NetworkStatistics')
+      .then(module => ({ default: module.NetworkStatistics })).then(resolve), 400)));
+
 const NetworkDevices = lazy(() => 
-  import('@/components/network-management/NetworkDevices').then(module => ({ default: module.NetworkDevices })));
+  new Promise(resolve => setTimeout(() => 
+    import('@/components/network-management/NetworkDevices')
+      .then(module => ({ default: module.NetworkDevices })).then(resolve), 500)));
+
 const SavedNetworks = lazy(() => 
-  import('@/components/network-management/SavedNetworks').then(module => ({ default: module.SavedNetworks })));
+  new Promise(resolve => setTimeout(() => 
+    import('@/components/network-management/SavedNetworks')
+      .then(module => ({ default: module.SavedNetworks })).then(resolve), 600)));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -51,11 +64,15 @@ const NetworkManagement = () => {
   } = useNetworkStatus();
   
   const [isRefreshing, setIsRefreshing] = useState(false);
+  // Track which tab content has been loaded
+  const [loadedTabs, setLoadedTabs] = useState<Record<string, boolean>>({
+    overview: true
+  });
   
   // Memoize handlers to prevent re-renders
-  const handleGatewayClick = useCallback(() => {
+  const handleGatewayClick = useCallback(preventRapidExecution(() => {
     openGatewayInterface();
-  }, [openGatewayInterface]);
+  }, 300), [openGatewayInterface]);
   
   // Debounced refresh handler to prevent multiple rapid refreshes
   const debouncedRefresh = useCallback(
@@ -83,6 +100,13 @@ const NetworkManagement = () => {
     }, 300),
     []
   );
+
+  // Only load tab content when tab is selected
+  useEffect(() => {
+    if (tabValue && !loadedTabs[tabValue]) {
+      setLoadedTabs(prev => ({ ...prev, [tabValue]: true }));
+    }
+  }, [tabValue, loadedTabs]);
   
   // Use memo to prevent tab content re-rendering unless necessary
   const tabContent = useMemo(() => (
@@ -100,49 +124,58 @@ const NetworkManagement = () => {
       
       <TabsContent value="overview" className="space-y-4">
         <Suspense fallback={<LoadingFallback />}>
-          <NetworkOverviewOptimized 
-            networkStatus={networkStatus}
-            isLoading={isLoading}
-            isRefreshing={isRefreshing}
-            handleRefresh={debouncedRefresh}
-            handleGatewayClick={handleGatewayClick}
-            updateInterval={updateInterval}
-            setRefreshRate={setRefreshRate}
-          />
+          {loadedTabs.overview && (
+            <NetworkOverviewOptimized 
+              networkStatus={networkStatus}
+              isLoading={isLoading}
+              isRefreshing={isRefreshing}
+              handleRefresh={debouncedRefresh}
+              handleGatewayClick={handleGatewayClick}
+              updateInterval={updateInterval}
+              setRefreshRate={setRefreshRate}
+            />
+          )}
         </Suspense>
       </TabsContent>
       
       <TabsContent value="statistics">
         <Suspense fallback={<LoadingFallback />}>
-          <NetworkStatistics 
-            networkStatus={networkStatus}
-            isLoading={isLoading}
-          />
+          {loadedTabs.statistics && (
+            <NetworkStatistics 
+              networkStatus={networkStatus}
+              isLoading={isLoading}
+            />
+          )}
         </Suspense>
       </TabsContent>
       
       <TabsContent value="devices">
         <Suspense fallback={<LoadingFallback />}>
-          <NetworkDevices 
-            networkStatus={networkStatus} 
-            isLoading={isLoading} 
-          />
+          {loadedTabs.devices && (
+            <NetworkDevices 
+              networkStatus={networkStatus} 
+              isLoading={isLoading} 
+            />
+          )}
         </Suspense>
       </TabsContent>
       
       <TabsContent value="saved">
         <Suspense fallback={<LoadingFallback />}>
-          <SavedNetworks 
-            networks={networks}
-            loading={loading}
-            fetchNetworks={fetchNetworks}
-            openAddNetworkDialog={handleOpenAddDialog}
-          />
+          {loadedTabs.saved && (
+            <SavedNetworks 
+              networks={networks}
+              loading={loading}
+              fetchNetworks={fetchNetworks}
+              openAddNetworkDialog={handleOpenAddDialog}
+            />
+          )}
         </Suspense>
       </TabsContent>
     </Tabs>
   ), [
     tabValue,
+    loadedTabs,
     networkStatus,
     isLoading,
     isRefreshing,

@@ -38,9 +38,8 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
   // Function to refresh scanner status
   const handleRefreshScannerStatus = () => {
     toast.info('Checking scanner status...');
-    checkScannerAvailability().then(() => {
-      toast.success('Scanner check completed');
-    });
+    checkScannerAvailability();
+    // We removed the .then() call that was causing the error
   };
 
   return (

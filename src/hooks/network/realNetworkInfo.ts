@@ -19,12 +19,35 @@ export const fetchRealNetworkInfo = async (): Promise<{
     lastUpdated: new Date()
   };
   
-  // Immediate return if not visible (extreme performance optimization)
+  // Skip processing completely if document not visible (saves resources)
   if (document.visibilityState !== 'visible') {
+    console.log('Document not visible, returning minimal data');
+    return baseResponse;
+  }
+
+  // Check if we're throttling this request based on time since last request
+  const now = Date.now();
+  const lastRequestTime = Number(sessionStorage.getItem('last_network_request_time') || '0');
+  const minTimeBetweenRequests = 3000; // 3 seconds minimum between full requests
+  
+  if (now - lastRequestTime < minTimeBetweenRequests) {
+    console.log('Throttling network request, returning cached data');
+    // Return cached values for frequent requests
+    const cachedNetworkInfo = sessionStorage.getItem('cached_network_info');
+    if (cachedNetworkInfo) {
+      try {
+        return JSON.parse(cachedNetworkInfo);
+      } catch (e) {
+        // If parse fails, continue with minimal response
+      }
+    }
     return baseResponse;
   }
   
   try {
+    // Store current time for throttling
+    sessionStorage.setItem('last_network_request_time', now.toString());
+    
     // Use highly optimized memory-safe implementation for connection history
     const connectionHistory = (() => {
       try {
@@ -56,13 +79,24 @@ export const fetchRealNetworkInfo = async (): Promise<{
       gatewayIp: sessionStorage.getItem('last_known_gateway_ip') || '192.168.1.1'
     };
     
-    // Return optimized result object with minimal property access/creation
-    return {
+    // Create the full response
+    const response = {
       ...baseResponse,
       ...cachedValues,
       connectionHistory
     };
+    
+    // Cache the response for future requests
+    try {
+      sessionStorage.setItem('cached_network_info', JSON.stringify(response));
+    } catch (e) {
+      console.warn('Failed to cache network info:', e);
+    }
+    
+    // Return optimized result object with minimal property access/creation
+    return response;
   } catch (error) {
+    console.error('Error fetching network info:', error);
     // Fallback to minimal data on error
     return baseResponse;
   }

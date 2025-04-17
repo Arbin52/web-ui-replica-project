@@ -74,18 +74,21 @@ export const isInViewport = (element: HTMLElement): boolean => {
   );
 };
 
-// Setup IntersectionObserver to track elements in viewport
+// Setup IntersectionObserver to track elements in viewport - Fixed TypeScript error
 export const createViewportObserver = (
   callback: (entries: IntersectionObserverEntry[]) => void,
   options = { rootMargin: '100px', threshold: 0.1 }
 ): IntersectionObserver => {
   if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
-    // Return a no-op observer if not supported
+    // Return a no-op observer if not supported, with proper type assertion
     return {
       observe: () => {},
       unobserve: () => {},
       disconnect: () => {},
-      takeRecords: () => []
+      takeRecords: () => [],
+      root: null,
+      rootMargin: '0px',
+      thresholds: [0]
     } as IntersectionObserver;
   }
   
@@ -139,4 +142,53 @@ export const shouldComponentUpdate = (
   propKeys: string[]
 ): boolean => {
   return propKeys.some(key => prevProps[key] !== nextProps[key]);
+};
+
+// Delay navigation to prevent UI freezing
+export const delayedNavigation = (
+  navigationFn: () => void, 
+  delay: number = 10
+): void => {
+  setTimeout(navigationFn, delay);
+};
+
+// Prevent rapid function execution
+export const preventRapidExecution = <F extends (...args: any[]) => any>(
+  func: F,
+  cooldownMs: number = 200
+): ((...args: Parameters<F>) => void) => {
+  let lastExecution = 0;
+  
+  return (...args: Parameters<F>): void => {
+    const now = Date.now();
+    if (now - lastExecution >= cooldownMs) {
+      lastExecution = now;
+      func(...args);
+    }
+  };
+};
+
+// Break up long-running tasks
+export const breakLongTask = <T>(
+  items: T[],
+  processFn: (item: T) => void,
+  chunkSize: number = 5,
+  delay: number = 0
+): void => {
+  let index = 0;
+  
+  const processChunk = () => {
+    const limit = Math.min(index + chunkSize, items.length);
+    
+    while (index < limit) {
+      processFn(items[index]);
+      index++;
+    }
+    
+    if (index < items.length) {
+      setTimeout(processChunk, delay);
+    }
+  };
+  
+  processChunk();
 };
