@@ -1,5 +1,4 @@
-
-import { useEffect, MutableRefObject } from 'react';
+import { useEffect, useRef, MutableRefObject } from 'react';
 
 export const useNetworkPolling = (
   isLiveUpdating: boolean,
@@ -7,49 +6,53 @@ export const useNetworkPolling = (
   fetchNetworkStatus: () => Promise<void>,
   intervalRef: MutableRefObject<NodeJS.Timeout | null>
 ) => {
+  // Keep track of last fetch time
+  const lastFetchTime = useRef<number>(0);
+  
   useEffect(() => {
-    // Always clear any existing polling on component mount or deps change
+    // Clean up any existing intervals immediately
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
     
-    // Only setup polling if live updates are enabled
+    // If live updates are disabled, do nothing
     if (!isLiveUpdating) {
       return;
     }
 
-    // Use a simple flag in local scope to prevent concurrent fetches
-    let isFetching = false;
-    
-    // Simplified fetch function with minimal overhead
-    const safeFetch = async () => {
-      // Skip if already fetching or document is hidden
-      if (isFetching || document.visibilityState !== 'visible') {
+    // Create a simple fetch function with minimum overhead
+    const simpleFetch = async () => {
+      // Skip if document is hidden to save resources
+      if (document.visibilityState !== 'visible') {
         return;
       }
       
+      // Enforce minimum interval between fetches (15 seconds)
+      const now = Date.now();
+      if (now - lastFetchTime.current < 15000) {
+        return;
+      }
+      
+      // Update last fetch time and execute fetch
+      lastFetchTime.current = now;
       try {
-        isFetching = true;
         await fetchNetworkStatus();
       } catch (err) {
-        console.error('Error fetching network status:', err);
-      } finally {
-        isFetching = false;
+        console.error('Network fetch error:', err);
       }
     };
 
-    // Execute initial fetch after a short delay to let the UI render
+    // Initial fetch with delay to prevent initial load spike
     const initialTimeout = setTimeout(() => {
-      if (document.visibilityState === 'visible') {
-        safeFetch();
-      }
+      simpleFetch();
     }, 1000);
     
-    // Use a much simpler interval mechanism with guaranteed minimum interval
-    const minInterval = Math.max(15000, updateInterval); // Minimum 15 seconds
-    intervalRef.current = setInterval(safeFetch, minInterval);
+    // Use fixed interval of at least 15 seconds
+    const actualInterval = Math.max(15000, updateInterval);
+    intervalRef.current = setInterval(simpleFetch, actualInterval);
     
+    // Clean up function
     return () => {
       clearTimeout(initialTimeout);
       if (intervalRef.current) {

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useCallback, memo } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { Router, Smartphone, Laptop, Monitor, Tv, TabletIcon, RefreshCw } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,11 +11,11 @@ interface ConnectedDevicesProps {
   isLoading: boolean;
 }
 
-// Use memo for device components to prevent unnecessary re-renders
+// Lightweight device item component
 const DeviceItem = memo(({ device, isOnline }: { device: ConnectedDevice, isOnline: boolean }) => {
-  // Get device icon based on device type
-  const getDeviceIcon = (deviceType: string) => {
-    switch(deviceType.toLowerCase()) {
+  // Simple icon selection without complex logic
+  const getDeviceIcon = () => {
+    switch(device.type.toLowerCase()) {
       case 'smartphone':
       case 'mobile':
       case 'phone':
@@ -41,7 +41,7 @@ const DeviceItem = memo(({ device, isOnline }: { device: ConnectedDevice, isOnli
     <div className="flex items-center justify-between p-3 rounded-md bg-background hover:bg-muted/50 transition-colors border border-muted">
       <div className="flex items-center space-x-3">
         <div className="p-2 bg-primary/10 rounded-full text-primary">
-          {getDeviceIcon(device.type)}
+          {getDeviceIcon()}
         </div>
         <div>
           <div className="font-medium">{device.name}</div>
@@ -57,29 +57,29 @@ const DeviceItem = memo(({ device, isOnline }: { device: ConnectedDevice, isOnli
 });
 
 export const ConnectedDevices: React.FC<ConnectedDevicesProps> = ({ networkStatus, isLoading }) => {
-  // Always use local devices to ensure we have something to display
+  // Use local state to prevent re-renders from parent
   const [devices, setDevices] = useState<ConnectedDevice[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const isOnline = navigator.onLine;
+  const isOnline = navigator.onLine; // Direct browser API
   
-  // Load devices on mount only, then update when status changes
-  useEffect(() => {
-    // Use a simpler approach that won't cause blocking
-    setDevices(getConnectedDeviceStatus());
-  }, [networkStatus?.isOnline]);
+  // Extremely simplified effect to prevent freezes
+  React.useEffect(() => {
+    // Get devices from local storage/memory - no API calls
+    const localDevices = getConnectedDeviceStatus();
+    setDevices(localDevices);
+  }, [networkStatus?.isOnline]); // Only update when online status changes
 
-  // Memoize the refresh handler to prevent re-renders
+  // Simple refresh handler
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
     // Use setTimeout to prevent UI blocking
     setTimeout(() => {
-      const updatedDevices = getConnectedDeviceStatus();
-      setDevices(updatedDevices);
+      setDevices(getConnectedDeviceStatus());
       setRefreshing(false);
     }, 100);
   }, []);
 
-  // Loading state
+  // Simple loading state
   if (isLoading || refreshing) {
     return (
       <Card className="border shadow-sm">
@@ -87,10 +87,7 @@ export const ConnectedDevices: React.FC<ConnectedDevicesProps> = ({ networkStatu
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Router size={18} className="text-primary" />
-              <CardTitle className="text-lg">
-                Connected Devices
-                <span className="ml-2 text-sm font-normal text-muted-foreground">(...)</span>
-              </CardTitle>
+              <CardTitle className="text-lg">Connected Devices</CardTitle>
             </div>
             <Button variant="outline" size="sm" disabled>
               <RefreshCw size={14} className="animate-spin" />
