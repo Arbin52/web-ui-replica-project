@@ -22,134 +22,88 @@ const packageJson = {
 
 fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2));
 
+// Create basic requirements.txt file for Python dependencies
+console.log("📝 Creating Python requirements file...");
+const requirementsDir = path.join(__dirname, 'python');
+if (!fs.existsSync(requirementsDir)) {
+  fs.mkdirSync(requirementsDir, { recursive: true });
+}
+
+// Create a simplified requirements file that's more likely to install without errors
+const basicRequirements = `
+# Basic network scanning requirements - simplified for compatibility
+getmac>=0.8.2
+requests>=2.28.0
+colorama>=0.4.4
+
+# System-specific packages - these will be installed only if compatible
+# These are optional and the scanner will work without them
+pynetinfo>=0.1.0; platform_system=="Windows"
+netifaces==0.10.9; platform_system!="Windows"
+`;
+
+const reqPath = path.join(requirementsDir, 'requirements.txt');
+fs.writeFileSync(reqPath, basicRequirements);
+
+// Check if Python is available and try to install basic dependencies
+console.log("🔍 Checking for Python...");
+let pythonAvailable = false;
+let pythonCommand = '';
+
+try {
+  // Try python3 first (common on Linux/Mac)
+  execSync('python3 --version', { stdio: 'pipe' });
+  pythonCommand = 'python3';
+  pythonAvailable = true;
+  console.log("✅ Found Python 3");
+} catch (err) {
+  try {
+    // Try python (common on Windows)
+    execSync('python --version', { stdio: 'pipe' });
+    pythonCommand = 'python';
+    pythonAvailable = true;
+    console.log("✅ Found Python");
+  } catch (e) {
+    console.log("❌ Python not found. Will use basic network scanning only.");
+  }
+}
+
+// Try to install Python dependencies if Python is available
+if (pythonAvailable) {
+  console.log("📦 Installing Python dependencies...");
+  try {
+    if (process.platform === 'win32') {
+      // On Windows, avoid trying to install problematic packages
+      execSync(`${pythonCommand} -m pip install getmac colorama`, { stdio: 'inherit' });
+      console.log("✅ Installed basic Python packages");
+      
+      // Try to install pynetinfo but don't fail if it doesn't work
+      try {
+        execSync(`${pythonCommand} -m pip install pynetinfo`, { stdio: 'inherit' });
+      } catch (err) {
+        console.log("⚠️  Could not install pynetinfo. Basic functionality will still work.");
+      }
+    } else {
+      // On Unix systems
+      execSync(`${pythonCommand} -m pip install getmac colorama`, { stdio: 'inherit' });
+      
+      // Try netifaces but don't fail if it doesn't work
+      try {
+        execSync(`${pythonCommand} -m pip install netifaces==0.10.9`, { stdio: 'inherit' });
+      } catch (err) {
+        console.log("⚠️  Could not install netifaces. Basic functionality will still work.");
+      }
+    }
+  } catch (err) {
+    console.log("⚠️  Could not install Python packages. Basic functionality will still work.");
+    console.log(`   Error: ${err.message}`);
+  }
+}
+
 // Create index.js if it doesn't exist
 console.log("📝 Creating scanner service...");
 if (!fs.existsSync('index.js')) {
-  const indexContent = `
-const express = require('express');
-const cors = require('cors');
-const { execSync } = require('child_process');
-
-const app = express();
-const PORT = 3001;
-
-app.use(cors());
-app.use(express.json());
-
-// Get network devices using system commands
-const getNetworkDevices = () => {
-  try {
-    // Get devices from ARP table
-    const output = execSync('arp -a', { encoding: 'utf8' });
-    const devices = [];
-    
-    output.split('\\n').forEach((line, index) => {
-      if (line.includes('(') || line.match(/[\\d.]+/)) {
-        const ipMatch = line.match(/([\\d.]+)/);
-        const macMatch = line.match(/([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})/);
-        
-        if (ipMatch) {
-          devices.push({
-            id: \`dev-\${index}\`,
-            ip: ipMatch[0],
-            mac: macMatch ? macMatch[0] : 'unknown',
-            name: \`Device \${index + 1}\`,
-            status: 'Online',
-            type: 'Unknown'
-          });
-        }
-      }
-    });
-    
-    return devices;
-  } catch (error) {
-    console.error('Error scanning network:', error);
-    
-    // Return sample data if scan fails
-    return [
-      { id: 'router', ip: '192.168.1.1', mac: '00:11:22:33:44:55', name: 'Router', status: 'Online', type: 'Router' },
-      { id: 'local', ip: '192.168.1.100', mac: '11:22:33:44:55:66', name: 'This Computer', status: 'Online', type: 'Computer' }
-    ];
-  }
-};
-
-// Scanner settings
-let scannerSettings = {
-  scanInterval: 60000, // 1 minute default
-  scanDepth: 'quick',
-  excludedIpRanges: []
-};
-
-// Routes
-app.get('/status', (req, res) => {
-  res.json({ 
-    status: 'running', 
-    version: '1.0.0',
-    pythonAvailable: false
-  });
-});
-
-app.get('/devices', (req, res) => {
-  res.json(getNetworkDevices());
-});
-
-app.get('/device/:ip', (req, res) => {
-  const { ip } = req.params;
-  const devices = getNetworkDevices();
-  const device = devices.find(d => d.ip === ip);
-  
-  if (device) {
-    res.json(device);
-  } else {
-    res.status(404).json({ error: 'Device not found' });
-  }
-});
-
-// New endpoint for scanner status
-app.get('/scanner-status', (req, res) => {
-  res.json({
-    pythonAvailable: false,
-    modules: {
-      scapy: false,
-      nmap: false,
-      netifaces: false,
-      psutil: false
-    },
-    os: process.platform,
-    defaultGateway: '192.168.1.1',
-    networkRange: '192.168.1.0/24'
-  });
-});
-
-// New endpoint to configure scanner
-app.post('/configure', (req, res) => {
-  try {
-    const newSettings = req.body;
-    scannerSettings = { ...scannerSettings, ...newSettings };
-    console.log('Scanner settings updated:', scannerSettings);
-    res.json({ success: true, settings: scannerSettings });
-  } catch (error) {
-    console.error('Error updating scanner settings:', error);
-    res.status(500).json({ error: 'Failed to update scanner settings' });
-  }
-});
-
-// Endpoint for scan trigger
-app.post('/scan', (req, res) => {
-  console.log('Network scan triggered');
-  res.json({ status: 'Scan initiated' });
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(\`\\n=============================================\`);
-  console.log(\`✅ Network Scanner running on port \${PORT}\`);
-  console.log(\`=============================================\`);
-  console.log(\`📱 View devices: http://localhost:\${PORT}/devices\`);
-  console.log(\`🔍 Check status: http://localhost:\${PORT}/status\`);
-  console.log(\`\\n💡 Keep this window open while using the app\\n\`);
-});
-`;
+  const indexContent = fs.readFileSync(path.join(__dirname, 'index.js'), 'utf8');
   fs.writeFileSync('index.js', indexContent);
 }
 
