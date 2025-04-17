@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo, Suspense, lazy, useEffect } from 'react';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
@@ -11,29 +10,27 @@ import { debounce, preventRapidExecution, delayedNavigation } from '@/utils/perf
 // Import our header component (not lazy loaded since it's small and always visible)
 import { NetworkHeader } from '@/components/network-management/NetworkHeader';
 
-// Lazy load larger components to improve initial page load with increased timeouts
+// Properly typed lazy loading for components
 const AddNetworkDialog = lazy(() => 
-  new Promise(resolve => setTimeout(() => 
-    import('../components/AddNetworkDialog').then(resolve), 300)));
+  import('../components/AddNetworkDialog'));
 
 const NetworkOverviewOptimized = lazy(() => 
-  new Promise(resolve => setTimeout(() => 
-    import('@/components/network-management/NetworkOverviewOptimized').then(resolve), 200)));
+  import('@/components/network-management/NetworkOverviewOptimized'));
 
 const NetworkStatistics = lazy(() => 
-  new Promise(resolve => setTimeout(() => 
-    import('@/components/network-management/NetworkStatistics')
-      .then(module => ({ default: module.NetworkStatistics })).then(resolve), 400)));
+  import('@/components/network-management/NetworkStatistics').then(
+    module => ({ default: module.NetworkStatistics })
+  ));
 
 const NetworkDevices = lazy(() => 
-  new Promise(resolve => setTimeout(() => 
-    import('@/components/network-management/NetworkDevices')
-      .then(module => ({ default: module.NetworkDevices })).then(resolve), 500)));
+  import('@/components/network-management/NetworkDevices').then(
+    module => ({ default: module.NetworkDevices })
+  ));
 
 const SavedNetworks = lazy(() => 
-  new Promise(resolve => setTimeout(() => 
-    import('@/components/network-management/SavedNetworks')
-      .then(module => ({ default: module.SavedNetworks })).then(resolve), 600)));
+  import('@/components/network-management/SavedNetworks').then(
+    module => ({ default: module.SavedNetworks })
+  ));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -216,7 +213,7 @@ const NetworkManagement = () => {
           <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         </div>
         <div className="flex-grow overflow-y-auto">
-          <div className="max-w-screen-xl mx-auto p-4 md:p-6 animate-fade-in">
+          <div className="max-w-screen-xl mx-auto p-4 md:p-6">
             {networkHeader}
             {tabContent}
           </div>

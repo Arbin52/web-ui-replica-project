@@ -74,14 +74,14 @@ export const isInViewport = (element: HTMLElement): boolean => {
   );
 };
 
-// Setup IntersectionObserver to track elements in viewport - Fixed TypeScript error
+// Setup IntersectionObserver to track elements in viewport
 export const createViewportObserver = (
   callback: (entries: IntersectionObserverEntry[]) => void,
   options = { rootMargin: '100px', threshold: 0.1 }
 ): IntersectionObserver => {
   if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
     // Return a no-op observer if not supported, with proper type assertion
-    return {
+    const noopObserver = {
       observe: () => {},
       unobserve: () => {},
       disconnect: () => {},
@@ -89,7 +89,8 @@ export const createViewportObserver = (
       root: null,
       rootMargin: '0px',
       thresholds: [0]
-    } as IntersectionObserver;
+    };
+    return noopObserver as IntersectionObserver;
   }
   
   return new IntersectionObserver(callback, options);
@@ -191,4 +192,50 @@ export const breakLongTask = <T>(
   };
   
   processChunk();
+};
+
+// Detect if the current device is slow based on device memory and CPU cores
+export const isSlowDevice = (): boolean => {
+  // Check device memory (if available)
+  if ((navigator as any).deviceMemory && (navigator as any).deviceMemory < 4) {
+    return true;
+  }
+  
+  // Check hardware concurrency (CPU cores)
+  if (navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4) {
+    return true;
+  }
+  
+  // Check if it's a mobile device
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if (isMobile) {
+    return true;
+  }
+  
+  return false;
+};
+
+// Adaptively adjust animations and effects based on device capabilities
+export const adaptPerformanceSettings = (): {
+  useAnimations: boolean;
+  useShadows: boolean;
+  useComplexLayouts: boolean;
+  useBackgroundEffects: boolean;
+} => {
+  const isLowPerfDevice = isSlowDevice();
+  
+  return {
+    useAnimations: !isLowPerfDevice,
+    useShadows: !isLowPerfDevice,
+    useComplexLayouts: !isLowPerfDevice,
+    useBackgroundEffects: !isLowPerfDevice
+  };
+};
+
+// Smart timeout that can detect if the device is slow and adjust accordingly
+export const smartTimeout = (callback: () => void, defaultDelay: number): void => {
+  const isLow = isSlowDevice();
+  const adjustedDelay = isLow ? defaultDelay * 1.5 : defaultDelay;
+  
+  setTimeout(callback, adjustedDelay);
 };

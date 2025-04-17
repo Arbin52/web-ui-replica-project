@@ -28,7 +28,7 @@ export const fetchRealNetworkInfo = async (): Promise<{
   // Check if we're throttling this request based on time since last request
   const now = Date.now();
   const lastRequestTime = Number(sessionStorage.getItem('last_network_request_time') || '0');
-  const minTimeBetweenRequests = 3000; // 3 seconds minimum between full requests
+  const minTimeBetweenRequests = 5000; // 5 seconds minimum between full requests - increased from 3s
   
   if (now - lastRequestTime < minTimeBetweenRequests) {
     console.log('Throttling network request, returning cached data');
@@ -55,14 +55,14 @@ export const fetchRealNetworkInfo = async (): Promise<{
         if (!cached) return [];
         
         // Use a transfer size limit to prevent memory issues
-        const maxSize = 10000; // 10KB limit for history
+        const maxSize = 5000; // 5KB limit for history (reduced from 10KB)
         if (cached.length > maxSize) {
           console.warn('Connection history exceeds safe size, truncating');
           return [];
         }
         
         const parsed = JSON.parse(cached);
-        return Array.isArray(parsed) ? parsed.slice(-15) : []; // Keep only last 15 entries
+        return Array.isArray(parsed) ? parsed.slice(-10) : []; // Keep only last 10 entries (reduced from 15)
       } catch (e) {
         return [];
       }
@@ -79,18 +79,23 @@ export const fetchRealNetworkInfo = async (): Promise<{
       gatewayIp: sessionStorage.getItem('last_known_gateway_ip') || '192.168.1.1'
     };
     
-    // Create the full response
-    const response = {
-      ...baseResponse,
-      ...cachedValues,
-      connectionHistory
-    };
+    // Create the full response with shallow object spread to minimize property access/creation
+    const response = Object.assign({}, baseResponse, cachedValues, { connectionHistory });
     
-    // Cache the response for future requests
-    try {
-      sessionStorage.setItem('cached_network_info', JSON.stringify(response));
-    } catch (e) {
-      console.warn('Failed to cache network info:', e);
+    // Cache the response for future requests - only if document is visible to prevent unnecessary storage writes
+    if (document.visibilityState === 'visible') {
+      try {
+        // Use a requestIdleCallback-like approach for non-critical storage
+        setTimeout(() => {
+          try {
+            sessionStorage.setItem('cached_network_info', JSON.stringify(response));
+          } catch (e) {
+            console.warn('Failed to cache network info in delayed execution:', e);
+          }
+        }, 100); // Small delay to prioritize UI rendering
+      } catch (e) {
+        console.warn('Failed to schedule cache operation:', e);
+      }
     }
     
     // Return optimized result object with minimal property access/creation

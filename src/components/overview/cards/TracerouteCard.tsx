@@ -11,6 +11,7 @@ const TracerouteCard: React.FC = () => {
       description="Network path analysis"
       path="/traceroute"
       buttonText="Trace Route"
+      priority="medium"
     >
       <div className="flex items-center justify-center p-2">
         <div className="flex space-x-1">
