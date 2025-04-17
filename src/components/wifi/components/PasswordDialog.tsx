@@ -3,12 +3,11 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Wifi, Lock } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface PasswordDialogProps {
@@ -65,9 +64,13 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({
     <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Connect to {selectedNetwork?.ssid}</DialogTitle>
-          <DialogDescription>
-            Enter the password for this network to connect.
+          <DialogTitle className="flex items-center gap-2">
+            <Wifi className="h-4 w-4" />
+            <span>Connect to {selectedNetwork?.ssid}</span>
+          </DialogTitle>
+          <DialogDescription className="flex items-center gap-2 pt-2">
+            <Lock className="h-3 w-3" />
+            <span>This network requires a password</span>
           </DialogDescription>
         </DialogHeader>
 
@@ -85,7 +88,7 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>Network Password</FormLabel>
                   <FormControl>
                     <Input 
                       id="password" 
@@ -93,6 +96,8 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({
                       placeholder="Enter network password" 
                       {...field} 
                       disabled={isConnecting}
+                      autoFocus
+                      autoComplete="off"
                     />
                   </FormControl>
                   <FormMessage />

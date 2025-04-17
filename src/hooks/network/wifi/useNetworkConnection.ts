@@ -38,11 +38,14 @@ export const useNetworkConnection = (
           void refreshNetworkStatus();
         }, 500);
         
+        toast.success(`Successfully connected to ${selectedNetwork.ssid}`);
         return true;
       }
+      toast.error(`Failed to connect to ${selectedNetwork.ssid}`);
       return false;
     } catch (error) {
       console.error("Connection error:", error);
+      toast.error(`Error connecting to ${selectedNetwork.ssid}`);
       return false;
     } finally {
       setIsConnecting(false);
@@ -57,8 +60,10 @@ export const useNetworkConnection = (
     
     try {
       await disconnectFromNetwork();
+      toast.success(`Disconnected from ${networkStatus.networkName}`);
     } catch (error) {
       console.error("Disconnection error:", error);
+      toast.error("Failed to disconnect from network");
     } finally {
       setIsDisconnecting(false);
     }
@@ -75,8 +80,10 @@ export const useNetworkConnection = (
           void refreshNetworkStatus();
         }, 100);
         
+        toast.success(`Network name updated to "${customNetworkName.trim()}"`);
         resolve(true);
       } else {
+        toast.error("Network name cannot be empty");
         resolve(false);
       }
     });
