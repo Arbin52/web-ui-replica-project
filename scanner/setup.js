@@ -22,28 +22,29 @@ const packageJson = {
 
 fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2));
 
-// Create basic requirements.txt file for Python dependencies
-console.log("📝 Creating Python requirements file...");
-const requirementsDir = path.join(__dirname, 'python');
-if (!fs.existsSync(requirementsDir)) {
-  fs.mkdirSync(requirementsDir, { recursive: true });
+// Create directories if they don't exist
+console.log("📁 Creating directories...");
+const pythonDir = path.join(__dirname, 'python');
+if (!fs.existsSync(pythonDir)) {
+  fs.mkdirSync(pythonDir, { recursive: true });
 }
 
 // Create a simplified requirements file that's more likely to install without errors
-// Removed problematic packages like pynetinfo that might require compilation
+console.log("📝 Creating Python requirements file...");
 const basicRequirements = `
 # Basic network scanning requirements - simplified for maximum compatibility
 getmac>=0.8.2
 requests>=2.28.0
 colorama>=0.4.4
 
-# Platform-specific packages are commented out to avoid build failures
-# If you need these, you can install them manually:
+# These packages might require compilation, so they're optional
+# Uncomment if needed and if you have a C compiler:
+# scapy>=2.4.5
 # netifaces==0.10.9
 # pynetinfo>=0.1.0
 `;
 
-const reqPath = path.join(requirementsDir, 'requirements.txt');
+const reqPath = path.join(pythonDir, 'requirements.txt');
 fs.writeFileSync(reqPath, basicRequirements);
 
 // Check if Python is available and try to install basic dependencies
