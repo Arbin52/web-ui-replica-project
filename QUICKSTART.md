@@ -11,8 +11,8 @@ npm install
 ### Step 2: Start Network Scanner
 ```bash
 # In first terminal window
-cd local-scanner
-node setup-scanner.js
+cd scanner
+node setup.js
 npm start
 ```
 
@@ -30,6 +30,6 @@ npm run dev
 If you have issues with the scanner:
 1. Make sure it's running on port 3001
 2. Check status at http://localhost:3001/status
-3. Run `npm install ts-node express cors` in local-scanner directory
+3. Run `npm install ts-node express cors` in scanner directory
 
-For more details, see local-scanner-quick-start.md
+For more details, see scanner/README.md

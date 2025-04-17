@@ -15,7 +15,7 @@ This guide will help you quickly set up and run the application in VS Code.
    ```
    npm run dev
    ```
-5. Your app will be running at http://localhost:5173
+5. Your app will be running at http://localhost:8080
 
 ## Running the Network Scanner
 
@@ -40,7 +40,27 @@ The scanner must be running alongside the main application for network scanning 
 
 ## Quick Access Guide
 
-- **Main application**: http://localhost:5173
+- **Main application**: http://localhost:8080
 - **Scanner status**: http://localhost:3001/status
 - **Scanner devices**: http://localhost:3001/devices
 
+## Troubleshooting Common Issues
+
+### "Module not found" errors
+If you encounter module not found errors:
+```
+npm install
+```
+
+And in the scanner directory:
+```
+cd scanner
+npm install express cors
+```
+
+### Python dependency issues
+The scanner will work with basic functionality even without Python.
+For advanced features, you can manually install:
+```
+pip install getmac colorama requests
+```
