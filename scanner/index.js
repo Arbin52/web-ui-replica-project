@@ -29,22 +29,16 @@ const checkPythonSetup = () => {
       }
     }
 
-    // Check if we can install basic packages for Windows
-    if (process.platform === 'win32') {
-      try {
-        console.log('Installing basic Python packages for Windows...');
-        execSync(`${pythonCommand} -m pip install getmac colorama`);
-      } catch (err) {
-        console.log('Could not install Python packages:', err.message);
-      }
-    } else {
-      // For non-Windows platforms
-      try {
-        console.log('Installing basic Python packages...');
-        execSync(`${pythonCommand} -m pip install netifaces getmac`);
-      } catch (err) {
-        console.log('Could not install Python packages:', err.message);
-      }
+    // Try to install just the basic, non-problematic packages
+    console.log('Installing basic Python packages...');
+    try {
+      execSync(`${pythonCommand} -m pip install getmac colorama requests`, {
+        stdio: 'pipe',
+        timeout: 30000 // 30 second timeout
+      });
+      console.log('Basic Python packages installed successfully');
+    } catch (err) {
+      console.log('Note: Could not install all Python packages. This is normal and non-critical.');
     }
     
     return true;
@@ -182,7 +176,9 @@ app.listen(PORT, () => {
   console.log(`\n💡 Keep this window open while using the app\n`);
   
   if (isPythonAvailable) {
-    console.log(`✅ Python detected - enhanced scanning available`);
+    console.log(`✅ Python detected - basic scanning available`);
+    console.log(`⚠️  Note: Extended Python features may require manual installation of packages`);
+    console.log(`   To manually install: pip install scapy netifaces python-nmap`);
   } else {
     console.log(`⚠️  Python not detected - basic scanning only`);
     console.log(`   To enable enhanced scanning, install Python`);

@@ -31,3 +31,28 @@ This scanner runs as a local service that allows the main application to:
 - Node.js 14+
 - npm
 
+## Troubleshooting
+
+### Python Package Installation Issues
+
+If you see errors related to Python packages like `pynetinfo`:
+
+1. This is normal and non-critical. The scanner will work with basic functionality.
+2. For enhanced features, you can manually install Python packages:
+
+   ```
+   # Windows
+   pip install getmac colorama requests
+   
+   # Mac/Linux
+   pip3 install getmac colorama requests
+   ```
+
+3. Advanced packages (optional):
+   ```
+   # Try these if you need more features
+   pip install scapy
+   pip install python-nmap
+   ```
+
+The scanner will work even without these optional packages!

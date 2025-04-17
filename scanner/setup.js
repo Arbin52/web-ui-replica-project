@@ -30,16 +30,17 @@ if (!fs.existsSync(requirementsDir)) {
 }
 
 // Create a simplified requirements file that's more likely to install without errors
+// Removed problematic packages like pynetinfo that might require compilation
 const basicRequirements = `
-# Basic network scanning requirements - simplified for compatibility
+# Basic network scanning requirements - simplified for maximum compatibility
 getmac>=0.8.2
 requests>=2.28.0
 colorama>=0.4.4
 
-# System-specific packages - these will be installed only if compatible
-# These are optional and the scanner will work without them
-pynetinfo>=0.1.0; platform_system=="Windows"
-netifaces==0.10.9; platform_system!="Windows"
+# Platform-specific packages are commented out to avoid build failures
+# If you need these, you can install them manually:
+# netifaces==0.10.9
+# pynetinfo>=0.1.0
 `;
 
 const reqPath = path.join(requirementsDir, 'requirements.txt');
@@ -72,31 +73,16 @@ try {
 if (pythonAvailable) {
   console.log("📦 Installing Python dependencies...");
   try {
-    if (process.platform === 'win32') {
-      // On Windows, avoid trying to install problematic packages
-      execSync(`${pythonCommand} -m pip install getmac colorama`, { stdio: 'inherit' });
-      console.log("✅ Installed basic Python packages");
-      
-      // Try to install pynetinfo but don't fail if it doesn't work
-      try {
-        execSync(`${pythonCommand} -m pip install pynetinfo`, { stdio: 'inherit' });
-      } catch (err) {
-        console.log("⚠️  Could not install pynetinfo. Basic functionality will still work.");
-      }
-    } else {
-      // On Unix systems
-      execSync(`${pythonCommand} -m pip install getmac colorama`, { stdio: 'inherit' });
-      
-      // Try netifaces but don't fail if it doesn't work
-      try {
-        execSync(`${pythonCommand} -m pip install netifaces==0.10.9`, { stdio: 'inherit' });
-      } catch (err) {
-        console.log("⚠️  Could not install netifaces. Basic functionality will still work.");
-      }
-    }
+    // Install just the minimal requirements to avoid compilation issues
+    execSync(`${pythonCommand} -m pip install getmac colorama requests`, { 
+      stdio: 'inherit',
+      timeout: 60000 // 60 second timeout for pip
+    });
+    console.log("✅ Installed basic Python packages");
   } catch (err) {
     console.log("⚠️  Could not install Python packages. Basic functionality will still work.");
     console.log(`   Error: ${err.message}`);
+    console.log("   This is not critical - the scanner will work with reduced functionality.");
   }
 }
 
