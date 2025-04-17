@@ -1,31 +1,4 @@
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
-
-console.log("\n\x1b[36m===== NETWORK SCANNER SETUP =====\x1b[0m\n");
-
-// Create package.json
-console.log("📦 Setting up package.json...");
-const packageJson = {
-  "name": "network-scanner",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5"
-  }
-};
-
-fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2));
-
-// Create index.js if it doesn't exist
-console.log("📝 Creating scanner service...");
-if (!fs.existsSync('index.js')) {
-  const indexContent = `
 const express = require('express');
 const cors = require('cors');
 const { execSync } = require('child_process');
@@ -43,17 +16,17 @@ const getNetworkDevices = () => {
     const output = execSync('arp -a', { encoding: 'utf8' });
     const devices = [];
     
-    output.split('\\n').forEach((line, index) => {
-      if (line.includes('(') || line.match(/[\\d.]+/)) {
-        const ipMatch = line.match(/([\\d.]+)/);
+    output.split('\n').forEach((line, index) => {
+      if (line.includes('(') || line.match(/[\d.]+/)) {
+        const ipMatch = line.match(/([\d.]+)/);
         const macMatch = line.match(/([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})/);
         
         if (ipMatch) {
           devices.push({
-            id: \`dev-\${index}\`,
+            id: `dev-${index}`,
             ip: ipMatch[0],
             mac: macMatch ? macMatch[0] : 'unknown',
-            name: \`Device \${index + 1}\`,
+            name: `Device ${index + 1}`,
             status: 'Online',
             type: 'Unknown'
           });
@@ -142,27 +115,10 @@ app.post('/scan', (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(\`\\n=============================================\`);
-  console.log(\`✅ Network Scanner running on port \${PORT}\`);
-  console.log(\`=============================================\`);
-  console.log(\`📱 View devices: http://localhost:\${PORT}/devices\`);
-  console.log(\`🔍 Check status: http://localhost:\${PORT}/status\`);
-  console.log(\`\\n💡 Keep this window open while using the app\\n\`);
+  console.log(`\n=============================================`);
+  console.log(`✅ Network Scanner running on port ${PORT}`);
+  console.log(`=============================================`);
+  console.log(`📱 View devices: http://localhost:${PORT}/devices`);
+  console.log(`🔍 Check status: http://localhost:${PORT}/status`);
+  console.log(`\n💡 Keep this window open while using the app\n`);
 });
-`;
-  fs.writeFileSync('index.js', indexContent);
-}
-
-// Install dependencies
-console.log("📥 Installing dependencies...");
-try {
-  execSync('npm install', { stdio: 'inherit' });
-  console.log("\n\x1b[32m✅ SETUP COMPLETE!\x1b[0m");
-  console.log("\n\x1b[36mTo start the scanner:\x1b[0m");
-  console.log("  npm start");
-  console.log("\n\x1b[36mThen open a new terminal and run the main app:\x1b[0m");
-  console.log("  npm run dev\n");
-} catch (err) {
-  console.error("\n\x1b[31mError installing dependencies. Try manually:\x1b[0m");
-  console.log("  npm install express cors\n");
-}

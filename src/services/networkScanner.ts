@@ -74,7 +74,12 @@ export const getDeviceDetails = async (ipAddress: string): Promise<ConnectedDevi
 // Scan the network for devices
 export const scanNetwork = async (): Promise<boolean> => {
   try {
-    const response = await fetch(`${LOCAL_SCANNER_URL}/devices`);
+    const response = await fetch(`${LOCAL_SCANNER_URL}/scan`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
     
     if (!response.ok) {
       throw new Error('Failed to scan network');
@@ -111,7 +116,7 @@ export const getScannerStatus = async () => {
         netifaces: false,
         psutil: false
       },
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
 };
