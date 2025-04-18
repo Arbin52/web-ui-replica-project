@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Shield, ScanSearch, ShieldCheck, ShieldAlert, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { Shield, ScanSearch, ShieldCheck, ShieldAlert, ExternalLink, CheckCircle2, Wifi, Server, Lock, Settings } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { toast } from 'sonner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -15,6 +14,9 @@ interface Vulnerability {
   description: string;
   fixSteps: string[];
   resolved: boolean;
+  category: 'network' | 'system' | 'access' | 'configuration';
+  impact: string;
+  detectedDate: string;
 }
 
 const SecurityScan: React.FC = () => {
@@ -31,7 +33,6 @@ const SecurityScan: React.FC = () => {
     setProgress(0);
     toast.info('Starting security scan...');
 
-    // Simulate different scan stages
     const stages = [
       'Checking firewall status...',
       'Scanning open ports...',
@@ -46,51 +47,76 @@ const SecurityScan: React.FC = () => {
       setProgress((i + 1) * (100 / stages.length));
     }
 
-    // Generate random vulnerabilities
     const possibleVulnerabilities = [
       {
         id: 'vuln-1',
         severity: 'high',
+        category: 'network',
         title: 'Firewall Port 22 Exposed',
         description: 'SSH port is accessible from the internet, allowing potential unauthorized access.',
+        impact: 'Critical - Allows direct remote access to system resources',
+        detectedDate: new Date().toLocaleString(),
         fixSteps: [
           'Update firewall rules to restrict SSH access',
           'Implement IP whitelisting for SSH connections',
-          'Consider changing the default SSH port'
+          'Consider changing the default SSH port',
+          'Enable key-based authentication only'
         ],
         resolved: false
       },
       {
         id: 'vuln-2',
         severity: 'medium',
+        category: 'system',
         title: 'Outdated Router Firmware',
         description: 'Your router firmware is out of date and missing security patches.',
+        impact: 'Moderate - Known vulnerabilities may be exploitable',
+        detectedDate: new Date().toLocaleString(),
         fixSteps: [
           'Access router admin panel',
           'Navigate to System Update section',
-          'Download and install the latest firmware'
+          'Download and install the latest firmware',
+          'Verify system stability after update'
         ],
         resolved: false
       },
       {
         id: 'vuln-3',
         severity: 'low',
+        category: 'access',
         title: 'Weak Wi-Fi Password',
         description: 'Network password does not meet minimum security requirements.',
+        impact: 'Low - Potential for unauthorized network access',
+        detectedDate: new Date().toLocaleString(),
         fixSteps: [
           'Access router settings',
           'Navigate to wireless security settings',
-          'Create a stronger password with at least 12 characters including numbers and special characters'
+          'Create a stronger password with at least 12 characters including numbers and special characters',
+          'Update all connected devices with new password'
+        ],
+        resolved: false
+      },
+      {
+        id: 'vuln-4',
+        severity: 'high',
+        category: 'configuration',
+        title: 'UPnP Enabled',
+        description: 'Universal Plug and Play is enabled and may expose network services.',
+        impact: 'High - Potential for unauthorized port forwarding',
+        detectedDate: new Date().toLocaleString(),
+        fixSteps: [
+          'Access router configuration',
+          'Locate UPnP settings',
+          'Disable UPnP feature',
+          'Review and manually configure required port forwards'
         ],
         resolved: false
       }
     ] as Vulnerability[];
 
-    // Randomly choose 0-2 vulnerabilities
-    const numVulns = Math.floor(Math.random() * 3);
+    const numVulns = Math.floor(Math.random() * 4);
     const selectedVulnerabilities: Vulnerability[] = [];
     
-    // Select random vulnerabilities
     for (let i = 0; i < numVulns; i++) {
       if (possibleVulnerabilities.length > 0) {
         const randomIndex = Math.floor(Math.random() * possibleVulnerabilities.length);
@@ -98,7 +124,6 @@ const SecurityScan: React.FC = () => {
       }
     }
 
-    // Simulate scan completion
     const mockResults = {
       vulnerabilities: selectedVulnerabilities,
       status: 'completed',
@@ -140,6 +165,21 @@ const SecurityScan: React.FC = () => {
         return 'text-yellow-500 bg-yellow-50 border-yellow-200';
       default:
         return 'text-gray-500 bg-gray-50 border-gray-200';
+    }
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch(category) {
+      case 'network':
+        return <Wifi size={18} />;
+      case 'system':
+        return <Server size={18} />;
+      case 'access':
+        return <Lock size={18} />;
+      case 'configuration':
+        return <Settings size={18} />;
+      default:
+        return <Shield size={18} />;
     }
   };
 
