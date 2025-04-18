@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { Shield, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
+import SecurityScan from './SecurityScan';
 
 const Security: React.FC = () => {
   const securityData = {
@@ -177,9 +177,7 @@ const Security: React.FC = () => {
       </div>
       
       <div className="mt-6">
-        <button className="bg-primary text-white px-4 py-2 rounded hover:bg-opacity-90 transition-colors">
-          Run Security Scan
-        </button>
+        <SecurityScan />
       </div>
     </div>
   );
