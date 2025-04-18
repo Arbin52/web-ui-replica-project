@@ -1,6 +1,5 @@
 import React from 'react';
-import { Shield, CheckCircle, XCircle, AlertCircle, Wifi, Lock, Server, Database } from 'lucide-react';
-import { Progress } from "@/components/ui/progress";
+import { Shield, Wifi, Lock } from 'lucide-react';
 import SecurityScan from './SecurityScan';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -20,7 +19,6 @@ const Security: React.FC = () => {
     passwordStrength: 'Strong',
     guestNetworkEnabled: true,
     macFiltering: 'Enabled',
-    // Additional security metrics
     encryptionType: 'AES-256',
     dnsProtection: 'Active',
     vpnStatus: 'Not Connected',
@@ -62,17 +60,12 @@ const Security: React.FC = () => {
         <h2 className="text-xl font-bold">Security Center</h2>
       </div>
       
-      <Tabs defaultValue="scan" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="scan">Security Scanner</TabsTrigger>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Security Overview</TabsTrigger>
+          <TabsTrigger value="scan">Security Scanner</TabsTrigger>
           <TabsTrigger value="network">Network Security</TabsTrigger>
-          <TabsTrigger value="system">System Security</TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="scan" className="p-4 bg-white rounded-md shadow-sm border mt-2">
-          <SecurityScan />
-        </TabsContent>
         
         <TabsContent value="overview" className="mt-2">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -201,7 +194,11 @@ const Security: React.FC = () => {
             </div>
           </div>
         </TabsContent>
-
+        
+        <TabsContent value="scan" className="p-4 bg-white rounded-md shadow-sm border mt-2">
+          <SecurityScan />
+        </TabsContent>
+        
         <TabsContent value="network" className="mt-2">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-6">
@@ -335,12 +332,6 @@ const Security: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="system" className="mt-2">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
           </div>
         </TabsContent>
       </Tabs>
