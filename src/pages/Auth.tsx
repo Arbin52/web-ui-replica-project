@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import MFASetup from '@/components/auth/MFASetup';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -34,6 +34,7 @@ const Auth = () => {
   const { user, signIn, signUp, loading } = useAuth();
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showMFASetup, setShowMFASetup] = useState(false);
   
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -59,6 +60,7 @@ const Auth = () => {
     setIsSubmitting(true);
     try {
       await signIn(values.email, values.password);
+      setShowMFASetup(true);
     } catch (error) {
       // Error is handled in the auth context
     } finally {
@@ -78,7 +80,6 @@ const Auth = () => {
     }
   };
 
-  // Redirect if already logged in
   if (user && !loading) {
     return <Navigate to="/" />;
   }
@@ -301,6 +302,11 @@ const Auth = () => {
           </Tabs>
         </Card>
       </div>
+
+      <MFASetup 
+        isOpen={showMFASetup} 
+        onClose={() => setShowMFASetup(false)} 
+      />
     </div>
   );
 };
