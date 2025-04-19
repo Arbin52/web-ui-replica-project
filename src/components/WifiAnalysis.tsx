@@ -1,20 +1,25 @@
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { Wifi, Activity } from 'lucide-react';
+import { toast } from "sonner";
 
 const WifiAnalysis: React.FC = () => {
-  const channels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-  const networks = [
+  const [is5GHz, setIs5GHz] = useState(false);
+  const [networks, setNetworks] = useState([
     { ssid: 'MyNetwork', channel: 6, signal: -45, security: 'WPA2' },
     { ssid: 'Neighbor_5G', channel: 1, signal: -65, security: 'WPA2' },
     { ssid: 'NETGEAR-2.4', channel: 11, signal: -70, security: 'WPA3' },
     { ssid: 'Xfinity', channel: 6, signal: -72, security: 'WPA2' },
     { ssid: 'ATT-WIFI-5G', channel: 3, signal: -75, security: 'WPA2' }
-  ];
+  ]);
+
+  // Define channels based on frequency band
+  const channels = is5GHz 
+    ? [36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112, 116, 120, 124, 128]
+    : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
   // Convert signal strength (dBm) to a visual bar
   const getSignalStrength = (signal: number) => {
-    // Signal: -30 (best) to -90 (worst)
     const percentage = 100 - (Math.abs(signal) - 30) * 1.5;
     return Math.max(0, Math.min(100, percentage));
   };
@@ -23,9 +28,23 @@ const WifiAnalysis: React.FC = () => {
     const networksOnChannel = networks.filter(n => n.channel === channel);
     if (networksOnChannel.length === 0) return 0;
     
-    // Calculate activity based on networks and signal strength
     return Math.min(100, networksOnChannel.length * 25 + 
       networksOnChannel.reduce((acc, n) => acc + (100 - Math.abs(n.signal)), 0) / 5);
+  };
+
+  const handleRefreshAnalysis = useCallback(() => {
+    // Simulate refresh with new random values
+    const updatedNetworks = networks.map(network => ({
+      ...network,
+      signal: Math.floor(Math.random() * ((-30) - (-90)) + (-90)) // Random signal between -30 and -90
+    }));
+    setNetworks(updatedNetworks);
+    toast.success(`WiFi analysis refreshed for ${is5GHz ? '5 GHz' : '2.4 GHz'} channels`);
+  }, [networks, is5GHz]);
+
+  const toggleFrequencyBand = () => {
+    setIs5GHz(!is5GHz);
+    toast.info(`Switched to ${!is5GHz ? '5 GHz' : '2.4 GHz'} channels`);
   };
 
   return (
@@ -36,7 +55,9 @@ const WifiAnalysis: React.FC = () => {
       </div>
 
       <div className="mb-6">
-        <h3 className="text-lg font-semibold mb-2">Channel Activity (2.4 GHz)</h3>
+        <h3 className="text-lg font-semibold mb-2">
+          Channel Activity ({is5GHz ? '5 GHz' : '2.4 GHz'})
+        </h3>
         <div className="w-full bg-gray-100 p-4 rounded-md">
           <div className="flex justify-between mb-2">
             {channels.map(channel => (
@@ -108,12 +129,18 @@ const WifiAnalysis: React.FC = () => {
       </div>
 
       <div className="flex gap-4">
-        <button className="bg-primary text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-opacity-90">
+        <button 
+          onClick={handleRefreshAnalysis}
+          className="bg-primary text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-opacity-90"
+        >
           <Activity size={18} />
           <span>Refresh Analysis</span>
         </button>
-        <button className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300">
-          View 5 GHz Channels
+        <button 
+          onClick={toggleFrequencyBand}
+          className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+        >
+          View {is5GHz ? '2.4 GHz' : '5 GHz'} Channels
         </button>
       </div>
     </div>
