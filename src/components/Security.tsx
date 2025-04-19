@@ -1,7 +1,9 @@
+
 import React from 'react';
-import { Shield, Wifi, Lock } from 'lucide-react';
+import { Shield, Wifi, Lock, CheckCircle, XCircle, AlertCircle, Server, Database } from 'lucide-react';
 import SecurityScan from './SecurityScan';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 
 const Security: React.FC = () => {
   const securityData = {
