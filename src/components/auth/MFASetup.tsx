@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -16,6 +15,7 @@ const MFASetup: React.FC<MFASetupProps> = ({ isOpen, onClose }) => {
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [verifyCode, setVerifyCode] = useState('');
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [challengeId, setChallengeId] = useState<string | null>(null);
 
   const enrollMFA = async () => {
     try {
@@ -38,14 +38,12 @@ const MFASetup: React.FC<MFASetupProps> = ({ isOpen, onClose }) => {
   };
 
   const verifyMFA = async () => {
-    if (!factorId || !verifyCode) return;
+    if (!factorId || !verifyCode || !challengeId) return;
 
     try {
-      const { error } = await supabase.auth.mfa.challenge({ factorId });
-      if (error) throw error;
-
       const { error: verifyError } = await supabase.auth.mfa.verify({
         factorId,
+        challengeId,
         code: verifyCode,
       });
 
@@ -57,6 +55,26 @@ const MFASetup: React.FC<MFASetupProps> = ({ isOpen, onClose }) => {
       toast.error('Failed to verify MFA: ' + error.message);
     }
   };
+
+  const challengeMFA = async () => {
+    if (!factorId) return;
+
+    try {
+      const { data, error } = await supabase.auth.mfa.challenge({ factorId });
+      if (error) throw error;
+      if (data) {
+        setChallengeId(data.id);
+      }
+    } catch (error: any) {
+      toast.error('Failed to challenge MFA: ' + error.message);
+    }
+  };
+
+  useEffect(() => {
+    if (factorId) {
+      challengeMFA();
+    }
+  }, [factorId]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
