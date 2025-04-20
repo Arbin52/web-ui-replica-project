@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { ConnectedDevices } from '../overview/ConnectedDevices';
@@ -18,28 +17,23 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
   networkStatus,
   isLoading
 }) => {
-  // Get current hostname to detect if we're deployed or on localhost
   const isDeployed = typeof window !== 'undefined' && 
     window.location.hostname !== 'localhost' && 
     window.location.hostname !== '127.0.0.1';
 
-  const { hasScanner, checkScannerAvailability } = useRealDevices();
-  
-  // Function to handle scanner status check
+  const { hasScanner, checkScannerAvailability, isPythonAvailable } = useRealDevices();
+
   const handleCheckScannerStatus = () => {
     window.open('http://localhost:3001/status', '_blank');
   };
   
-  // Function to open setup guide
   const handleOpenSetupGuide = () => {
     window.open('/SETUP.md', '_blank');
   };
   
-  // Function to refresh scanner status
   const handleRefreshScannerStatus = () => {
     toast.info('Checking scanner status...');
     checkScannerAvailability();
-    // We removed the .then() call that was causing the error
   };
 
   return (
@@ -47,7 +41,7 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
       <CardHeader>
         <CardTitle>Connected Devices</CardTitle>
         <CardDescription>
-          Manage devices connected to your network
+          Real-time device monitoring
         </CardDescription>
         
         {isDeployed && !hasScanner ? (
@@ -62,14 +56,14 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
         ) : !hasScanner ? (
           <Alert variant="default" className="mt-2 border-amber-200 bg-amber-50">
             <AlertCircle className="h-4 w-4 text-amber-600" />
-            <AlertTitle className="text-amber-800 font-medium">Local Network Scanner Not Running</AlertTitle>
+            <AlertTitle className="text-amber-800 font-medium">Network Scanner Not Connected</AlertTitle>
             <AlertDescription className="text-amber-700">
-              <p className="mb-2">Simple steps to start the scanner:</p>
+              <p className="mb-2">To enable real-time device monitoring:</p>
               <ol className="list-decimal pl-5 space-y-1">
-                <li>Open a terminal window</li>
-                <li>Run <code className="bg-amber-100 px-1 rounded">cd scanner</code></li>
+                <li>Open terminal in scanner directory</li>
                 <li>Run <code className="bg-amber-100 px-1 rounded">node setup.js</code></li>
                 <li>Run <code className="bg-amber-100 px-1 rounded">npm start</code></li>
+                <li>Scanner will start on port 3001</li>
               </ol>
               <div className="flex flex-wrap gap-2 mt-3">
                 <Button
@@ -87,7 +81,7 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
                   className="bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1"
                   onClick={handleOpenSetupGuide}
                 >
-                  <PlayCircle className="h-3.5 w-3.5" />
+                  <ExternalLink className="h-3.5 w-3.5" />
                   <span>Setup Guide</span>
                 </Button>
                 <Button
@@ -101,7 +95,15 @@ export const NetworkDevices: React.FC<NetworkDevicesProps> = ({
               </div>
             </AlertDescription>
           </Alert>
-        ) : null}
+        ) : (
+          <Alert variant="default" className="mt-2 border-green-200 bg-green-50">
+            <Info className="h-4 w-4 text-green-600" />
+            <AlertTitle className="text-green-800">Scanner Connected</AlertTitle>
+            <AlertDescription className="text-green-700">
+              Real-time device monitoring is active. {isPythonAvailable ? 'Advanced scanning enabled with Python.' : 'Basic scanning mode active.'}
+            </AlertDescription>
+          </Alert>
+        )}
       </CardHeader>
       <CardContent className="p-0">
         <ConnectedDevices networkStatus={networkStatus} isLoading={isLoading} />
