@@ -60,6 +60,15 @@ export const FeatureCards: React.FC<FeatureCardsProps> = ({ networkStatus, isLoa
     );
   }
 
+  // Calculate values to pass to cards
+  const downloadSpeed = networkStatus?.connectionSpeed?.download || 0;
+  const uploadSpeed = networkStatus?.connectionSpeed?.upload || 0;
+  const latency = networkStatus?.connectionSpeed?.latency || 0;
+  const networkName = networkStatus?.networkName || 'Unknown Network';
+  const signalStrength = networkStatus?.signalStrength || 'Unknown';
+  const connectedDevices = networkStatus?.connectedDevices?.length || 0;
+  const isOnline = networkStatus?.isOnline ?? navigator.onLine;
+
   // Use staggered rendering to prevent freezing
   return (
     <div 
@@ -69,14 +78,14 @@ export const FeatureCards: React.FC<FeatureCardsProps> = ({ networkStatus, isLoa
       {/* Speed Test Card */}
       <div className="feature-card" data-id="speed">
         <SpeedTestCard 
-          downloadSpeed={networkStatus?.connectionSpeed.download}
-          uploadSpeed={networkStatus?.connectionSpeed.upload}
+          downloadSpeed={downloadSpeed}
+          uploadSpeed={uploadSpeed}
         />
       </div>
       
       {/* Ping Status Card */}
       <div className="feature-card" data-id="ping">
-        <PingStatusCard latency={networkStatus?.connectionSpeed.latency} />
+        <PingStatusCard latency={latency} />
       </div>
       
       {/* Traceroute Card */}
@@ -87,8 +96,8 @@ export const FeatureCards: React.FC<FeatureCardsProps> = ({ networkStatus, isLoa
       {/* WiFi Management Card */}
       <div className="feature-card" data-id="wifi">
         <WifiManagementCard
-          networkName={networkStatus?.networkName}
-          signalStrength={networkStatus?.signalStrength}
+          networkName={networkName}
+          signalStrength={signalStrength}
         />
       </div>
       
@@ -100,8 +109,8 @@ export const FeatureCards: React.FC<FeatureCardsProps> = ({ networkStatus, isLoa
       {/* Network Management Card */}
       <div className="feature-card" data-id="networks">
         <NetworkManagementCard
-          deviceCount={networkStatus?.connectedDevices?.length || 0}
-          isOnline={networkStatus?.isOnline}
+          deviceCount={connectedDevices}
+          isOnline={isOnline}
         />
       </div>
     </div>

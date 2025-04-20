@@ -1,5 +1,5 @@
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { NetworkStatus } from './types';
 import { generateNetworkStatus } from './networkStatusGenerator';
@@ -31,6 +31,7 @@ export const useNetworkStatus = () => {
   // Fetch network status function
   const fetchNetworkStatus = useCallback(async () => {
     console.log("Fetching network status...");
+    setIsLoading(true);
     try {
       const data = await generateNetworkStatus(networkStatus);
       
@@ -44,6 +45,11 @@ export const useNetworkStatus = () => {
       setIsLoading(false);
     }
   }, [networkStatus, setNetworkStatus, setError, setIsLoading]);
+  
+  // Initial data fetch on mount
+  useEffect(() => {
+    fetchNetworkStatus();
+  }, []);
   
   // Connection error handling
   const {

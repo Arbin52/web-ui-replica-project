@@ -23,7 +23,7 @@ const formatTimeSimple = (date: Date) => {
 
 // Separate component for connection events to prevent re-renders
 const ConnectionEvents = memo(({ events }: { events: any[] }) => {
-  if (events.length === 0) return null;
+  if (!events || events.length === 0) return null;
   
   return (
     <div className="mt-2 border rounded-md p-2">
@@ -35,7 +35,7 @@ const ConnectionEvents = memo(({ events }: { events: any[] }) => {
           <span className="text-gray-500">
             {typeof event.timestamp === 'string' 
               ? formatTimeSimple(new Date(event.timestamp)) 
-              : formatTimeSimple(event.timestamp)}
+              : formatTimeSimple(event.timestamp instanceof Date ? event.timestamp : new Date())}
           </span>
         </div>
       ))}

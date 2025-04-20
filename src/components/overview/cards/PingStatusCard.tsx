@@ -8,7 +8,7 @@ interface PingStatusCardProps {
   latency: number | undefined;
 }
 
-const PingStatusCard: React.FC<PingStatusCardProps> = ({ latency }) => {
+const PingStatusCard: React.FC<PingStatusCardProps> = ({ latency = 0 }) => {
   // Pre-calculate latency metrics
   const latencyQuality = latency ? 
     (latency < 20 ? 'Excellent' : latency < 50 ? 'Good' : 'Poor') : 'Unknown';
@@ -22,6 +22,7 @@ const PingStatusCard: React.FC<PingStatusCardProps> = ({ latency }) => {
       title="Ping Status"
       description="Connection latency"
       path="/ping"
+      buttonText="Check Ping"
     >
       <div className="flex flex-col items-center">
         <div className="text-3xl font-bold mb-2">{latency || '--'} ms</div>
