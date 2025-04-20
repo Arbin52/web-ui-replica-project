@@ -6,9 +6,15 @@ const AuthHeader = () => {
   return (
     <div className="text-center mb-8">
       <div className="flex justify-center mb-2">
-        <div className="relative p-4 bg-gradient-to-br from-sky-400 to-blue-600 rounded-full">
-          <WifiIcon size={24} className="text-white absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
-          <Lock size={16} className="text-white absolute bottom-2.5 left-1/2 transform -translate-x-1/2" />
+        <div className="relative p-5 bg-gradient-to-b from-cyan-300 to-cyan-400 rounded-full">
+          <WifiIcon 
+            size={28} 
+            className="text-white absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-[60%]" 
+          />
+          <Lock 
+            size={20} 
+            className="text-white absolute bottom-3.5 left-1/2 transform -translate-x-1/2" 
+          />
         </div>
       </div>
       <h1 className="text-2xl font-bold text-gray-900">WiFi Security Auditing</h1>
