@@ -7,7 +7,7 @@ export const useNetworkStatusState = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLiveUpdating, setIsLiveUpdating] = useState(false);
-  const [updateInterval, setUpdateInterval] = useState(300000); // Default to 5 minutes
+  const [updateInterval, setUpdateInterval] = useState(60000); // Changed to 1 minute (60,000 ms)
   const [autoConnectAttempted, setAutoConnectAttempted] = useState(false);
 
   return {

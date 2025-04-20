@@ -27,9 +27,10 @@ export const UpdateFrequencyControl: React.FC<UpdateFrequencyControlProps> = ({
       console.log(`Changing update interval from ${updateInterval}ms to ${interval}ms`);
       setRefreshRate(interval);
       
-      const intervalText = interval === 900000 ? '15 minutes' : 
-                          interval === 600000 ? '10 minutes' :
-                          interval === 300000 ? '5 minutes' : `${interval / 60000} minutes`;
+      const intervalText = interval === 60000 ? '1 minute' :
+                           interval === 300000 ? '5 minutes' : 
+                           interval === 600000 ? '10 minutes' :
+                           interval === 900000 ? '15 minutes' : `${interval / 60000} minutes`;
       
       debouncedToast(`Update interval changed to ${intervalText}`);
     }
@@ -47,7 +48,7 @@ export const UpdateFrequencyControl: React.FC<UpdateFrequencyControlProps> = ({
         </div>
       </div>
       <div className="flex gap-2">
-        {[900000, 600000, 300000].map(interval => (
+        {[60000, 300000, 600000, 900000].map(interval => (
           <Button 
             key={interval} 
             size="sm"
@@ -55,9 +56,10 @@ export const UpdateFrequencyControl: React.FC<UpdateFrequencyControlProps> = ({
             onClick={() => handleIntervalChange(interval)}
             className={updateInterval === interval ? "shadow-sm" : ""}
           >
-            {interval === 900000 ? '15 min' : 
+            {interval === 60000 ? '1 min' : 
+             interval === 300000 ? '5 min' : 
              interval === 600000 ? '10 min' :
-             interval === 300000 ? '5 min' : `${interval / 60000} min`}
+             interval === 900000 ? '15 min' : `${interval / 60000} min`}
           </Button>
         ))}
       </div>
