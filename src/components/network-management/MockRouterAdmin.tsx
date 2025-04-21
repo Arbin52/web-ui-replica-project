@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Save, RefreshCw, Wifi, Shield, Settings, Globe, Upload, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { GPONGatewayLogin } from './GPONGatewayLogin';
 
 interface MockRouterAdminProps {
   open: boolean;
@@ -28,8 +28,8 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
   const [wifiName, setWifiName] = useState('HomeNetwork-5G');
   const [password, setPassword] = useState('••••••••••••');
   const [isSaving, setIsSaving] = useState(false);
-  
-  // If this is a real network, redirect to the actual router admin page
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   useEffect(() => {
     if (isRealNetwork && open) {
       window.open(`http://${gatewayIp}`, '_blank');
@@ -55,11 +55,19 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
     return null; // We don't render anything if in real network mode
   }
 
+  if (open && !isLoggedIn) {
+    return (
+      <GPONGatewayLogin
+        isOpen={open}
+        onSuccess={() => setIsLoggedIn(true)}
+      />
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl w-full h-[80vh] p-0 overflow-hidden">
         <div className="flex h-full flex-col">
-          {/* Router Admin Header */}
           <DialogHeader className="p-6 border-b bg-primary text-primary-foreground">
             <div className="flex justify-between items-center">
               <div>
@@ -80,9 +88,7 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
             </div>
           </DialogHeader>
 
-          {/* Router Content */}
           <div className="flex flex-1 overflow-hidden">
-            {/* Sidebar Navigation */}
             <div className="w-64 border-r bg-muted/30 p-4 hidden md:block">
               <div className="space-y-1">
                 <Button 
@@ -120,7 +126,6 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
               </div>
             </div>
 
-            {/* Main Content Area */}
             <div className="flex-1 p-6 overflow-y-auto">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="mb-4 md:hidden">
