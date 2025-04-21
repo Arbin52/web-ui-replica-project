@@ -36,18 +36,20 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
   
   // Effect to open gateway in new tab if using real network
   useEffect(() => {
+    // Handle real network case separately
     if (isRealNetwork && open) {
       window.open(`http://${gatewayIp}`, '_blank');
       onClose();
-    } else if (open) {
-      setVisibleInUI(true);
-    } else {
-      setVisibleInUI(false);
+      return;
     }
+    
+    // For mock network, update visibility based on open state
+    setVisibleInUI(open);
   }, [isRealNetwork, open, gatewayIp, onClose]);
 
   // Effect to manage login dialog visibility
   useEffect(() => {
+    // Only show login dialog if the component is visible, we're not logged in, and not using a real network
     if (open && !isLoggedIn && !isRealNetwork) {
       setShowLoginDialog(true);
     } else {
