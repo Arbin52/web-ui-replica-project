@@ -1,7 +1,8 @@
+
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { NetworkStatus } from './types';
-import { fetchRealDevices, isScannerAvailable } from '../services/networkScanner';
+import { fetchRealDevices, isScannerAvailable } from '../../services/networkScanner';
 import { useNetworkStatusState } from './status/useNetworkStatusState';
 import { useNetworkActions } from './actions/useNetworkActions';
 import { useNetworkPolling } from './useNetworkPolling';
@@ -148,3 +149,4 @@ export const useNetworkStatus = () => {
     setAutoConnectAttempted
   };
 };
+
