@@ -32,16 +32,17 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
-  const [shouldRenderContent, setShouldRenderContent] = useState(!isRealNetwork);
+  const [visibleInUI, setVisibleInUI] = useState(false);
   
   // Effect to open gateway in new tab if using real network
   useEffect(() => {
     if (isRealNetwork && open) {
       window.open(`http://${gatewayIp}`, '_blank');
       onClose();
-      setShouldRenderContent(false);
+    } else if (open) {
+      setVisibleInUI(true);
     } else {
-      setShouldRenderContent(true);
+      setVisibleInUI(false);
     }
   }, [isRealNetwork, open, gatewayIp, onClose]);
 
@@ -73,12 +74,12 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
     setShowLoginDialog(false);
   };
 
-  // Render the login dialog if needed
+  // Render the login dialog component - always returns a component or null
   const renderLoginDialog = () => {
-    if (shouldRenderContent && showLoginDialog) {
+    if (visibleInUI && showLoginDialog) {
       return (
         <GPONGatewayLogin
-          isOpen={showLoginDialog}
+          isOpen={true}
           onSuccess={handleLoginSuccess}
         />
       );
@@ -86,9 +87,9 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
     return null;
   };
 
-  // Render the router admin dialog if logged in
+  // Render the router admin dialog component - always returns a component or null
   const renderRouterAdmin = () => {
-    if (shouldRenderContent && open && isLoggedIn) {
+    if (visibleInUI && isLoggedIn) {
       return (
         <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
           <DialogContent className="max-w-4xl w-full h-[80vh] p-0 overflow-hidden">
@@ -199,7 +200,7 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
     return null;
   };
 
-  // Main component return - NO early returns with conditional rendering of the entire component
+  // Always return a JSX element or null - no early returns with conditional rendering
   return (
     <>
       {renderLoginDialog()}
