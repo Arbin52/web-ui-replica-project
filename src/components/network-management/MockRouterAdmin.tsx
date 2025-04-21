@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,7 +22,6 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
   gatewayIp,
   isRealNetwork = false
 }) => {
-  // Define all hooks at component level - always call them unconditionally
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('status');
   const [wifiEnabled, setWifiEnabled] = useState(true);
@@ -34,7 +32,6 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [visibleInUI, setVisibleInUI] = useState(false);
   
-  // Effect for handling real network vs mock router display
   useEffect(() => {
     if (isRealNetwork && open) {
       window.open(`http://${gatewayIp}`, '_blank');
@@ -44,7 +41,6 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
     }
   }, [isRealNetwork, open, gatewayIp, onClose]);
   
-  // Effect for login dialog visibility
   useEffect(() => {
     if (open && !isLoggedIn && !isRealNetwork) {
       setShowLoginDialog(true);
@@ -53,7 +49,6 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
     }
   }, [open, isLoggedIn, isRealNetwork]);
   
-  // Handler functions - no hooks inside these
   const handleRefresh = () => {
     setLoading(true);
     setTimeout(() => {
@@ -73,7 +68,6 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
     setShowLoginDialog(false);
   };
   
-  // Render method for login dialog - always returns JSX or null
   const renderLoginDialog = () => {
     if (!visibleInUI || !showLoginDialog) return null;
     
@@ -85,7 +79,6 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
     );
   };
   
-  // Render method for router admin - always returns JSX or null
   const renderRouterAdmin = () => {
     if (!visibleInUI || !isLoggedIn) return null;
     
@@ -197,8 +190,6 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
     );
   };
 
-  // Final return with consistent hook ordering - no conditionals at this level
-  // Always return the same structure regardless of state
   return (
     <>
       {renderLoginDialog()}
