@@ -23,7 +23,7 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
   gatewayIp,
   isRealNetwork = false
 }) => {
-  // Define all hooks at component level
+  // Define all hooks at component level - always call them unconditionally
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('status');
   const [wifiEnabled, setWifiEnabled] = useState(true);
@@ -34,19 +34,17 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [visibleInUI, setVisibleInUI] = useState(false);
   
-  // Handle real network vs mock router display
+  // Effect for handling real network vs mock router display
   useEffect(() => {
     if (isRealNetwork && open) {
-      // For real networks, open in new tab and close this interface
       window.open(`http://${gatewayIp}`, '_blank');
       onClose();
     } else {
-      // For mock router, simply update visibility state
       setVisibleInUI(open);
     }
   }, [isRealNetwork, open, gatewayIp, onClose]);
   
-  // Handle login dialog visibility
+  // Effect for login dialog visibility
   useEffect(() => {
     if (open && !isLoggedIn && !isRealNetwork) {
       setShowLoginDialog(true);
@@ -55,7 +53,7 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
     }
   }, [open, isLoggedIn, isRealNetwork]);
   
-  // Handler functions
+  // Handler functions - no hooks inside these
   const handleRefresh = () => {
     setLoading(true);
     setTimeout(() => {
@@ -75,132 +73,132 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
     setShowLoginDialog(false);
   };
   
-  // Render functions that always return JSX or null
+  // Render method for login dialog - always returns JSX or null
   const renderLoginDialog = () => {
-    if (visibleInUI && showLoginDialog) {
-      return (
-        <GPONGatewayLogin
-          isOpen={true}
-          onSuccess={handleLoginSuccess}
-        />
-      );
-    }
-    return null;
+    if (!visibleInUI || !showLoginDialog) return null;
+    
+    return (
+      <GPONGatewayLogin
+        isOpen={true}
+        onSuccess={handleLoginSuccess}
+      />
+    );
   };
   
+  // Render method for router admin - always returns JSX or null
   const renderRouterAdmin = () => {
-    if (visibleInUI && isLoggedIn) {
-      return (
-        <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
-          <DialogContent className="max-w-4xl w-full h-[80vh] p-0 overflow-hidden">
-            <div className="flex h-full flex-col">
-              <DialogHeader className="p-6 border-b bg-primary text-primary-foreground">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <DialogTitle className="text-2xl font-bold">Router Admin Interface</DialogTitle>
-                    <DialogDescription className="text-primary-foreground/80">
-                      {gatewayIp} • Default Router
-                    </DialogDescription>
-                  </div>
+    if (!visibleInUI || !isLoggedIn) return null;
+    
+    return (
+      <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-4xl w-full h-[80vh] p-0 overflow-hidden">
+          <div className="flex h-full flex-col">
+            <DialogHeader className="p-6 border-b bg-primary text-primary-foreground">
+              <div className="flex justify-between items-center">
+                <div>
+                  <DialogTitle className="text-2xl font-bold">Router Admin Interface</DialogTitle>
+                  <DialogDescription className="text-primary-foreground/80">
+                    {gatewayIp} • Default Router
+                  </DialogDescription>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={onClose}
+                  className="h-8"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-1" />
+                  Return to App
+                </Button>
+              </div>
+            </DialogHeader>
+
+            <div className="flex flex-1 overflow-hidden">
+              <div className="w-64 border-r bg-muted/30 p-4 hidden md:block">
+                <div className="space-y-1">
                   <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={onClose}
-                    className="h-8"
+                    variant={activeTab === 'status' ? "secondary" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => setActiveTab('status')}
                   >
-                    <ArrowLeft className="h-4 w-4 mr-1" />
-                    Return to App
+                    <Globe className="h-4 w-4 mr-2" />
+                    Status
+                  </Button>
+                  <Button
+                    variant={activeTab === 'wifi' ? "secondary" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => setActiveTab('wifi')}
+                  >
+                    <Wifi className="h-4 w-4 mr-2" />
+                    WiFi Settings
+                  </Button>
+                  <Button
+                    variant={activeTab === 'security' ? "secondary" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => setActiveTab('security')}
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    Security
+                  </Button>
+                  <Button
+                    variant={activeTab === 'advanced' ? "secondary" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => setActiveTab('advanced')}
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Advanced
                   </Button>
                 </div>
-              </DialogHeader>
+              </div>
 
-              <div className="flex flex-1 overflow-hidden">
-                <div className="w-64 border-r bg-muted/30 p-4 hidden md:block">
-                  <div className="space-y-1">
-                    <Button
-                      variant={activeTab === 'status' ? "secondary" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => setActiveTab('status')}
-                    >
-                      <Globe className="h-4 w-4 mr-2" />
-                      Status
-                    </Button>
-                    <Button
-                      variant={activeTab === 'wifi' ? "secondary" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => setActiveTab('wifi')}
-                    >
-                      <Wifi className="h-4 w-4 mr-2" />
-                      WiFi Settings
-                    </Button>
-                    <Button
-                      variant={activeTab === 'security' ? "secondary" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => setActiveTab('security')}
-                    >
-                      <Shield className="h-4 w-4 mr-2" />
-                      Security
-                    </Button>
-                    <Button
-                      variant={activeTab === 'advanced' ? "secondary" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => setActiveTab('advanced')}
-                    >
-                      <Settings className="h-4 w-4 mr-2" />
-                      Advanced
-                    </Button>
-                  </div>
-                </div>
+              <div className="flex-1 p-6 overflow-y-auto">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <TabsList className="mb-4 md:hidden">
+                    <TabsTrigger value="status">Status</TabsTrigger>
+                    <TabsTrigger value="wifi">WiFi</TabsTrigger>
+                    <TabsTrigger value="security">Security</TabsTrigger>
+                    <TabsTrigger value="advanced">Advanced</TabsTrigger>
+                  </TabsList>
 
-                <div className="flex-1 p-6 overflow-y-auto">
-                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="mb-4 md:hidden">
-                      <TabsTrigger value="status">Status</TabsTrigger>
-                      <TabsTrigger value="wifi">WiFi</TabsTrigger>
-                      <TabsTrigger value="security">Security</TabsTrigger>
-                      <TabsTrigger value="advanced">Advanced</TabsTrigger>
-                    </TabsList>
+                  <TabsContent value="status" className="space-y-4">
+                    <RouterStatusPanel
+                      gatewayIp={gatewayIp}
+                      loading={loading}
+                      handleRefresh={handleRefresh}
+                    />
+                  </TabsContent>
 
-                    <TabsContent value="status" className="space-y-4">
-                      <RouterStatusPanel
-                        gatewayIp={gatewayIp}
-                        loading={loading}
-                        handleRefresh={handleRefresh}
-                      />
-                    </TabsContent>
+                  <TabsContent value="wifi" className="space-y-4">
+                    <RouterWifiPanel
+                      wifiEnabled={wifiEnabled}
+                      setWifiEnabled={setWifiEnabled}
+                      wifiName={wifiName}
+                      setWifiName={setWifiName}
+                      password={password}
+                      setPassword={setPassword}
+                      isSaving={isSaving}
+                      handleSaveSettings={handleSaveSettings}
+                    />
+                  </TabsContent>
 
-                    <TabsContent value="wifi" className="space-y-4">
-                      <RouterWifiPanel
-                        wifiEnabled={wifiEnabled}
-                        setWifiEnabled={setWifiEnabled}
-                        wifiName={wifiName}
-                        setWifiName={setWifiName}
-                        password={password}
-                        setPassword={setPassword}
-                        isSaving={isSaving}
-                        handleSaveSettings={handleSaveSettings}
-                      />
-                    </TabsContent>
+                  <TabsContent value="security" className="space-y-4">
+                    <RouterSecurityPanel />
+                  </TabsContent>
 
-                    <TabsContent value="security" className="space-y-4">
-                      <RouterSecurityPanel />
-                    </TabsContent>
-
-                    <TabsContent value="advanced" className="space-y-4">
-                      <RouterAdvancedPanel />
-                    </TabsContent>
-                  </Tabs>
-                </div>
+                  <TabsContent value="advanced" className="space-y-4">
+                    <RouterAdvancedPanel />
+                  </TabsContent>
+                </Tabs>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
-      );
-    }
-    return null;
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
   };
 
   // Final return with consistent hook ordering - no conditionals at this level
+  // Always return the same structure regardless of state
   return (
     <>
       {renderLoginDialog()}
