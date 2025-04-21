@@ -32,12 +32,16 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [shouldRenderContent, setShouldRenderContent] = useState(!isRealNetwork);
 
   // Effect to open gateway in new tab if using real network
   useEffect(() => {
     if (isRealNetwork && open) {
       window.open(`http://${gatewayIp}`, '_blank');
       onClose();
+      setShouldRenderContent(false);
+    } else {
+      setShouldRenderContent(true);
     }
   }, [isRealNetwork, open, gatewayIp, onClose]);
 
@@ -69,122 +73,122 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
     setShowLoginDialog(false);
   };
 
-  // Early return that does not interrupt hooks
-  if (isRealNetwork) {
-    return null;
-  }
-
+  // No more early returns that could affect hook execution order
   return (
     <>
-      <GPONGatewayLogin
-        isOpen={showLoginDialog}
-        onSuccess={handleLoginSuccess}
-      />
+      {shouldRenderContent && (
+        <>
+          <GPONGatewayLogin
+            isOpen={showLoginDialog}
+            onSuccess={handleLoginSuccess}
+          />
 
-      <Dialog open={open && isLoggedIn} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-4xl w-full h-[80vh] p-0 overflow-hidden">
-          <div className="flex h-full flex-col">
-            <DialogHeader className="p-6 border-b bg-primary text-primary-foreground">
-              <div className="flex justify-between items-center">
-                <div>
-                  <DialogTitle className="text-2xl font-bold">Router Admin Interface</DialogTitle>
-                  <DialogDescription className="text-primary-foreground/80">
-                    {gatewayIp} • Default Router
-                  </DialogDescription>
+          <Dialog open={open && isLoggedIn} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className="max-w-4xl w-full h-[80vh] p-0 overflow-hidden">
+              <div className="flex h-full flex-col">
+                <DialogHeader className="p-6 border-b bg-primary text-primary-foreground">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <DialogTitle className="text-2xl font-bold">Router Admin Interface</DialogTitle>
+                      <DialogDescription className="text-primary-foreground/80">
+                        {gatewayIp} • Default Router
+                      </DialogDescription>
+                    </div>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={onClose}
+                      className="h-8"
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-1" />
+                      Return to App
+                    </Button>
+                  </div>
+                </DialogHeader>
+
+                <div className="flex flex-1 overflow-hidden">
+                  <div className="w-64 border-r bg-muted/30 p-4 hidden md:block">
+                    <div className="space-y-1">
+                      <Button
+                        variant={activeTab === 'status' ? "secondary" : "ghost"}
+                        className="w-full justify-start"
+                        onClick={() => setActiveTab('status')}
+                      >
+                        <Globe className="h-4 w-4 mr-2" />
+                        Status
+                      </Button>
+                      <Button
+                        variant={activeTab === 'wifi' ? "secondary" : "ghost"}
+                        className="w-full justify-start"
+                        onClick={() => setActiveTab('wifi')}
+                      >
+                        <Wifi className="h-4 w-4 mr-2" />
+                        WiFi Settings
+                      </Button>
+                      <Button
+                        variant={activeTab === 'security' ? "secondary" : "ghost"}
+                        className="w-full justify-start"
+                        onClick={() => setActiveTab('security')}
+                      >
+                        <Shield className="h-4 w-4 mr-2" />
+                        Security
+                      </Button>
+                      <Button
+                        variant={activeTab === 'advanced' ? "secondary" : "ghost"}
+                        className="w-full justify-start"
+                        onClick={() => setActiveTab('advanced')}
+                      >
+                        <Settings className="h-4 w-4 mr-2" />
+                        Advanced
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 p-6 overflow-y-auto">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                      <TabsList className="mb-4 md:hidden">
+                        <TabsTrigger value="status">Status</TabsTrigger>
+                        <TabsTrigger value="wifi">WiFi</TabsTrigger>
+                        <TabsTrigger value="security">Security</TabsTrigger>
+                        <TabsTrigger value="advanced">Advanced</TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="status" className="space-y-4">
+                        <RouterStatusPanel
+                          gatewayIp={gatewayIp}
+                          loading={loading}
+                          handleRefresh={handleRefresh}
+                        />
+                      </TabsContent>
+
+                      <TabsContent value="wifi" className="space-y-4">
+                        <RouterWifiPanel
+                          wifiEnabled={wifiEnabled}
+                          setWifiEnabled={setWifiEnabled}
+                          wifiName={wifiName}
+                          setWifiName={setWifiName}
+                          password={password}
+                          setPassword={setPassword}
+                          isSaving={isSaving}
+                          handleSaveSettings={handleSaveSettings}
+                        />
+                      </TabsContent>
+
+                      <TabsContent value="security" className="space-y-4">
+                        <RouterSecurityPanel />
+                      </TabsContent>
+
+                      <TabsContent value="advanced" className="space-y-4">
+                        <RouterAdvancedPanel />
+                      </TabsContent>
+                    </Tabs>
+                  </div>
                 </div>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={onClose}
-                  className="h-8"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-1" />
-                  Return to App
-                </Button>
               </div>
-            </DialogHeader>
-
-            <div className="flex flex-1 overflow-hidden">
-              <div className="w-64 border-r bg-muted/30 p-4 hidden md:block">
-                <div className="space-y-1">
-                  <Button
-                    variant={activeTab === 'status' ? "secondary" : "ghost"}
-                    className="w-full justify-start"
-                    onClick={() => setActiveTab('status')}
-                  >
-                    <Globe className="h-4 w-4 mr-2" />
-                    Status
-                  </Button>
-                  <Button
-                    variant={activeTab === 'wifi' ? "secondary" : "ghost"}
-                    className="w-full justify-start"
-                    onClick={() => setActiveTab('wifi')}
-                  >
-                    <Wifi className="h-4 w-4 mr-2" />
-                    WiFi Settings
-                  </Button>
-                  <Button
-                    variant={activeTab === 'security' ? "secondary" : "ghost"}
-                    className="w-full justify-start"
-                    onClick={() => setActiveTab('security')}
-                  >
-                    <Shield className="h-4 w-4 mr-2" />
-                    Security
-                  </Button>
-                  <Button
-                    variant={activeTab === 'advanced' ? "secondary" : "ghost"}
-                    className="w-full justify-start"
-                    onClick={() => setActiveTab('advanced')}
-                  >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Advanced
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex-1 p-6 overflow-y-auto">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="mb-4 md:hidden">
-                    <TabsTrigger value="status">Status</TabsTrigger>
-                    <TabsTrigger value="wifi">WiFi</TabsTrigger>
-                    <TabsTrigger value="security">Security</TabsTrigger>
-                    <TabsTrigger value="advanced">Advanced</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="status" className="space-y-4">
-                    <RouterStatusPanel
-                      gatewayIp={gatewayIp}
-                      loading={loading}
-                      handleRefresh={handleRefresh}
-                    />
-                  </TabsContent>
-
-                  <TabsContent value="wifi" className="space-y-4">
-                    <RouterWifiPanel
-                      wifiEnabled={wifiEnabled}
-                      setWifiEnabled={setWifiEnabled}
-                      wifiName={wifiName}
-                      setWifiName={setWifiName}
-                      password={password}
-                      setPassword={setPassword}
-                      isSaving={isSaving}
-                      handleSaveSettings={handleSaveSettings}
-                    />
-                  </TabsContent>
-
-                  <TabsContent value="security" className="space-y-4">
-                    <RouterSecurityPanel />
-                  </TabsContent>
-
-                  <TabsContent value="advanced" className="space-y-4">
-                    <RouterAdvancedPanel />
-                  </TabsContent>
-                </Tabs>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
     </>
   );
 };
