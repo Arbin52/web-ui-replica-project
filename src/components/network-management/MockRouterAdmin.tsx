@@ -23,7 +23,7 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
   gatewayIp,
   isRealNetwork = false
 }) => {
-  // Define ALL hooks at the top level - never conditionally
+  // All hooks must be declared at the component level
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('status');
   const [wifiEnabled, setWifiEnabled] = useState(true);
@@ -34,9 +34,8 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [visibleInUI, setVisibleInUI] = useState(false);
   
-  // Effect to open gateway in new tab if using real network
+  // Effect to open gateway in new tab if using real network or show in UI
   useEffect(() => {
-    // Handle real network case separately
     if (isRealNetwork && open) {
       window.open(`http://${gatewayIp}`, '_blank');
       onClose();
@@ -46,37 +45,36 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
     // For mock network, update visibility based on open state
     setVisibleInUI(open);
   }, [isRealNetwork, open, gatewayIp, onClose]);
-
+  
   // Effect to manage login dialog visibility
   useEffect(() => {
-    // Only show login dialog if the component is visible, we're not logged in, and not using a real network
     if (open && !isLoggedIn && !isRealNetwork) {
       setShowLoginDialog(true);
     } else {
       setShowLoginDialog(false);
     }
   }, [open, isLoggedIn, isRealNetwork]);
-
+  
   const handleRefresh = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
     }, 1500);
   };
-
+  
   const handleSaveSettings = () => {
     setIsSaving(true);
     setTimeout(() => {
       setIsSaving(false);
     }, 2000);
   };
-
+  
   const handleLoginSuccess = () => {
     setIsLoggedIn(true);
     setShowLoginDialog(false);
   };
-
-  // Render the login dialog component - always returns a component or null
+  
+  // Always return a component or null - never return early
   const renderLoginDialog = () => {
     if (visibleInUI && showLoginDialog) {
       return (
@@ -88,8 +86,8 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
     }
     return null;
   };
-
-  // Render the router admin dialog component - always returns a component or null
+  
+  // Always return a component or null - never return early
   const renderRouterAdmin = () => {
     if (visibleInUI && isLoggedIn) {
       return (
@@ -202,7 +200,8 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
     return null;
   };
 
-  // Always return a JSX element or null - no early returns with conditional rendering
+  // Final return with no conditionals that would cause early returns
+  // All render logic is moved to helper functions that always return a value
   return (
     <>
       {renderLoginDialog()}
