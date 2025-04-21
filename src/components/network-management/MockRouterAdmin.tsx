@@ -23,6 +23,7 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
   gatewayIp,
   isRealNetwork = false
 }) => {
+  // Define ALL hooks at the top level - never conditionally
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('status');
   const [wifiEnabled, setWifiEnabled] = useState(true);
@@ -32,6 +33,7 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
+  // Effect to open gateway in new tab if using real network
   useEffect(() => {
     if (isRealNetwork && open) {
       window.open(`http://${gatewayIp}`, '_blank');
@@ -39,6 +41,7 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
     }
   }, [isRealNetwork, open, gatewayIp, onClose]);
 
+  // Effect to manage login dialog visibility
   useEffect(() => {
     if (open && !isLoggedIn && !isRealNetwork) {
       setShowLoginDialog(true);
@@ -66,6 +69,7 @@ const MockRouterAdmin: React.FC<MockRouterAdminProps> = ({
     setShowLoginDialog(false);
   };
 
+  // Early return that does not interrupt hooks
   if (isRealNetwork) {
     return null;
   }
