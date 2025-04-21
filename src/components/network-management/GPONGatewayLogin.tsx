@@ -17,8 +17,6 @@ export const GPONGatewayLogin: React.FC<GPONGatewayLoginProps> = ({
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  if (!isOpen) return null;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -39,7 +37,8 @@ export const GPONGatewayLogin: React.FC<GPONGatewayLoginProps> = ({
     setError(null);
   };
 
-  return (
+  // Instead of early return, render conditionally
+  return isOpen ? (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-10"
       aria-modal="true"
@@ -165,5 +164,5 @@ export const GPONGatewayLogin: React.FC<GPONGatewayLoginProps> = ({
         </form>
       </div>
     </div>
-  );
+  ) : null; // Return null when not open
 };
