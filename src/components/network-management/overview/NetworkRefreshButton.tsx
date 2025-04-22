@@ -1,0 +1,28 @@
+
+import React from 'react';
+import { Button } from "@/components/ui/button";
+import { Signal } from 'lucide-react';
+
+interface NetworkRefreshButtonProps {
+  isRefreshing: boolean;
+  handleRefresh: () => void;
+}
+
+export const NetworkRefreshButton: React.FC<NetworkRefreshButtonProps> = ({
+  isRefreshing,
+  handleRefresh
+}) => {
+  return (
+    <Button 
+      variant="outline" 
+      onClick={handleRefresh}
+      className="w-full mt-2 hover:bg-primary/5"
+      disabled={isRefreshing}
+    >
+      <div className="flex items-center">
+        <Signal className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+        {isRefreshing ? 'Refreshing...' : 'Refresh Network Data'}
+      </div>
+    </Button>
+  );
+};

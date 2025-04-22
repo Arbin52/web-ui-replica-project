@@ -5,9 +5,8 @@ import { NetworkDeviceTabs } from '../overview/NetworkDeviceTabs';
 import { UpdateFrequencyControl } from './UpdateFrequencyControl';
 import { NetworkStatusCards } from '../overview/NetworkStatusCards';
 import { NetworkStatus } from '@/hooks/network/types';
-import { Button } from "@/components/ui/button";
-import { Signal } from 'lucide-react';
-import MockRouterAdmin from './MockRouterAdmin';
+import { NetworkRefreshButton } from './overview/NetworkRefreshButton';
+import { RouterDialog } from './overview/RouterDialog';
 
 interface NetworkOverviewProps {
   networkStatus: NetworkStatus | null;
@@ -58,26 +57,16 @@ export const NetworkOverview: React.FC<NetworkOverviewProps> = ({
         handleGatewayClick={handleGatewayClickLocal} 
       />
       
-      <Button 
-        variant="outline" 
-        onClick={handleRefresh}
-        className="w-full mt-2 hover:bg-primary/5"
-        disabled={isRefreshing}
-      >
-        <div className="flex items-center">
-          <Signal className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          {isRefreshing ? 'Refreshing...' : 'Refresh Network Data'}
-        </div>
-      </Button>
+      <NetworkRefreshButton 
+        isRefreshing={isRefreshing}
+        handleRefresh={handleRefresh}
+      />
       
-      {isMockRouterOpen && (
-        <MockRouterAdmin
-          open={isMockRouterOpen}
-          onClose={() => setIsMockRouterOpen(false)}
-          gatewayIp={networkStatus?.gatewayIp || '192.168.1.1'}
-          isRealNetwork={false}
-        />
-      )}
+      <RouterDialog
+        isOpen={isMockRouterOpen}
+        onClose={() => setIsMockRouterOpen(false)}
+        gatewayIp={networkStatus?.gatewayIp || '192.168.1.1'}
+      />
     </div>
   );
 };
