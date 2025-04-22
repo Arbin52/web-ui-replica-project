@@ -43,11 +43,6 @@ const Overview: React.FC = () => {
     }
   }, [refreshNetworkStatus]);
 
-  // Use error boundary pattern
-  if (error) {
-    return <ErrorState error={error} handleRefresh={handleRefresh} />;
-  }
-
   // Memoize content sections to prevent unnecessary re-renders
   const headerSection = useMemo(() => (
     <PageHeader 
@@ -92,6 +87,11 @@ const Overview: React.FC = () => {
   const footerSection = useMemo(() => (
     <NetworkStatusFooter networkStatus={networkStatus} isLiveUpdating={isLiveUpdating} />
   ), [networkStatus, isLiveUpdating]);
+
+  // IMPORTANT: Move the error check AFTER all hooks have been defined
+  if (error) {
+    return <ErrorState error={error} handleRefresh={handleRefresh} />;
+  }
 
   return (
     <div className="content-card animate-fade-in">

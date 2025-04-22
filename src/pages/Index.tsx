@@ -44,7 +44,9 @@ const Index = () => {
     return (
       <ComponentErrorBoundary 
         fallbackMessage={`There was an error loading the ${activeTab} section`}
-        onReset={() => console.log(`Attempting to recover ${activeTab} section`)}
+        onReset={() => {
+          console.log(`Attempting to recover ${activeTab} section`);
+        }}
       >
         <Suspense fallback={
           <div className="flex items-center justify-center h-64">
