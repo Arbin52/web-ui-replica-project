@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { RefreshCw, Signal, Database, Shield, Wifi, Router } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { NetworkStatusCards } from '../overview/NetworkStatusCards';
@@ -40,10 +41,10 @@ export const NetworkOverview: React.FC<NetworkOverviewProps> = ({
   const uploadAnimFrameRef = useRef<number | null>(null);
   
   // Always show mock router in this environment
-  const handleGatewayClickLocal = () => {
+  const handleGatewayClickLocal = useCallback(() => {
     // Show mock router interface
     setIsMockRouterOpen(true);
-  };
+  }, []);
   
   // Effect to smoothly transition download speed using requestAnimationFrame
   useEffect(() => {
@@ -121,6 +122,10 @@ export const NetworkOverview: React.FC<NetworkOverviewProps> = ({
     };
   }, [networkStatus?.connectionSpeed.upload]);
 
+  // Safely render content even when network status is null
+  const safeDisplayDownload = displayDownload ? displayDownload.toFixed(1) : "0.0";
+  const safeDisplayUpload = displayUpload ? displayUpload.toFixed(1) : "0.0";
+
   return (
     <div className="space-y-6">
       {/* Current Network Status */}
@@ -146,7 +151,7 @@ export const NetworkOverview: React.FC<NetworkOverviewProps> = ({
               {networkStatus?.isOnline && (
                 <Button variant="outline" className="gap-1" onClick={handleGatewayClickLocal}>
                   <Router size={16} />
-                  <span>Gateway: {networkStatus?.gatewayIp}</span>
+                  <span>Gateway: {networkStatus?.gatewayIp || '192.168.1.1'}</span>
                 </Button>
               )}
             </div>
@@ -163,7 +168,7 @@ export const NetworkOverview: React.FC<NetworkOverviewProps> = ({
             />
             <DashboardCard 
               title="Download"
-              value={`${displayDownload.toFixed(1)} Mbps`}
+              value={`${safeDisplayDownload} Mbps`}
               icon={<Database size={18} />}
               description="Current download speed"
               isLoading={isLoading}
@@ -171,7 +176,7 @@ export const NetworkOverview: React.FC<NetworkOverviewProps> = ({
             />
             <DashboardCard 
               title="Upload"
-              value={`${displayUpload.toFixed(1)} Mbps`}
+              value={`${safeDisplayUpload} Mbps`}
               icon={<Database size={18} />}
               description="Current upload speed"
               isLoading={isLoading}
