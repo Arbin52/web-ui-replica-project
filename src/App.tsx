@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import NotFound from "./pages/NotFound";
+import { ComponentErrorBoundary } from "@/components/ui/component-error-boundary";
 
 // Lazy load components to improve initial loading performance
 const Index = lazy(() => import("./pages/Index"));
@@ -23,22 +24,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-// Error boundary fallback
-const ErrorFallback = () => {
-  return (
-    <div className="flex h-screen items-center justify-center flex-col gap-4">
-      <h2 className="text-2xl font-semibold">Something went wrong</h2>
-      <p className="text-muted-foreground">There was an error loading this page</p>
-      <button 
-        onClick={() => window.location.reload()}
-        className="px-4 py-2 bg-primary text-primary-foreground rounded-md"
-      >
-        Try again
-      </button>
-    </div>
-  );
-};
 
 // Loading state
 const LoadingFallback = () => (
@@ -61,7 +46,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   return (
     <Suspense fallback={<LoadingFallback />}>
-      {children}
+      <ComponentErrorBoundary>
+        {children}
+      </ComponentErrorBoundary>
     </Suspense>
   );
 };

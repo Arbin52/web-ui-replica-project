@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
@@ -11,6 +11,7 @@ import Ping from '../components/Ping';
 import Traceroute from '../components/Traceroute';
 import WifiAnalysis from '../components/WifiAnalysis';
 import WifiManager from '../components/wifi/WifiManager';
+import { ComponentErrorBoundary } from '@/components/ui/component-error-boundary';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -38,27 +39,43 @@ const Index = () => {
     document.title = `Network Monitor | ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`;
   }, [activeTab]);
 
+  // Safe content renderer with error boundary
   const renderContent = () => {
-    switch (activeTab) {
-      case 'overview':
-        return <Overview />;
-      case 'security':
-        return <Security />;
-      case 'reports':
-        return <Reports />;
-      case 'speed':
-        return <Speed />;
-      case 'ping':
-        return <Ping />;
-      case 'traceroute':
-        return <Traceroute />;
-      case 'wifi-analysis':
-        return <WifiAnalysis />;
-      case 'wifi':
-        return <WifiManager />;
-      default:
-        return <Overview />;
-    }
+    return (
+      <ComponentErrorBoundary 
+        fallbackMessage={`There was an error loading the ${activeTab} section`}
+        onReset={() => console.log(`Attempting to recover ${activeTab} section`)}
+      >
+        <Suspense fallback={
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+          </div>
+        }>
+          {(() => {
+            switch (activeTab) {
+              case 'overview':
+                return <Overview />;
+              case 'security':
+                return <Security />;
+              case 'reports':
+                return <Reports />;
+              case 'speed':
+                return <Speed />;
+              case 'ping':
+                return <Ping />;
+              case 'traceroute':
+                return <Traceroute />;
+              case 'wifi-analysis':
+                return <WifiAnalysis />;
+              case 'wifi':
+                return <WifiManager />;
+              default:
+                return <Overview />;
+            }
+          })()}
+        </Suspense>
+      </ComponentErrorBoundary>
+    );
   };
 
   // Determine animation direction based on sidebar order
