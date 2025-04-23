@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NetworkStatusSection } from './sections/NetworkStatusSection';
 import { NetworkDeviceTabs } from '../overview/NetworkDeviceTabs';
 import { UpdateFrequencyControl } from './UpdateFrequencyControl';
@@ -7,6 +7,9 @@ import { NetworkStatusCards } from '../overview/NetworkStatusCards';
 import { NetworkStatus } from '@/hooks/network/types';
 import { NetworkRefreshButton } from './overview/NetworkRefreshButton';
 import { RouterDialog } from './overview/RouterDialog';
+import { toast } from 'sonner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 interface NetworkOverviewProps {
   networkStatus: NetworkStatus | null;
@@ -28,13 +31,41 @@ export const NetworkOverview: React.FC<NetworkOverviewProps> = ({
   setRefreshRate
 }) => {
   const [isMockRouterOpen, setIsMockRouterOpen] = useState(false);
+  const [errorShown, setErrorShown] = useState(false);
+  
+  // Reset error shown state when networkStatus changes
+  useEffect(() => {
+    if (networkStatus) {
+      setErrorShown(false);
+    }
+  }, [networkStatus]);
 
   const handleGatewayClickLocal = () => {
     setIsMockRouterOpen(true);
   };
+  
+  const handleRetry = () => {
+    toast.info("Retrying network connection...");
+    setErrorShown(true);
+    handleRefresh();
+  };
 
   return (
     <div className="space-y-6">
+      {!networkStatus && !isLoading && !errorShown && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>Failed to fetch network status. Please try again.</span>
+            <NetworkRefreshButton 
+              isRefreshing={isRefreshing}
+              handleRefresh={handleRetry}
+              label="Try Again"
+            />
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <NetworkStatusSection 
         networkStatus={networkStatus}
         isLoading={isLoading}
