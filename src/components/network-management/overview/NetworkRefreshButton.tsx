@@ -6,11 +6,13 @@ import { Signal } from 'lucide-react';
 interface NetworkRefreshButtonProps {
   isRefreshing: boolean;
   handleRefresh: () => void;
+  label?: string; // Added optional label prop
 }
 
 export const NetworkRefreshButton: React.FC<NetworkRefreshButtonProps> = ({
   isRefreshing,
-  handleRefresh
+  handleRefresh,
+  label
 }) => {
   return (
     <Button 
@@ -21,7 +23,7 @@ export const NetworkRefreshButton: React.FC<NetworkRefreshButtonProps> = ({
     >
       <div className="flex items-center">
         <Signal className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-        {isRefreshing ? 'Refreshing...' : 'Refresh Network Data'}
+        {isRefreshing ? 'Refreshing...' : label || 'Refresh Network Data'}
       </div>
     </Button>
   );
