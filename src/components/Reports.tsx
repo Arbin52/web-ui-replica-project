@@ -33,17 +33,42 @@ const Reports: React.FC = () => {
     { id: 6, name: 'Intrusion Detection Logs', date: '2023-04-05', size: '320 KB', type: 'Security' },
   ];
 
+  const generateReportContent = (report: typeof reports[0], format: 'pdf' | 'csv') => {
+    // This is a simple example - in a real app, you'd format the data properly
+    const content = `
+Report: ${report.name}
+Date: ${report.date}
+Type: ${report.type}
+Size: ${report.size}
+    `;
+
+    if (format === 'csv') {
+      return `Name,Date,Type,Size\n${report.name},${report.date},${report.type},${report.size}`;
+    }
+    return content;
+  };
+
   const handleDownload = (reportId: number, format: 'pdf' | 'csv') => {
     const report = reports.find(r => r.id === reportId);
     if (!report) return;
+    
+    const content = generateReportContent(report, format);
+    const blob = new Blob([content], { 
+      type: format === 'pdf' ? 'application/pdf' : 'text/csv' 
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${report.name}.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
     
     toast({
       title: "Download started",
       description: `Downloading ${report.name} in ${format.toUpperCase()} format`,
     });
-    
-    // This would be replaced with actual download logic in a real application
-    console.log(`Downloading report ${reportId} in ${format} format`);
   };
 
   const handleGenerateReport = () => {
