@@ -1,9 +1,12 @@
 
 import React, { useState } from "react";
+import { X } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 
 interface GPONGatewayLoginProps {
   isOpen: boolean;
   onSuccess: () => void;
+  onClose: () => void; // Added onClose prop
 }
 
 const BACKGROUND_COLOR = "#61929B";
@@ -12,6 +15,7 @@ const BORDER_RADIUS = "3px";
 export const GPONGatewayLogin: React.FC<GPONGatewayLoginProps> = ({
   isOpen,
   onSuccess,
+  onClose, // Added onClose parameter
 }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -45,7 +49,7 @@ export const GPONGatewayLogin: React.FC<GPONGatewayLoginProps> = ({
       role="dialog"
     >
       <div
-        className="flex flex-col items-center min-w-[360px]"
+        className="flex flex-col items-center min-w-[360px] relative" // Added relative positioning
         style={{
           background: BACKGROUND_COLOR,
           borderRadius: BORDER_RADIUS,
@@ -53,6 +57,15 @@ export const GPONGatewayLogin: React.FC<GPONGatewayLoginProps> = ({
           padding: "0",
         }}
       >
+        {/* Close button positioned absolutely */}
+        <button 
+          onClick={onClose}
+          className="absolute top-2 right-2 p-1 hover:bg-red-100 rounded-full z-10"
+          aria-label="Close"
+        >
+          <X size={20} className="text-white" />
+        </button>
+
         <div
           className="w-full py-2 font-bold text-center text-lg text-white"
           style={{
@@ -164,5 +177,5 @@ export const GPONGatewayLogin: React.FC<GPONGatewayLoginProps> = ({
         </form>
       </div>
     </div>
-  ) : null; // Return null when not open
+  ) : null;
 };
