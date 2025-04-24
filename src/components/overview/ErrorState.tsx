@@ -28,8 +28,9 @@ export const ErrorState: React.FC<ErrorStateProps> = ({ error, handleRefresh }) 
             <p>To use real-time network data, start the local scanner service:</p>
             <div className="bg-gray-800 text-green-400 p-3 rounded-md font-mono text-sm overflow-x-auto">
               <p className="mb-1"><Terminal size={14} className="inline mr-2" />cd local-scanner</p>
-              <p className="mb-1"><Terminal size={14} className="inline mr-2" />node setup-scanner.js</p>
-              <p><Terminal size={14} className="inline mr-2" />npm start</p>
+              <p className="mb-1"><Terminal size={14} className="inline mr-2" />node setup.js</p>
+              <p className="mb-1"><Terminal size={14} className="inline mr-2" />npm start</p>
+              <p className="mb-1 text-yellow-300"><Terminal size={14} className="inline mr-2" />If you get errors with TypeScript, try: node index.js</p>
             </div>
             <p>Don't worry! The application will automatically use simulated data for now.</p>
             <Button 
