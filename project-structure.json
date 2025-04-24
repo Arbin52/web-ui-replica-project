@@ -1,0 +1,108 @@
+
+{
+  "name": "wifi-security-auditing",
+  "type": "folder",
+  "children": [
+    {
+      "name": "src",
+      "type": "folder",
+      "description": "Main application source code",
+      "children": [
+        {
+          "name": "components",
+          "type": "folder",
+          "description": "React components"
+        },
+        {
+          "name": "hooks",
+          "type": "folder",
+          "description": "React custom hooks"
+        },
+        {
+          "name": "services",
+          "type": "folder",
+          "description": "API and service functions"
+        },
+        {
+          "name": "contexts",
+          "type": "folder",
+          "description": "React context providers"
+        },
+        {
+          "name": "pages",
+          "type": "folder",
+          "description": "Main application pages"
+        }
+      ]
+    },
+    {
+      "name": "local-scanner",
+      "type": "folder",
+      "description": "Network scanner service",
+      "children": [
+        {
+          "name": "setup.js",
+          "type": "file",
+          "description": "Scanner setup script"
+        },
+        {
+          "name": "index.ts",
+          "type": "file",
+          "description": "Main scanner TypeScript file"
+        },
+        {
+          "name": "index.js",
+          "type": "file",
+          "description": "JavaScript fallback scanner"
+        },
+        {
+          "name": "python",
+          "type": "folder",
+          "description": "Python scanner scripts (optional)"
+        }
+      ]
+    },
+    {
+      "name": "guides",
+      "type": "folder",
+      "description": "Application documentation",
+      "children": [
+        {
+          "name": "index.md",
+          "type": "file",
+          "description": "Guide overview"
+        },
+        {
+          "name": "quick-start.md",
+          "type": "file",
+          "description": "Quick start guide"
+        },
+        {
+          "name": "scanner-setup.md",
+          "type": "file",
+          "description": "Network scanner setup guide"
+        },
+        {
+          "name": "app-functionality.md",
+          "type": "file",
+          "description": "App features guide"
+        },
+        {
+          "name": "connecting-real-scanner.md",
+          "type": "file",
+          "description": "Real-time data connection guide"
+        }
+      ]
+    },
+    {
+      "name": "STEP-BY-STEP.md",
+      "type": "file",
+      "description": "Complete setup instructions"
+    },
+    {
+      "name": ".env",
+      "type": "file",
+      "description": "Environment configuration"
+    }
+  ]
+}
