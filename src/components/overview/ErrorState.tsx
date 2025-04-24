@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Info, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Info, RefreshCw, AlertTriangle, Terminal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -25,7 +25,13 @@ export const ErrorState: React.FC<ErrorStateProps> = ({ error, handleRefresh }) 
           <AlertTriangle className="h-5 w-5 text-amber-500 mb-2" />
           <AlertDescription className="space-y-4">
             <p className="font-medium">Network scanner is not available.</p>
-            <p>Don't worry! The application will automatically use simulated data in a moment.</p>
+            <p>To use real-time network data, start the local scanner service:</p>
+            <div className="bg-gray-800 text-green-400 p-3 rounded-md font-mono text-sm overflow-x-auto">
+              <p className="mb-1"><Terminal size={14} className="inline mr-2" />cd local-scanner</p>
+              <p className="mb-1"><Terminal size={14} className="inline mr-2" />node setup-scanner.js</p>
+              <p><Terminal size={14} className="inline mr-2" />npm start</p>
+            </div>
+            <p>Don't worry! The application will automatically use simulated data for now.</p>
             <Button 
               onClick={handleRefresh} 
               className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2"
