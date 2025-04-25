@@ -9,6 +9,8 @@ import { NetworkStatus } from './types';
 let previousDownloadSpeed = 0;
 let previousUploadSpeed = 0;
 let previousLatency = 0;
+let previousDataDownload = 1500;
+let previousDataUpload = 500;
 
 // Adding more global variables to track long-term average values
 // This helps create more stable numbers that don't fluctuate wildly
@@ -61,19 +63,28 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   console.log("Connected devices:", connectedDevices.length);
   
   // Generate more dynamic speed values based on connection type
-  let baseDownloadSpeed = effectiveType === '4g' ? 100 : 
+  let baseDownloadSpeed;
+  if (previousStatus && previousStatus.connectionSpeed) {
+    // Use previous speeds as base to create smoother transitions
+    baseDownloadSpeed = previousStatus.connectionSpeed.download;
+  } else {
+    baseDownloadSpeed = effectiveType === '4g' ? 100 : 
                          effectiveType === '3g' ? 50 : 
                          effectiveType === '2g' ? 20 : 75;
-                         
+  }
+  
   let baseUploadSpeed = baseDownloadSpeed * 0.3;
   
-  // Add some random variation to make it look live
-  const variation = 0.2; // 20% variation
+  // Add very small random variation to make it look live but not jump wildly
+  const variation = 0.05; // 5% variation (reduced from 20%)
   const randomFactor = 1 + (Math.random() * variation * 2 - variation);
   
   let downloadSpeed = Math.round(baseDownloadSpeed * randomFactor * 10) / 10;
   let uploadSpeed = Math.round(baseUploadSpeed * randomFactor * 10) / 10;
-  let latency = Math.round((Math.random() * 10 + 5) * 10) / 10;
+  let latency = Math.round((previousStatus?.connectionSpeed.latency || 15) + (Math.random() * 2 - 1) * 10) / 10;
+  
+  // Ensure latency is always positive
+  if (latency < 1) latency = 1;
   
   // Use moving average for smoother transitions if we have previous values
   if (previousStatus) {
@@ -92,25 +103,67 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   if (uploadSpeedHistory.length > 5) uploadSpeedHistory.shift();
   if (latencyHistory.length > 5) latencyHistory.shift();
   
-  // Try to get the actual network name from various sources
-  const networkName = realNetworkInfo.networkName || 
-                     localStorage.getItem('user_provided_network_name') ||
-                     localStorage.getItem('current_browser_network') ||
-                     'Unknown Network';
+  // Try to get the actual network name from various sources including browser info
+  const activeNetworkName = (() => {
+    // Try to get the network SSID from browser or OS info
+    try {
+      // Use real detected network name first
+      const detectedName = realNetworkInfo.networkName;
+      
+      // If we have a real network name from the user's device, use it
+      if (detectedName && 
+          detectedName !== "Unknown Network" && 
+          detectedName !== "Connected Network") {
+        return detectedName;
+      }
+      
+      // Try to get network name from browser
+      if (window && window.navigator) {
+        // Try connection info (Chrome/Android)
+        if ((navigator as any).connection?.name) {
+          return (navigator as any).connection.name;
+        }
+        
+        // For some browsers/OS, detect Wi-Fi vs cellular
+        if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) {
+          return 'iOS Device Network';
+        }
+        
+        if (navigator.userAgent.includes('Android')) {
+          return 'Android Device Network';
+        }
+      }
+      
+      // Use any stored values
+      return localStorage.getItem('user_provided_network_name') ||
+             localStorage.getItem('current_browser_network') ||
+             (navigator.onLine ? 'Your Network' : 'Not Connected');
+    } catch (e) {
+      console.error('Error detecting network name:', e);
+      return navigator.onLine ? 'Your Network' : 'Not Connected';
+    }
+  })();
                      
   // Generate more realistic data usage values that increase over time
-  const lastUpdateTime = previousStatus?.lastUpdated || new Date();
+  const lastUpdateTime = previousStatus?.lastUpdated || new Date(Date.now() - 3000);
   const timeDiff = (new Date().getTime() - lastUpdateTime.getTime()) / 1000; // in seconds
   
-  const baseDownloadData = previousStatus?.dataUsage?.download || 1500;
-  const baseUploadData = previousStatus?.dataUsage?.upload || 500;
+  // Start with previous values or defaults
+  const baseDownloadData = previousStatus?.dataUsage?.download || previousDataDownload;
+  const baseUploadData = previousStatus?.dataUsage?.upload || previousDataUpload;
   
-  // Simulate data usage increase based on time passed
-  const downloadIncrease = (Math.random() * 50 + 10) * timeDiff;
-  const uploadIncrease = (Math.random() * 20 + 5) * timeDiff;
+  // Simulate data usage increase based on time passed and current speed
+  // This creates a realistic correlation between speed and data usage
+  const downloadIncrease = (downloadSpeed / 8) * timeDiff; // Convert Mbps to MB/s
+  const uploadIncrease = (uploadSpeed / 8) * timeDiff; // Convert Mbps to MB/s
   
-  const downloadData = Math.round(baseDownloadData + downloadIncrease);
-  const uploadData = Math.round(baseUploadData + uploadIncrease);
+  // Round to 2 decimal places for display
+  const downloadData = Math.round((baseDownloadData + downloadIncrease) * 100) / 100;
+  const uploadData = Math.round((baseUploadData + uploadIncrease) * 100) / 100;
+
+  // Store current values for next refresh
+  previousDataDownload = downloadData;
+  previousDataUpload = uploadData;
 
   // Get connection history and available networks
   const connectionHistory = realNetworkInfo.connectionHistory || getConnectionHistory();
@@ -126,7 +179,7 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   const macAddress = realNetworkInfo.macAddress || '00:1B:44:11:3A:B7';
   
   return {
-    networkName,
+    networkName: activeNetworkName,
     localIp,
     publicIp,
     gatewayIp,

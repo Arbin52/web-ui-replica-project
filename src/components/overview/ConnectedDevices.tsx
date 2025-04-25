@@ -37,14 +37,21 @@ const DeviceItem = memo(({ device, isOnline }: { device: ConnectedDevice, isOnli
     }
   };
 
+  // Highlight if this is the current device
+  const isCurrentDevice = device.name.includes('This Device') || 
+                         (device.ip === '192.168.1.2' && device.id === 1);
+
   return (
-    <div className="flex items-center justify-between p-3 rounded-md bg-background hover:bg-muted/50 transition-colors border border-muted">
+    <div className={`flex items-center justify-between p-3 rounded-md hover:bg-muted/50 transition-colors border ${isCurrentDevice ? 'bg-primary/5 border-primary/20' : 'bg-background border-muted'}`}>
       <div className="flex items-center space-x-3">
-        <div className="p-2 bg-primary/10 rounded-full text-primary">
+        <div className={`p-2 rounded-full ${isCurrentDevice ? 'bg-primary/20 text-primary' : 'bg-primary/10 text-primary'}`}>
           {getDeviceIcon()}
         </div>
         <div>
-          <div className="font-medium">{device.name}</div>
+          <div className="font-medium flex items-center">
+            {device.name}
+            {isCurrentDevice && <span className="ml-1 text-xs text-primary">(This Device)</span>}
+          </div>
           <div className="text-sm text-muted-foreground">{device.ip}</div>
         </div>
       </div>
@@ -62,22 +69,60 @@ export const ConnectedDevices: React.FC<ConnectedDevicesProps> = ({ networkStatu
   const [refreshing, setRefreshing] = useState(false);
   const isOnline = navigator.onLine; // Direct browser API
   
-  // Extremely simplified effect to prevent freezes
+  // Detect user's current device type
+  const getCurrentDeviceType = () => {
+    if (navigator.userAgent.includes('Mobile')) return 'Smartphone';
+    if (navigator.userAgent.includes('iPad')) return 'Tablet';
+    if (navigator.userAgent.includes('Mac')) return 'Laptop';
+    if (navigator.userAgent.includes('Windows')) return 'Computer';
+    return 'Computer';
+  };
+
+  // Create current device object
+  const getCurrentDeviceObj = useCallback((): ConnectedDevice => {
+    return {
+      id: 1, // Use ID 1 to always put current device first
+      name: "This Device", 
+      ip: networkStatus?.localIp || '192.168.1.2',
+      mac: networkStatus?.macAddress || '00:1B:44:11:3A:B7',
+      type: getCurrentDeviceType() as 'Wired' | 'Wireless',
+      status: 'Online',
+      lastSeen: new Date()
+    };
+  }, [networkStatus?.localIp, networkStatus?.macAddress]);
+  
+  // Load devices from storage and ensure current device is included
   React.useEffect(() => {
-    // Get devices from local storage/memory - no API calls
-    const localDevices = getConnectedDeviceStatus();
-    setDevices(localDevices);
-  }, [networkStatus?.isOnline]); // Only update when online status changes
+    const loadDevices = () => {
+      // Get devices from local storage/memory
+      const localDevices = getConnectedDeviceStatus();
+      
+      // Always ensure current device is in the list and at the top
+      const currentDevice = getCurrentDeviceObj();
+      
+      // Remove any device with id 1 to avoid duplicates
+      const filteredDevices = localDevices.filter(d => d.id !== 1);
+      
+      // Add current device at the beginning
+      setDevices([currentDevice, ...filteredDevices]);
+    };
+    
+    loadDevices();
+  }, [networkStatus, getCurrentDeviceObj]);
 
   // Simple refresh handler
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
     // Use setTimeout to prevent UI blocking
     setTimeout(() => {
-      setDevices(getConnectedDeviceStatus());
+      // Get devices but make sure our current device is still there
+      const localDevices = getConnectedDeviceStatus();
+      const currentDevice = getCurrentDeviceObj();
+      const filteredDevices = localDevices.filter(d => d.id !== 1);
+      setDevices([currentDevice, ...filteredDevices]);
       setRefreshing(false);
     }, 100);
-  }, []);
+  }, [getCurrentDeviceObj]);
 
   // Simple loading state
   if (isLoading || refreshing) {

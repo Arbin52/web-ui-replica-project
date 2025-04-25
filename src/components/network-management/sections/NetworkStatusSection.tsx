@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Signal, Database, Shield, Wifi, Router } from 'lucide-react';
+import { Signal, Database, Shield, Wifi, Router, Laptop } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DashboardCard } from '@/components/ui/dashboard-card';
 import { NetworkStatus } from '@/hooks/network/types';
@@ -24,9 +24,19 @@ export const NetworkStatusSection: React.FC<NetworkStatusSectionProps> = ({
     parseFloat(networkStatus.connectionSpeed.upload.toFixed(1)) : 0;
 
   // Format the network name display
-  const networkDisplay = networkStatus?.networkName && networkStatus.networkName !== 'Unknown Network' 
-    ? networkStatus.networkName 
-    : 'Not Connected';
+  const networkName = networkStatus?.networkName || 'Unknown Network';
+  const networkDisplay = networkStatus?.isOnline ? networkName : 'Not Connected';
+  
+  // Get device info for display
+  const deviceName = (() => {
+    // Try to detect the device type/name
+    if (navigator.userAgent.includes('Windows')) return 'Windows PC';
+    if (navigator.userAgent.includes('Mac')) return 'Mac';
+    if (navigator.userAgent.includes('iPhone')) return 'iPhone';
+    if (navigator.userAgent.includes('iPad')) return 'iPad';
+    if (navigator.userAgent.includes('Android')) return 'Android Device';
+    return 'This Device';
+  })();
 
   return (
     <Card className="overflow-hidden border-l-4 border-l-primary shadow-sm">
@@ -45,10 +55,11 @@ export const NetworkStatusSection: React.FC<NetworkStatusSectionProps> = ({
                   `Connected via ${networkStatus?.networkType || 'WiFi'}` : 
                   "No active connection"}
               </p>
-              {networkStatus?.networkType && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Connection type: {networkStatus.networkType}
-                </p>
+              {networkStatus?.isOnline && (
+                <div className="text-xs text-muted-foreground mt-1 flex items-center">
+                  <Laptop size={12} className="mr-1" />
+                  <span>{deviceName} connected to this network</span>
+                </div>
               )}
             </div>
           </div>
@@ -85,7 +96,7 @@ export const NetworkStatusSection: React.FC<NetworkStatusSectionProps> = ({
           />
           <DashboardCard 
             title="Security"
-            value={networkStatus?.availableNetworks?.find(n => n.ssid === networkStatus.networkName)?.security || "N/A"}
+            value={networkStatus?.availableNetworks?.find(n => n.ssid === networkStatus.networkName)?.security || "WPA2"}
             icon={<Shield size={18} />}
             description="Security protocol"
             isLoading={isLoading}
