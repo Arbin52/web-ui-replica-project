@@ -1,4 +1,3 @@
-
 import { fetchRealNetworkInfo } from './realNetworkInfo';
 import { generateConnectedDevices, getConnectedDeviceStatus } from './connectedDevices';
 import { getAvailableNetworks } from './availableNetworks';
@@ -47,69 +46,73 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   const realNetworkInfo = await fetchRealNetworkInfo();
   console.log("Real network info:", realNetworkInfo);
   
+  // Get actual browser network information if available
+  const connection = (navigator as any).connection;
+  const networkType = connection?.type || 'unknown';
+  const effectiveType = connection?.effectiveType || '4g';
+  
   // CRITICAL: Always trust the browser's online status
   const isCurrentlyOnline = navigator.onLine;
   console.log("Browser reports online status:", isCurrentlyOnline);
   
   // ALWAYS get devices regardless of online status
-  // This ensures we always have devices to show in the UI
   const connectedDevices = getConnectedDeviceStatus();
   console.log("Connected devices:", connectedDevices.length);
   
-  // Smooth the network speed values to prevent rapid changes
-  let downloadSpeed, uploadSpeed, latency;
+  // Generate more dynamic speed values based on connection type
+  let baseDownloadSpeed = effectiveType === '4g' ? 100 : 
+                         effectiveType === '3g' ? 50 : 
+                         effectiveType === '2g' ? 20 : 75;
+                         
+  let baseUploadSpeed = baseDownloadSpeed * 0.3;
   
+  // Add some random variation to make it look live
+  const variation = 0.2; // 20% variation
+  const randomFactor = 1 + (Math.random() * variation * 2 - variation);
+  
+  let downloadSpeed = Math.round(baseDownloadSpeed * randomFactor * 10) / 10;
+  let uploadSpeed = Math.round(baseUploadSpeed * randomFactor * 10) / 10;
+  let latency = Math.round((Math.random() * 10 + 5) * 10) / 10;
+  
+  // Use moving average for smoother transitions if we have previous values
   if (previousStatus) {
-    // Apply advanced smoothing with smaller maximum changes
-    const maxDownloadChange = previousDownloadSpeed * 0.01;
-    const randomDownloadChange = (Math.random() * maxDownloadChange * 2 - maxDownloadChange);
-    const newDownloadValue = previousDownloadSpeed + randomDownloadChange;
-    
-    // Use moving average for super-smooth values
-    downloadSpeed = calculateMovingAverage(downloadSpeedHistory, newDownloadValue);
-    downloadSpeed = Math.round(downloadSpeed * 10) / 10; // Round to 1 decimal place
-    
-    const maxUploadChange = previousUploadSpeed * 0.01;
-    const randomUploadChange = (Math.random() * maxUploadChange * 2 - maxUploadChange);
-    const newUploadValue = previousUploadSpeed + randomUploadChange;
-    
-    uploadSpeed = calculateMovingAverage(uploadSpeedHistory, newUploadValue);
-    uploadSpeed = Math.round(uploadSpeed * 10) / 10; // Round to 1 decimal place
-    
-    const maxLatencyChange = Math.max(0.5, previousLatency * 0.01);
-    const randomLatencyChange = (Math.random() * maxLatencyChange * 2 - maxLatencyChange);
-    const newLatencyValue = previousLatency + randomLatencyChange;
-    
-    latency = calculateMovingAverage(latencyHistory, newLatencyValue);
-    latency = Math.round(latency * 10) / 10; // Round to 1 decimal place
-  } else {
-    // Initial values
-    downloadSpeed = Math.floor(Math.random() * 30) + 90; // Higher speed for 5G network
-    uploadSpeed = Math.floor(Math.random() * 10) + 20; // Higher upload for 5G
-    latency = Math.floor(Math.random() * 10) + 3; // Lower latency for 5G
-    
-    // Initialize histories
-    downloadSpeedHistory = [downloadSpeed];
-    uploadSpeedHistory = [uploadSpeed];
-    latencyHistory = [latency];
+    downloadSpeed = calculateMovingAverage(downloadSpeedHistory, downloadSpeed);
+    uploadSpeed = calculateMovingAverage(uploadSpeedHistory, uploadSpeed);
+    latency = calculateMovingAverage(latencyHistory, latency);
   }
   
-  // Update previous values for next time
-  previousDownloadSpeed = downloadSpeed;
-  previousUploadSpeed = uploadSpeed;
-  previousLatency = latency;
+  // Update histories
+  downloadSpeedHistory.push(downloadSpeed);
+  uploadSpeedHistory.push(uploadSpeed);
+  latencyHistory.push(latency);
   
-  // Data usage simulated values - with stable generation
-  const downloadData = previousStatus?.dataUsage?.download || Math.floor(Math.random() * 500) + 1000;
-  const uploadData = previousStatus?.dataUsage?.upload || Math.floor(Math.random() * 200) + 300;
+  // Maintain maximum history length
+  if (downloadSpeedHistory.length > 5) downloadSpeedHistory.shift();
+  if (uploadSpeedHistory.length > 5) uploadSpeedHistory.shift();
+  if (latencyHistory.length > 5) latencyHistory.shift();
+  
+  // Try to get the actual network name from various sources
+  const networkName = realNetworkInfo.networkName || 
+                     localStorage.getItem('user_provided_network_name') ||
+                     localStorage.getItem('current_browser_network') ||
+                     'Unknown Network';
+                     
+  // Generate more realistic data usage values that increase over time
+  const lastUpdateTime = previousStatus?.lastUpdated || new Date();
+  const timeDiff = (new Date().getTime() - lastUpdateTime.getTime()) / 1000; // in seconds
+  
+  const baseDownloadData = previousStatus?.dataUsage?.download || 1500;
+  const baseUploadData = previousStatus?.dataUsage?.upload || 500;
+  
+  // Simulate data usage increase based on time passed
+  const downloadIncrease = (Math.random() * 50 + 10) * timeDiff;
+  const uploadIncrease = (Math.random() * 20 + 5) * timeDiff;
+  
+  const downloadData = Math.round(baseDownloadData + downloadIncrease);
+  const uploadData = Math.round(baseUploadData + uploadIncrease);
 
-  // Get connection history from storage
+  // Get connection history and available networks
   const connectionHistory = realNetworkInfo.connectionHistory || getConnectionHistory();
-  
-  // Use browser's online status and network name from realNetworkInfo
-  let networkName = realNetworkInfo.networkName;
-  
-  // Generate available networks
   const availableNetworks = getAvailableNetworks();
   
   // Generate realistic signal strength
@@ -117,28 +120,28 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   
   return {
     networkName,
-    localIp: '192.168.1.2',
+    localIp: realNetworkInfo.localIp || '192.168.1.2',
     publicIp: realNetworkInfo.publicIp || '203.0.113.1',
     gatewayIp: realNetworkInfo.gatewayIp || '192.168.1.1',
     signalStrength: signalStrengthDb > -60 ? 'Good' : signalStrengthDb > -70 ? 'Fair' : 'Poor',
     signalStrengthDb: `${signalStrengthDb} dBm`,
-    networkType: realNetworkInfo.networkType || '802.11ac (5GHz)',
-    macAddress: '00:1B:44:11:3A:B7',
+    networkType: realNetworkInfo.networkType || `${networkType} (${effectiveType})`,
+    macAddress: realNetworkInfo.macAddress || '00:1B:44:11:3A:B7',
     dnsServer: '8.8.8.8, 8.8.4.4',
-    connectedDevices: connectedDevices,
+    connectedDevices,
     lastUpdated: new Date(),
-    isOnline: isCurrentlyOnline, // Most important: Use browser's online status
+    isOnline: isCurrentlyOnline,
     connectionSpeed: {
       download: downloadSpeed,
       upload: uploadSpeed,
-      latency: latency
+      latency
     },
     dataUsage: {
       download: downloadData,
       upload: uploadData,
       total: downloadData + uploadData
     },
-    connectionHistory: connectionHistory,
-    availableNetworks: availableNetworks
+    connectionHistory,
+    availableNetworks
   };
 };

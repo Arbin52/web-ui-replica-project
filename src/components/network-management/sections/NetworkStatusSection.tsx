@@ -23,6 +23,11 @@ export const NetworkStatusSection: React.FC<NetworkStatusSectionProps> = ({
   const displayUpload = networkStatus?.connectionSpeed.upload ? 
     parseFloat(networkStatus.connectionSpeed.upload.toFixed(1)) : 0;
 
+  // Format the network name display
+  const networkDisplay = networkStatus?.networkName && networkStatus.networkName !== 'Unknown Network' 
+    ? networkStatus.networkName 
+    : 'Not Connected';
+
   return (
     <Card className="overflow-hidden border-l-4 border-l-primary shadow-sm">
       <CardContent className="p-6">
@@ -33,13 +38,18 @@ export const NetworkStatusSection: React.FC<NetworkStatusSectionProps> = ({
             </div>
             <div>
               <h2 className="text-2xl font-semibold">
-                {networkStatus?.networkName || "Not Connected"}
+                {networkDisplay}
               </h2>
               <p className="text-muted-foreground">
                 {networkStatus?.isOnline ? 
                   `Connected via ${networkStatus?.networkType || 'WiFi'}` : 
                   "No active connection"}
               </p>
+              {networkStatus?.networkType && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Connection type: {networkStatus.networkType}
+                </p>
+              )}
             </div>
           </div>
           {networkStatus?.isOnline && (
