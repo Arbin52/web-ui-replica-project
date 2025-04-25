@@ -20,6 +20,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Function to send login notification
+  const sendLoginNotification = async (email: string) => {
+    try {
+      console.log("Sending login notification to:", email);
+      const { error } = await supabase.functions.invoke('login-notification', {
+        body: { email },
+      });
+      
+      if (error) {
+        console.error("Error sending login notification:", error);
+      } else {
+        console.log("Login notification sent successfully");
+      }
+    } catch (error) {
+      console.error("Failed to send login notification:", error);
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -28,11 +46,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (event === 'SIGNED_IN') {
+        if (event === 'SIGNED_IN' && session?.user?.email) {
           toast({
             title: "Welcome back!",
             description: "You have successfully signed in.",
           });
+          
+          // Send login notification email
+          setTimeout(() => {
+            sendLoginNotification(session.user.email!);
+          }, 0);
         } else if (event === 'SIGNED_OUT') {
           toast({
             title: "Signed out",
