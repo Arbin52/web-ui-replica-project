@@ -9,6 +9,8 @@ export const fetchRealNetworkInfo = async (): Promise<{
   gatewayIp?: string;
   lastUpdated?: Date;
   connectionHistory?: any[];
+  localIp?: string;        // Added this property to the return type
+  macAddress?: string;     // Added this property to the return type
 }> => {
   // Use isOnline check directly from navigator - extremely fast
   const browserIsOnline = navigator.onLine;
@@ -76,7 +78,9 @@ export const fetchRealNetworkInfo = async (): Promise<{
         (browserIsOnline ? 'Connected Network' : 'Not Connected'),
       publicIp: sessionStorage.getItem('last_known_public_ip') || '192.168.1.100',
       networkType: sessionStorage.getItem('last_known_network_type') || 'WiFi', 
-      gatewayIp: sessionStorage.getItem('last_known_gateway_ip') || '192.168.1.1'
+      gatewayIp: sessionStorage.getItem('last_known_gateway_ip') || '192.168.1.1',
+      localIp: sessionStorage.getItem('last_known_local_ip') || '192.168.1.2',
+      macAddress: sessionStorage.getItem('last_known_mac_address') || '00:1B:44:11:3A:B7'
     };
     
     // Create the full response with shallow object spread to minimize property access/creation

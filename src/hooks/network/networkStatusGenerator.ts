@@ -119,7 +119,7 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   // Generate realistic signal strength
   const signalStrengthDb = -(Math.floor(Math.random() * 30) + 40);
 
-  // Fixed: Use fallback values for localIp and macAddress when not present in realNetworkInfo
+  // Use fallback values for all potentially missing properties
   const localIp = realNetworkInfo.localIp || '192.168.1.2';
   const publicIp = realNetworkInfo.publicIp || '203.0.113.1';
   const gatewayIp = realNetworkInfo.gatewayIp || '192.168.1.1';
