@@ -17,11 +17,9 @@ export const NetworkStatusSection: React.FC<NetworkStatusSectionProps> = ({
   isLoading,
   handleGatewayClick
 }) => {
-  // Pre-format speed values
-  const displayDownload = networkStatus?.connectionSpeed.download ? 
-    parseFloat(networkStatus.connectionSpeed.download.toFixed(1)) : 0;
-  const displayUpload = networkStatus?.connectionSpeed.upload ? 
-    parseFloat(networkStatus.connectionSpeed.upload.toFixed(1)) : 0;
+  // Pre-format speed values - limiting to 2 decimal places max
+  const displayDownload = networkStatus?.connectionSpeed.download || 0;
+  const displayUpload = networkStatus?.connectionSpeed.upload || 0;
 
   // Format the network name display
   const networkName = networkStatus?.networkName || 'Unknown Network';

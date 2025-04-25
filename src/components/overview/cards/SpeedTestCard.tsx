@@ -1,8 +1,7 @@
 
-import React, { memo, useCallback } from 'react';
+import React, { memo } from 'react';
 import { Activity } from 'lucide-react';
 import OptimizedFeatureCard from '../OptimizedFeatureCard';
-import { preventRapidExecution } from '@/utils/performance';
 
 interface SpeedTestCardProps {
   downloadSpeed: number | undefined;
@@ -10,11 +9,9 @@ interface SpeedTestCardProps {
 }
 
 const SpeedTestCard: React.FC<SpeedTestCardProps> = ({ downloadSpeed, uploadSpeed }) => {
-  // Pre-format speed values to prevent calculations during render
-  const displayDownload = downloadSpeed !== undefined ? 
-    parseFloat(downloadSpeed.toFixed(1)) : '--';
-  const displayUpload = uploadSpeed !== undefined ? 
-    parseFloat(uploadSpeed.toFixed(1)) : '--';
+  // Display values exactly as they are - they are already formatted in networkStatusGenerator
+  const displayDownload = downloadSpeed !== undefined ? downloadSpeed : '--';
+  const displayUpload = uploadSpeed !== undefined ? uploadSpeed : '--';
 
   return (
     <OptimizedFeatureCard 

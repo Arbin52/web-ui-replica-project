@@ -42,6 +42,11 @@ const calculateMovingAverage = (history: number[], newValue: number, maxHistoryL
   return valueSum / weightSum;
 };
 
+// Function to format numbers to a reasonable number of decimals
+const formatNumber = (value: number): number => {
+  return parseFloat(value.toFixed(2));
+};
+
 export const generateNetworkStatus = async (previousStatus: NetworkStatus | null): Promise<NetworkStatus> => {
   console.log("Generating network status");
   
@@ -92,6 +97,11 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
     uploadSpeed = calculateMovingAverage(uploadSpeedHistory, uploadSpeed);
     latency = calculateMovingAverage(latencyHistory, latency);
   }
+  
+  // Format numbers to reasonable decimals (max 2 decimals)
+  downloadSpeed = formatNumber(downloadSpeed);
+  uploadSpeed = formatNumber(uploadSpeed);
+  latency = formatNumber(latency);
   
   // Update histories
   downloadSpeedHistory.push(downloadSpeed);
@@ -157,9 +167,9 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   const downloadIncrease = (downloadSpeed / 8) * timeDiff; // Convert Mbps to MB/s
   const uploadIncrease = (uploadSpeed / 8) * timeDiff; // Convert Mbps to MB/s
   
-  // Round to 2 decimal places for display
-  const downloadData = Math.round((baseDownloadData + downloadIncrease) * 100) / 100;
-  const uploadData = Math.round((baseUploadData + uploadIncrease) * 100) / 100;
+  // Format data usage to max 2 decimal places for more realistic display
+  const downloadData = formatNumber(baseDownloadData + downloadIncrease);
+  const uploadData = formatNumber(baseUploadData + uploadIncrease);
 
   // Store current values for next refresh
   previousDataDownload = downloadData;
@@ -199,7 +209,7 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
     dataUsage: {
       download: downloadData,
       upload: uploadData,
-      total: downloadData + uploadData
+      total: formatNumber(downloadData + uploadData)
     },
     connectionHistory,
     availableNetworks

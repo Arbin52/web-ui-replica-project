@@ -16,6 +16,7 @@ export const DataUsageCards: React.FC<DataUsageCardsProps> = ({ networkStatus, i
         value={isLoading ? "" : `${networkStatus?.dataUsage?.download} MB`}
         icon={<BarChart2 className="h-5 w-5" />}
         isLoading={isLoading}
+        description="Total data downloaded"
       />
 
       <DashboardCard
@@ -23,6 +24,7 @@ export const DataUsageCards: React.FC<DataUsageCardsProps> = ({ networkStatus, i
         value={isLoading ? "" : `${networkStatus?.dataUsage?.upload} MB`}
         icon={<BarChart2 className="h-5 w-5" />}
         isLoading={isLoading}
+        description="Total data uploaded"
       />
 
       <DashboardCard
@@ -30,6 +32,7 @@ export const DataUsageCards: React.FC<DataUsageCardsProps> = ({ networkStatus, i
         value={isLoading ? "" : `${networkStatus?.dataUsage?.total} MB`}
         icon={<BarChart2 className="h-5 w-5" />}
         isLoading={isLoading}
+        description="Combined usage"
       />
     </div>
   );

@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, Suspense, lazy, useEffect } from 'react';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
@@ -15,7 +16,9 @@ const AddNetworkDialog = lazy(() =>
   import('../components/AddNetworkDialog'));
 
 const NetworkOverviewOptimized = lazy(() => 
-  import('@/components/network-management/NetworkOverviewOptimized'));
+  import('@/components/network-management/NetworkOverviewOptimized').then(
+    module => ({ default: module.default })
+  ));
 
 const NetworkStatistics = lazy(() => 
   import('@/components/network-management/NetworkStatistics').then(
@@ -31,6 +34,15 @@ const SavedNetworks = lazy(() =>
   import('@/components/network-management/SavedNetworks').then(
     module => ({ default: module.SavedNetworks })
   ));
+
+const Reports = lazy(() => 
+  import('../components/Reports'));
+
+const Ping = lazy(() => 
+  import('../components/Ping'));
+
+const Speed = lazy(() => 
+  import('../components/Speed'));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -105,6 +117,24 @@ const NetworkManagement = () => {
     }
   }, [tabValue, loadedTabs]);
   
+  // Fix navigation by preserving the current tab when switching between features
+  useEffect(() => {
+    // Save current tab value to session storage
+    if (tabValue) {
+      sessionStorage.setItem('network_management_tab', tabValue);
+    }
+  }, [tabValue]);
+
+  // Restore tab from session storage on component mount
+  useEffect(() => {
+    const savedTab = sessionStorage.getItem('network_management_tab');
+    if (savedTab) {
+      setTabValue(savedTab);
+      // Pre-load the tab content
+      setLoadedTabs(prev => ({ ...prev, [savedTab]: true }));
+    }
+  }, []);
+  
   // Use memo to prevent tab content re-rendering unless necessary
   const tabContent = useMemo(() => (
     <Tabs 
@@ -112,11 +142,14 @@ const NetworkManagement = () => {
       onValueChange={setTabValue}
       className="space-y-4"
     >
-      <TabsList>
+      <TabsList className="flex flex-wrap">
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="statistics">Network Statistics</TabsTrigger>
         <TabsTrigger value="devices">Connected Devices</TabsTrigger>
         <TabsTrigger value="saved">Saved Networks</TabsTrigger>
+        <TabsTrigger value="reports">Reports</TabsTrigger>
+        <TabsTrigger value="ping">Ping</TabsTrigger>
+        <TabsTrigger value="speed">Speed Test</TabsTrigger>
       </TabsList>
       
       <TabsContent value="overview" className="space-y-4">
@@ -167,6 +200,24 @@ const NetworkManagement = () => {
               openAddNetworkDialog={handleOpenAddDialog}
             />
           )}
+        </Suspense>
+      </TabsContent>
+
+      <TabsContent value="reports">
+        <Suspense fallback={<LoadingFallback />}>
+          {loadedTabs.reports && <Reports />}
+        </Suspense>
+      </TabsContent>
+
+      <TabsContent value="ping">
+        <Suspense fallback={<LoadingFallback />}>
+          {loadedTabs.ping && <Ping />}
+        </Suspense>
+      </TabsContent>
+
+      <TabsContent value="speed">
+        <Suspense fallback={<LoadingFallback />}>
+          {loadedTabs.speed && <Speed />}
         </Suspense>
       </TabsContent>
     </Tabs>
