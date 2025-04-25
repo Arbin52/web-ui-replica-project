@@ -1,3 +1,4 @@
+
 import { fetchRealNetworkInfo } from './realNetworkInfo';
 import { generateConnectedDevices, getConnectedDeviceStatus } from './connectedDevices';
 import { getAvailableNetworks } from './availableNetworks';
@@ -117,16 +118,22 @@ export const generateNetworkStatus = async (previousStatus: NetworkStatus | null
   
   // Generate realistic signal strength
   const signalStrengthDb = -(Math.floor(Math.random() * 30) + 40);
+
+  // Fixed: Use fallback values for localIp and macAddress when not present in realNetworkInfo
+  const localIp = realNetworkInfo.localIp || '192.168.1.2';
+  const publicIp = realNetworkInfo.publicIp || '203.0.113.1';
+  const gatewayIp = realNetworkInfo.gatewayIp || '192.168.1.1';
+  const macAddress = realNetworkInfo.macAddress || '00:1B:44:11:3A:B7';
   
   return {
     networkName,
-    localIp: realNetworkInfo.localIp || '192.168.1.2',
-    publicIp: realNetworkInfo.publicIp || '203.0.113.1',
-    gatewayIp: realNetworkInfo.gatewayIp || '192.168.1.1',
+    localIp,
+    publicIp,
+    gatewayIp,
     signalStrength: signalStrengthDb > -60 ? 'Good' : signalStrengthDb > -70 ? 'Fair' : 'Poor',
     signalStrengthDb: `${signalStrengthDb} dBm`,
     networkType: realNetworkInfo.networkType || `${networkType} (${effectiveType})`,
-    macAddress: realNetworkInfo.macAddress || '00:1B:44:11:3A:B7',
+    macAddress,
     dnsServer: '8.8.8.8, 8.8.4.4',
     connectedDevices,
     lastUpdated: new Date(),
