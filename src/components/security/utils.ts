@@ -26,3 +26,13 @@ export const getCategoryIcon = (category: string) => {
       return 'Shield';
   }
 };
+
+export const getSecurityIcon = (status: string) => {
+  if (status === 'active' || status === 'valid' || status === 'enabled' || status === 'Active' || status === 'Enabled') {
+    return <span className="text-green-500">✓</span>;
+  } else if (status === 'inactive' || status === 'invalid' || status === 'disabled' || status === 'Not Connected') {
+    return <span className="text-red-500">✗</span>;
+  } else {
+    return null;
+  }
+};
