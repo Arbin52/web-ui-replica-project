@@ -185,7 +185,7 @@ export function testForMITMAttacks(): { isUnderAttack: boolean; issues: string[]
   if (window.location.protocol !== 'https:' && 
       !window.location.hostname.includes('localhost') && 
       !window.location.hostname.includes('127.0.0.1')) {
-    issues.push('Connection is not using HTTPS');
+    issues.push('Connection is not using HTTPS - vulnerable to MITM attacks');
   }
   
   // Check for suspicious iframes
@@ -198,12 +198,32 @@ export function testForMITMAttacks(): { isUnderAttack: boolean; issues: string[]
   try {
     const canary = localStorage.getItem('security_canary');
     if (canary && canary !== 'authentic') {
-      issues.push('Storage tampering detected');
+      issues.push('Storage tampering detected - possible session hijacking attempt');
     }
   } catch (e) {
     // Storage access might be blocked in some contexts
+    issues.push('Unable to verify storage integrity');
   }
+
+  // Check for proxy headers
+  const proxyHeaders = ['via', 'x-forwarded-for', 'forwarded', 'proxy-connection'];
+  const foundProxyHeaders = proxyHeaders.filter(header => 
+    document.cookie.includes(header) || 
+    (document.querySelector(`meta[http-equiv="${header}"]`))
+  );
   
+  if (foundProxyHeaders.length > 0) {
+    issues.push('Proxy headers detected - possible MITM proxy in use');
+  }
+
+  // Check for mixed content
+  const mixedContent = document.querySelectorAll(
+    'img[src^="http:"], script[src^="http:"], link[href^="http:"]'
+  );
+  if (mixedContent.length > 0) {
+    issues.push('Mixed content detected - insecure resources being loaded');
+  }
+
   return { 
     isUnderAttack: issues.length > 0,
     issues
