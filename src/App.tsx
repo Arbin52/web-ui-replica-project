@@ -1,4 +1,3 @@
-
 import { Suspense, lazy, useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -91,7 +90,17 @@ const AppRoutes = () => {
   );
 };
 
-const App = () => {
+function App() {
+  // Initialize security monitoring
+  useEffect(() => {
+    const cleanupSecurity = initSecurity();
+    
+    return () => {
+      // Clean up security monitoring on unmount
+      cleanupSecurity();
+    };
+  }, []);
+
   // Track if the app has mounted successfully
   const [hasMounted, setHasMounted] = useState(false);
 
