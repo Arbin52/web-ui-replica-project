@@ -1,4 +1,6 @@
 
+import React from 'react';
+
 export const getSeverityColor = (severity: string) => {
   switch (severity) {
     case 'high':
