@@ -105,11 +105,16 @@ export function setupSecurityMonitoring(): () => void {
   
   // Intercept all fetch requests
   const originalFetch = window.fetch;
-  window.fetch = async function(input, init) {
-    const url = typeof input === 'string' ? input : input.url;
+  window.fetch = async function(input: RequestInfo | URL, init?: RequestInit) {
+    // Extract the URL string from the input
+    const url = typeof input === 'string' 
+      ? input 
+      : input instanceof URL 
+        ? input.href
+        : input.url;
     
     // Add frontend security checks here
-    if (!url.startsWith('https:') && !url.startsWith('http://localhost')) {
+    if (typeof url === 'string' && !url.startsWith('https:') && !url.startsWith('http://localhost')) {
       console.warn(`Insecure request to ${url} detected`);
     }
     

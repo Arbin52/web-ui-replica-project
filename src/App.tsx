@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import NotFound from "./pages/NotFound";
 import { ComponentErrorBoundary } from "@/components/ui/component-error-boundary";
+import { initSecurity } from "./utils/securityMonitoring";
 
 // Lazy load components to improve initial loading performance
 const Index = lazy(() => import("./pages/Index"));
