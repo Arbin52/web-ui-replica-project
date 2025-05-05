@@ -24,6 +24,8 @@ export const getCategoryIcon = (category: string) => {
       return 'Lock';
     case 'configuration':
       return 'Settings';
+    case 'port':
+      return 'Shield';
     default:
       return 'Shield';
   }
@@ -38,3 +40,52 @@ export const getSecurityIcon = (status: string) => {
     return null;
   }
 };
+
+export const getPortRiskLevel = (port: number): { risk: 'high' | 'medium' | 'low'; description: string } => {
+  const highRiskPorts = [21, 22, 23, 25, 110, 135, 139, 445, 3389];
+  const mediumRiskPorts = [20, 53, 111, 143, 161, 1433, 1434, 3306, 5432, 8080];
+  
+  if (highRiskPorts.includes(port)) {
+    return { 
+      risk: 'high', 
+      description: 'This port is commonly targeted by attackers and should be closed if not needed.'
+    };
+  } else if (mediumRiskPorts.includes(port)) {
+    return { 
+      risk: 'medium', 
+      description: 'This port may expose services that should be secured properly.'
+    };
+  } else {
+    return { 
+      risk: 'low', 
+      description: 'This port is less commonly targeted but should still be monitored.'
+    };
+  }
+};
+
+export const getCommonPortService = (port: number): string => {
+  const portServices: Record<number, string> = {
+    21: 'FTP',
+    22: 'SSH',
+    23: 'Telnet',
+    25: 'SMTP',
+    53: 'DNS',
+    80: 'HTTP',
+    110: 'POP3',
+    135: 'RPC',
+    139: 'NetBIOS',
+    143: 'IMAP',
+    161: 'SNMP',
+    443: 'HTTPS',
+    445: 'SMB',
+    1433: 'SQL Server',
+    1434: 'SQL Browser',
+    3306: 'MySQL',
+    3389: 'RDP',
+    5432: 'PostgreSQL',
+    8080: 'HTTP Proxy'
+  };
+  
+  return portServices[port] || 'Unknown';
+};
+

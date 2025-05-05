@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Shield } from 'lucide-react';
 import SecurityScan from './SecurityScan';
@@ -7,17 +8,18 @@ import SecurityNetworkSection from './security/SecurityNetworkSection';
 import SecurityAccessSection from './security/SecurityAccessSection';
 import SecurityThreatProtection from './security/SecurityThreatProtection';
 import BlockedIPs from './security/BlockedIPs';
+import PortVulnerabilityScanner from './security/PortVulnerabilityScanner';
 
 const Security: React.FC = () => {
   const securityData = {
     wifiSecurity: 'WPA3',
     securityRating: 92,
     firewallStatus: 'Active',
-    lastScan: '2025-04-11 10:30 AM',
+    lastScan: '2025-05-11 10:30 AM',
     vulnerabilities: 0,
     blockedIps: ['45.227.253.109', '103.55.33.24'],
     blockedEvents: 56,
-    lastAttackAttempt: '2025-04-10 23:15 PM',
+    lastAttackAttempt: '2025-05-10 23:15 PM',
     attackType: 'Port Scanning',
     publicPortsExposed: [],
     securityUpdates: 'Up to date',
@@ -29,7 +31,7 @@ const Security: React.FC = () => {
     vpnStatus: 'Not Connected',
     malwareBlocked: 23,
     phishingAttempts: 12,
-    lastBackup: '2025-04-17 08:45 AM',
+    lastBackup: '2025-05-17 08:45 AM',
     certificateStatus: 'Valid',
     twoFactorAuth: 'Enabled',
     networkSegmentation: 'Enabled',
@@ -47,13 +49,18 @@ const Security: React.FC = () => {
         <SecurityMonitoring />
         
         <Tabs defaultValue="scan" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="scan">Security Scanner</TabsTrigger>
+            <TabsTrigger value="ports">Port Scanner</TabsTrigger>
             <TabsTrigger value="network">Network Security</TabsTrigger>
           </TabsList>
           
           <TabsContent value="scan" className="p-4 bg-white rounded-md shadow-sm border mt-2">
             <SecurityScan />
+          </TabsContent>
+          
+          <TabsContent value="ports" className="p-4 bg-white rounded-md shadow-sm border mt-2">
+            <PortVulnerabilityScanner />
           </TabsContent>
           
           <TabsContent value="network" className="mt-2">
