@@ -141,8 +141,8 @@ const SecurityMonitoring = () => {
             )}
           </CardTitle>
           <Badge 
-            variant={mitm.isUnderAttack ? "destructive" : "success"}
-            className={mitm.isUnderAttack ? "animate-pulse" : ""}
+            variant={mitm.isUnderAttack ? "destructive" : "outline"}
+            className={`${mitm.isUnderAttack ? "animate-pulse" : ""} ${!mitm.isUnderAttack ? "text-green-500 border-green-500" : ""}`}
           >
             {mitm.isUnderAttack ? "Alert" : "Secure"}
           </Badge>
